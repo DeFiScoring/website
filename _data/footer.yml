@@ -43,9 +43,6 @@ community:
   - name: Discord
     link: ""
     handle: "Coming soon"
-  - name: Email
-    link: "mailto:admin@defiscoring.com"
-    handle: "admin@defiscoring.com"
   - name: Facebook
     link: https://www.facebook.com/defiscoring/
     handle: "Facebook"
