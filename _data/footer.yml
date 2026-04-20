@@ -33,28 +33,22 @@ legal:
   - name: Privacy Policy
     link: /privacy/
 
-community:
+social:
   - name: X (Twitter)
+    icon: twitter
     link: https://twitter.com/DeFiScoring
-    handle: "@defiscoring"
-  - name: Telegram
-    link: ""
-    handle: "Coming soon"
-  - name: Discord
-    link: ""
-    handle: "Coming soon"
   - name: Facebook
+    icon: facebook
     link: https://www.facebook.com/defiscoring/
-    handle: "Facebook"
   - name: LinkedIn
+    icon: linkedin
     link: https://www.linkedin.com/company/defiscoring
-    handle: "LinkedIn"
   - name: Instagram
+    icon: instagram
     link: https://www.instagram.com/defiscoring/
-    handle: "Instagram"
   - name: YouTube
+    icon: youtube
     link: https://www.youtube.com/@DeFiScoring
-    handle: "YouTube"
 
 # Short text shown in the prominent disclaimer banner above the link columns.
 disclaimer_short: >
