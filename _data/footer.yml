@@ -35,7 +35,7 @@ legal:
 
 community:
   - name: X (Twitter)
-    link: ""
+    link: https://twitter.com/DeFiScoring
     handle: "@defiscoring"
   - name: Telegram
     link: ""
@@ -46,6 +46,18 @@ community:
   - name: Email
     link: "mailto:admin@defiscoring.com"
     handle: "admin@defiscoring.com"
+  - name: Facebook
+    link: https://www.facebook.com/defiscoring/
+    handle: "Facebook"
+  - name: LinkedIn
+    link: https://www.linkedin.com/company/defiscoring
+    handle: "LinkedIn"
+  - name: Instagram
+    link: https://www.instagram.com/defiscoring/
+    handle: "Instagram"
+  - name: YouTube
+    link: https://www.youtube.com/@DeFiScoring
+    handle: "YouTube"
 
 # Short text shown in the prominent disclaimer banner above the link columns.
 disclaimer_short: >
