@@ -1,58 +1,110 @@
 /* DeFi Scoring – approvals-checker.js
  *
- * Scans the connected wallet for ERC-20 approvals on a curated set of
- * common tokens × common spenders, flags unlimited allowances, and links
- * each row to revoke.cash so the user can rescind in one click.
+ * Scans the connected wallet for ERC-20 approvals on the wallet's CURRENT
+ * network, flags unlimited allowances and high-risk spenders, and links
+ * each row to revoke.cash for one-click revocation.
  *
- * Convention compliance:
- *   - Reads wallet from window.DefiWallet (set by wallet-connect.js).
- *   - Re-renders on the `defi:wallet-changed` custom event.
- *   - Uses project CSS classes (.defi-card, .defi-table, .defi-chip,
- *     .defi-btn) — no Tailwind.
- *   - Loads ethers v6 from jsDelivr lazily so the rest of the dashboard
- *     stays at zero extra weight when the user never visits this page.
+ * Design:
+ *   - Coverage comes from `eth_getLogs` over the wallet's recent history
+ *     (Approval event topic), not from a hardcoded token × spender matrix.
+ *     This means a wallet that approved a niche token on a SushiSwap fork
+ *     still surfaces here.
+ *   - Multi-chain: Ethereum mainnet (1), Polygon (137), Arbitrum One
+ *     (42161). The wallet's chainId picks the catalogue and the revoke.cash
+ *     deep link.
+ *   - Token metadata (symbol, name, decimals) is fetched on-demand per
+ *     unique token contract, in parallel.
+ *   - Known spenders are tagged with a brand name + heuristic risk; unknown
+ *     spenders show as "Unknown contract" with Medium-risk treatment so
+ *     they're never silently buried.
  *
- * Risk model:
- *   An approval row is a hazard if EITHER (a) it's unlimited (>= 2^255 in
- *   wei terms — practically uint256.max minus dust) OR (b) the spender is
- *   tagged High risk in our spender catalogue. Both flags are surfaced
- *   separately so the user can triage.
+ * Conventions:
+ *   - Reads wallet from window.DefiWallet, re-renders on
+ *     `defi:wallet-changed`. Uses project CSS classes (no Tailwind).
+ *   - ethers v6 is loaded lazily from jsDelivr.
  */
 (function () {
   const ETHERS_CDN = "https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js";
 
-  // Curated common ERC-20 tokens on Ethereum mainnet. The intent is breadth
-  // of *coverage* across what most users actually hold, not exhaustiveness —
-  // exhaustive scanning needs an indexer (Etherscan/Alchemy) and lives in a
-  // future Worker route.
-  const COMMON_TOKENS = {
-    "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48": { symbol: "USDC", name: "USD Coin", decimals: 6 },
-    "0xdAC17F958D2ee523a2206206994597C13D831ec7": { symbol: "USDT", name: "Tether",   decimals: 6 },
-    "0x6B175474E89094C44Da98b954EedeAC495271d0F": { symbol: "DAI",  name: "Dai",      decimals: 18 },
-    "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2": { symbol: "WETH", name: "Wrapped Ether", decimals: 18 },
-    "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599": { symbol: "WBTC", name: "Wrapped Bitcoin", decimals: 8 },
-    "0x514910771AF9Ca656af840dff83E8264EcF986CA": { symbol: "LINK", name: "Chainlink", decimals: 18 },
-    "0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9": { symbol: "AAVE", name: "Aave",      decimals: 18 },
-    "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984": { symbol: "UNI",  name: "Uniswap",   decimals: 18 },
+  /* --------------------------------------------------------------------- */
+  /* Per-chain configuration                                               */
+  /* --------------------------------------------------------------------- */
+
+  // Lookback windows are tuned per chain so each scan stays under the
+  // typical public-RPC range cap (~10k blocks per call) while still covering
+  // a few days of activity. Users can rescan to refresh.
+  //
+  //   ETH:      ~12s/block ·  90k blocks  ≈ 12 days
+  //   Polygon:  ~2.2s/block · 200k blocks ≈ 5 days
+  //   Arbitrum: ~0.25s/block · 500k blocks ≈ 35 hours
+  //
+  // chunkSize is the per-`eth_getLogs` block window. chunks * chunkSize is
+  // the total lookback.
+  const CHAIN_CONFIG = {
+    1: {
+      name: "Ethereum mainnet",
+      revokeId: 1,
+      chunkSize: 9000,
+      chunks: 10,
+    },
+    137: {
+      name: "Polygon",
+      revokeId: 137,
+      chunkSize: 9000,
+      chunks: 22,
+    },
+    42161: {
+      name: "Arbitrum One",
+      revokeId: 42161,
+      chunkSize: 9000,
+      chunks: 56,
+    },
   };
 
-  // Spender catalogue. `risk` reflects the contract surface, not the brand:
-  // a router that can pull any allowance is High; a position manager that
-  // mints NFTs is Low. "risk" here is independent from the protocol's
-  // composite DeFi Score — both signals are shown in the table.
-  const RISKY_SPENDERS = {
-    "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D": { name: "Uniswap V2 Router",       risk: "High",   slug: "uniswap" },
-    "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45": { name: "Uniswap V3 SwapRouter02", risk: "High",   slug: "uniswap-v3" },
-    "0xC36442b4a4522E871399CD717aBDD847Ab11FE88": { name: "Uniswap V3 Positions",    risk: "Low",    slug: "uniswap-v3" },
-    "0x1111111254EEB25477B68fb85Ed929f73A960582": { name: "1inch Router v5",         risk: "Medium", slug: "1inch" },
-    "0xDef1C0ded9bec7F1a1670819833240f027b25EfF": { name: "0x Exchange Proxy",       risk: "Medium", slug: "0x" },
-    "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2": { name: "Aave V3 Pool",            risk: "High",   slug: "aave-v3" },
-    "0xc3d688B66703497DAA19211EEdff47f25384cdc3": { name: "Compound V3 USDC",        risk: "High",   slug: "compound-v3" },
-    "0xDe27d2F2D2D2D2d2D2d2d2D2d2D2D2D2D2D2D2d2": { name: "Permit2 (Universal)",     risk: "Medium", slug: "permit2" },
+  // Known router / pool / aggregator addresses per chain. Anything not in
+  // this catalogue still renders, just tagged "Unknown contract · Medium
+  // risk". Addresses are checksummed lower-cased on lookup.
+  const KNOWN_SPENDERS = {
+    1: {
+      "0x7a250d5630b4cf539739df2c5dacb4c659f2488d": { name: "Uniswap V2 Router",       risk: "High"   },
+      "0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45": { name: "Uniswap V3 SwapRouter02", risk: "High"   },
+      "0x3fc91a3afd70395cd496c647d5a6cc9d4b2b7fad": { name: "Uniswap Universal Router", risk: "High" },
+      "0xc36442b4a4522e871399cd717abdd847ab11fe88": { name: "Uniswap V3 Positions",    risk: "Low"    },
+      "0x1111111254eeb25477b68fb85ed929f73a960582": { name: "1inch Router v5",         risk: "Medium" },
+      "0xdef1c0ded9bec7f1a1670819833240f027b25eff": { name: "0x Exchange Proxy",       risk: "Medium" },
+      "0x87870bca3f3fd6335c3f4ce8392d69350b4fa4e2": { name: "Aave V3 Pool",            risk: "High"   },
+      "0xc3d688b66703497daa19211eedff47f25384cdc3": { name: "Compound V3 USDC",        risk: "High"   },
+      "0x000000000022d473030f116ddee9f6b43ac78ba3": { name: "Permit2",                 risk: "Medium" },
+      "0x9008d19f58aabd9ed0d60971565aa8510560ab41": { name: "CowSwap GPv2 Settlement", risk: "Medium" },
+      "0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f": { name: "SushiSwap Router",        risk: "High"   },
+      "0xe592427a0aece92de3edee1f18e0157c05861564": { name: "Uniswap V3 SwapRouter",   risk: "High"   },
+    },
+    137: {
+      "0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45": { name: "Uniswap V3 SwapRouter02", risk: "High"   },
+      "0xec7be89e9d109e7e3fec59c222cf297125fefda2": { name: "Uniswap Universal Router (Polygon)", risk: "High" },
+      "0xc36442b4a4522e871399cd717abdd847ab11fe88": { name: "Uniswap V3 Positions",    risk: "Low"    },
+      "0xa5e0829caced8ffdd4de3c43696c57f7d7a678ff": { name: "QuickSwap V2 Router",     risk: "High"   },
+      "0x1111111254eeb25477b68fb85ed929f73a960582": { name: "1inch Router v5",         risk: "Medium" },
+      "0xdef1c0ded9bec7f1a1670819833240f027b25eff": { name: "0x Exchange Proxy",       risk: "Medium" },
+      "0x794a61358d6845594f94dc1db02a252b5b4814ad": { name: "Aave V3 Pool",            risk: "High"   },
+      "0x000000000022d473030f116ddee9f6b43ac78ba3": { name: "Permit2",                 risk: "Medium" },
+    },
+    42161: {
+      "0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45": { name: "Uniswap V3 SwapRouter02", risk: "High"   },
+      "0x5e325eda8064b456f4781070c0738d849c824258": { name: "Uniswap Universal Router (Arbitrum)", risk: "High" },
+      "0xc36442b4a4522e871399cd717abdd847ab11fe88": { name: "Uniswap V3 Positions",    risk: "Low"    },
+      "0x1111111254eeb25477b68fb85ed929f73a960582": { name: "1inch Router v5",         risk: "Medium" },
+      "0x794a61358d6845594f94dc1db02a252b5b4814ad": { name: "Aave V3 Pool",            risk: "High"   },
+      "0x000000000022d473030f116ddee9f6b43ac78ba3": { name: "Permit2",                 risk: "Medium" },
+      "0xc873fecbd354f5a56e00e710b90ef4201db2448d": { name: "Camelot Router",          risk: "High"   },
+      "0xabbc5f99639c9b6bcb58544ddf04efa6802f4064": { name: "GMX Router",              risk: "High"   },
+    },
   };
 
-  // ethers v6 is loaded once on first scan and memoised on window so the
-  // second visit is instant.
+  /* --------------------------------------------------------------------- */
+  /* Lazy ethers loader                                                    */
+  /* --------------------------------------------------------------------- */
+
   function loadEthers() {
     if (window.ethers) return Promise.resolve(window.ethers);
     if (window.__defiEthersPromise) return window.__defiEthersPromise;
@@ -67,14 +119,16 @@
     return window.__defiEthersPromise;
   }
 
+  /* --------------------------------------------------------------------- */
+  /* Formatters                                                            */
+  /* --------------------------------------------------------------------- */
+
   function shorten(addr) {
     if (!addr) return "";
     return addr.slice(0, 6) + "…" + addr.slice(-4);
   }
 
   function fmtAllowance(raw, decimals) {
-    // Format the raw uint256 allowance into human units. Capped at 4 sig
-    // figures; very small allowances render as "<0.0001".
     try {
       const whole = Number(raw / (10n ** BigInt(decimals)));
       if (whole >= 1) return whole.toLocaleString(undefined, { maximumFractionDigits: 2 });
@@ -101,31 +155,32 @@
     return '<span class="defi-chip defi-chip--muted">Limited</span>';
   }
 
+  /* --------------------------------------------------------------------- */
+  /* Render helpers                                                        */
+  /* --------------------------------------------------------------------- */
+
   function renderEmpty(container, msg) {
     container.innerHTML = '<div class="defi-empty">' + msg + "</div>";
   }
-
   function renderError(container, msg) {
     container.innerHTML = '<div class="defi-empty" style="color:var(--defi-danger,#ff6b6b)">' + msg + "</div>";
   }
-
-  function renderLoading(container, owner) {
+  function renderProgress(container, owner, chainName, stage) {
     container.innerHTML =
       '<div class="defi-empty">Scanning <code>' + shorten(owner) +
-      "</code> for ERC-20 approvals on Ethereum… (" +
-      Object.keys(COMMON_TOKENS).length + " tokens × " +
-      Object.keys(RISKY_SPENDERS).length + " spenders)</div>";
+      "</code> on <strong>" + chainName + "</strong> — " + stage + "…</div>";
   }
 
-  function renderTable(container, rows, owner, scannedAt) {
+  function renderTable(container, rows, owner, ctx) {
     if (!rows.length) {
       container.innerHTML =
         '<div class="defi-card">' +
           '<div class="defi-card__title">No active approvals found</div>' +
           '<p style="margin:8px 0 0;color:var(--defi-text-dim);font-size:13px">' +
-            "Scanned " + Object.keys(COMMON_TOKENS).length + " common tokens against " +
-            Object.keys(RISKY_SPENDERS).length + " spenders. None of them have a non-zero allowance set by " +
-            '<code>' + shorten(owner) + "</code> on Ethereum mainnet." +
+            "Indexed " + ctx.eventCount + " Approval event" + (ctx.eventCount === 1 ? "" : "s") +
+            " for <code>" + shorten(owner) + "</code> on " + ctx.chainName +
+            " over the last ~" + ctx.totalBlocks.toLocaleString() + " blocks. " +
+            "All current allowances are zero — your wallet has no live approvals to revoke on this chain." +
           "</p>" +
         "</div>";
       return;
@@ -138,7 +193,7 @@
     html += '<div class="defi-grid defi-grid--stats" style="margin-bottom:18px">';
     html +=   '<div class="defi-card"><div class="defi-card__title">Active approvals</div>' +
               '<div class="defi-card__value">' + rows.length + '</div>' +
-              '<div class="defi-card__delta">non-zero allowances</div></div>';
+              '<div class="defi-card__delta">non-zero allowances on ' + ctx.chainName + '</div></div>';
     html +=   '<div class="defi-card"><div class="defi-card__title">Unlimited</div>' +
               '<div class="defi-card__value" style="color:' + (unlimited ? "var(--defi-danger,#ff6b6b)" : "inherit") + '">' + unlimited + '</div>' +
               '<div class="defi-card__delta">grant access to your full balance</div></div>';
@@ -148,7 +203,7 @@
     html += "</div>";
 
     html += '<div class="defi-card">';
-    html +=   '<div class="defi-card__title">Approvals on Ethereum</div>';
+    html +=   '<div class="defi-card__title">Approvals on ' + ctx.chainName + '</div>';
     html +=   '<div style="overflow-x:auto;margin-top:10px">';
     html +=     '<table class="defi-table">';
     html +=       '<thead><tr>' +
@@ -157,23 +212,99 @@
                   '</tr></thead><tbody>';
     rows.forEach(function (r) {
       html +=     '<tr>' +
-                    '<td><strong>' + r.token.symbol + "</strong> <span style=\"color:var(--defi-text-dim);font-size:12px\">" + r.token.name + "</span></td>" +
-                    '<td>' + r.spender.name + ' <span style="color:var(--defi-text-dim);font-size:11px;font-family:monospace">' + shorten(r.spenderAddr) + "</span></td>" +
-                    '<td style="text-align:right;font-family:monospace">' + (r.isUnlimited ? "∞" : fmtAllowance(r.allowance, r.token.decimals) + " " + r.token.symbol) + "</td>" +
+                    '<td><strong>' + escapeHtml(r.token.symbol) + "</strong> " +
+                      '<span style="color:var(--defi-text-dim);font-size:12px">' + escapeHtml(r.token.name) + "</span> " +
+                      '<span style="display:block;color:var(--defi-text-dim);font-size:11px;font-family:monospace">' + shorten(r.tokenAddr) + "</span></td>" +
+                    '<td>' + escapeHtml(r.spender.name) +
+                      ' <span style="display:block;color:var(--defi-text-dim);font-size:11px;font-family:monospace">' + shorten(r.spenderAddr) + "</span></td>" +
+                    '<td style="text-align:right;font-family:monospace">' +
+                      (r.isUnlimited ? "∞" : fmtAllowance(r.allowance, r.token.decimals) + " " + escapeHtml(r.token.symbol)) +
+                    "</td>" +
                     '<td>' + unlimitedChip(r.isUnlimited) + '</td>' +
                     '<td>' + riskChip(r.spender.risk) + '</td>' +
-                    '<td style="text-align:right"><a class="defi-btn defi-btn--ghost" style="padding:6px 12px;font-size:12px" target="_blank" rel="noopener" href="https://revoke.cash/address/' + owner + "?chainId=1\">Revoke →</a></td>" +
+                    '<td style="text-align:right"><a class="defi-btn defi-btn--ghost" style="padding:6px 12px;font-size:12px" target="_blank" rel="noopener" href="https://revoke.cash/address/' + owner + "?chainId=" + ctx.revokeId + "\">Revoke →</a></td>" +
                   "</tr>";
     });
     html +=     "</tbody></table>";
     html +=   "</div>";
     html +=   '<p style="margin:14px 0 0;font-size:12px;color:var(--defi-text-dim)">' +
-              "Scan completed " + scannedAt + " · Read-only · No transactions sent. " +
-              "Revocations are executed on revoke.cash with your wallet." +
+              "Scan completed " + ctx.scannedAt + " · Read-only · No transactions sent. " +
+              "Indexed " + ctx.eventCount + " Approval events over ~" + ctx.totalBlocks.toLocaleString() +
+              " blocks. Revocations execute on revoke.cash with your wallet." +
             "</p>";
     html += "</div>";
 
     container.innerHTML = html;
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+
+  /* --------------------------------------------------------------------- */
+  /* Core scan                                                             */
+  /* --------------------------------------------------------------------- */
+
+  // Approval(address indexed owner, address indexed spender, uint256 value)
+  const APPROVAL_TOPIC = "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925";
+  const ERC20_ABI = [
+    "function allowance(address owner, address spender) view returns (uint256)",
+    "function symbol() view returns (string)",
+    "function name() view returns (string)",
+    "function decimals() view returns (uint8)",
+  ];
+  const UNLIMITED_THRESHOLD = (1n << 255n);
+
+  // Pad 20-byte address into 32-byte topic (0x + 64 hex chars).
+  function addrToTopic(addr) {
+    return "0x" + "0".repeat(24) + addr.toLowerCase().replace(/^0x/, "");
+  }
+  function topicToAddr(topic) {
+    return "0x" + topic.slice(-40).toLowerCase();
+  }
+
+  async function fetchApprovalLogs(provider, owner, fromBlock, toBlock, chunkSize) {
+    // Walk forwards in `chunkSize` chunks. Failures on a single chunk are
+    // logged but don't abort the whole scan — we surface what we got.
+    const logs = [];
+    let start = fromBlock;
+    while (start <= toBlock) {
+      const end = Math.min(start + chunkSize - 1, toBlock);
+      try {
+        const chunk = await provider.getLogs({
+          fromBlock: start,
+          toBlock: end,
+          topics: [APPROVAL_TOPIC, addrToTopic(owner)],
+        });
+        logs.push.apply(logs, chunk);
+      } catch (e) {
+        console.warn("[approvals] getLogs", start, "->", end, "failed:", e && e.message);
+      }
+      start = end + 1;
+    }
+    return logs;
+  }
+
+  async function fetchTokenMetadata(ethers, provider, tokenAddrs) {
+    // Resolve symbol/name/decimals in parallel. A token that fails any of
+    // these calls falls back to address-based labels so it still shows up.
+    const out = {};
+    await Promise.all(tokenAddrs.map(async function (addr) {
+      const c = new ethers.Contract(addr, ERC20_ABI, provider);
+      const [sym, name, dec] = await Promise.all([
+        c.symbol().catch(function () { return "?"; }),
+        c.name().catch(function () { return "Unknown token"; }),
+        c.decimals().catch(function () { return 18; }),
+      ]);
+      out[addr.toLowerCase()] = {
+        symbol: String(sym).slice(0, 12),
+        name:   String(name).slice(0, 60),
+        decimals: Number(dec),
+      };
+    }));
+    return out;
   }
 
   async function scan(owner) {
@@ -185,71 +316,102 @@
       return;
     }
 
-    renderLoading(container, owner);
-
     let ethers;
-    try {
-      ethers = await loadEthers();
-    } catch (e) {
+    try { ethers = await loadEthers(); }
+    catch (e) {
       renderError(container, "Could not load ethers.js from the CDN. Check your network and retry.");
       return;
     }
 
-    let provider;
+    let provider, chainId;
     try {
       provider = new ethers.BrowserProvider(window.ethereum);
       const net = await provider.getNetwork();
-      // Ethereum mainnet only — token + spender catalogues are mainnet
-      // addresses. Other chains will be added once we ship a multi-chain
-      // catalogue (tracked separately).
-      if (Number(net.chainId) !== 1) {
-        renderError(container,
-          "This scanner is Ethereum-mainnet only for now (your wallet is on chain " +
-          Number(net.chainId) + "). Switch network and retry.");
-        return;
-      }
+      chainId = Number(net.chainId);
     } catch (e) {
       renderError(container, "Wallet provider error: " + (e.message || e));
       return;
     }
 
-    const ABI = ["function allowance(address owner, address spender) view returns (uint256)"];
-    // 2^255 — anything at or above this we treat as "unlimited" (covers
-    // both uint256.max and Permit2's 2^160-1 grants in human terms).
-    const UNLIMITED_THRESHOLD = (1n << 255n);
+    const cfg = CHAIN_CONFIG[chainId];
+    if (!cfg) {
+      renderError(container,
+        "This chain (id " + chainId + ") isn't supported yet. " +
+        "Switch to Ethereum, Polygon, or Arbitrum and retry.");
+      return;
+    }
 
-    const tokenAddrs   = Object.keys(COMMON_TOKENS);
-    const spenderAddrs = Object.keys(RISKY_SPENDERS);
+    const totalBlocks = cfg.chunkSize * cfg.chunks;
+    renderProgress(container, owner, cfg.name, "indexing the last " + totalBlocks.toLocaleString() + " blocks for Approval events");
 
-    const probes = [];
-    tokenAddrs.forEach(function (tokenAddr) {
-      const token = COMMON_TOKENS[tokenAddr];
-      const c = new ethers.Contract(tokenAddr, ABI, provider);
-      spenderAddrs.forEach(function (spenderAddr) {
-        probes.push(
-          c.allowance(owner, spenderAddr)
-            .then(function (allowance) {
-              return { tokenAddr: tokenAddr, token: token, spenderAddr: spenderAddr, spender: RISKY_SPENDERS[spenderAddr], allowance: allowance };
-            })
-            .catch(function (e) {
-              // Don't let one bad call break the whole scan.
-              console.warn("[approvals]", token.symbol, "x", spenderAddr, "failed:", e.message);
-              return null;
-            })
-        );
-      });
+    let latest;
+    try { latest = await provider.getBlockNumber(); }
+    catch (e) {
+      renderError(container, "Could not fetch the latest block from your wallet's RPC: " + (e.message || e));
+      return;
+    }
+    const fromBlock = Math.max(0, latest - totalBlocks + 1);
+
+    const logs = await fetchApprovalLogs(provider, owner, fromBlock, latest, cfg.chunkSize);
+
+    // Reduce logs into the LATEST (token, spender) pair seen. We want one
+    // probe per pair — the actual current allowance is what matters, not
+    // historical values.
+    const pairMap = new Map();
+    logs.forEach(function (log) {
+      if (!log.topics || log.topics.length < 3) return;
+      const tokenAddr   = log.address.toLowerCase();
+      const spenderAddr = topicToAddr(log.topics[2]);
+      const key = tokenAddr + "|" + spenderAddr;
+      const blockNum = Number(log.blockNumber || 0);
+      const prev = pairMap.get(key);
+      if (!prev || blockNum > prev.blockNumber) {
+        pairMap.set(key, { tokenAddr: tokenAddr, spenderAddr: spenderAddr, blockNumber: blockNum });
+      }
     });
 
+    if (pairMap.size === 0) {
+      renderTable(container, [], owner, {
+        chainName: cfg.name,
+        revokeId: cfg.revokeId,
+        scannedAt: new Date().toLocaleString(),
+        eventCount: logs.length,
+        totalBlocks: totalBlocks,
+      });
+      return;
+    }
+
+    renderProgress(container, owner, cfg.name,
+      "fetching live allowances for " + pairMap.size + " token/spender pair" + (pairMap.size === 1 ? "" : "s"));
+
+    // Fetch metadata for unique tokens, in parallel.
+    const uniqueTokens = Array.from(new Set(Array.from(pairMap.values()).map(function (p) { return p.tokenAddr; })));
+    const meta = await fetchTokenMetadata(ethers, provider, uniqueTokens);
+
+    // Probe current allowance for each pair, in parallel.
+    const probes = Array.from(pairMap.values()).map(function (p) {
+      const c = new ethers.Contract(p.tokenAddr, ERC20_ABI, provider);
+      return c.allowance(owner, p.spenderAddr)
+        .then(function (allowance) { return Object.assign({}, p, { allowance: allowance }); })
+        .catch(function (e) {
+          console.warn("[approvals] allowance probe failed:", p.tokenAddr, p.spenderAddr, e && e.message);
+          return null;
+        });
+    });
     const results = await Promise.all(probes);
 
+    const knownSpenders = KNOWN_SPENDERS[chainId] || {};
     const rows = [];
     results.forEach(function (r) {
       if (!r) return;
       if (r.allowance <= 0n) return;
+      const spenderInfo = knownSpenders[r.spenderAddr] || { name: "Unknown contract", risk: "Medium" };
+      const tokenInfo = meta[r.tokenAddr] || { symbol: "?", name: "Unknown token", decimals: 18 };
       rows.push({
-        token: r.token,
-        spender: r.spender,
+        tokenAddr: r.tokenAddr,
+        token: tokenInfo,
         spenderAddr: r.spenderAddr,
+        spender: spenderInfo,
         allowance: r.allowance,
         isUnlimited: r.allowance >= UNLIMITED_THRESHOLD,
       });
@@ -263,14 +425,26 @@
       return a.allowance < b.allowance ? 1 : -1;
     });
 
-    renderTable(container, rows, owner, new Date().toLocaleString());
+    renderTable(container, rows, owner, {
+      chainName: cfg.name,
+      revokeId: cfg.revokeId,
+      scannedAt: new Date().toLocaleString(),
+      eventCount: logs.length,
+      totalBlocks: totalBlocks,
+    });
 
     // Anonymized telemetry: count of unlimited-grant rows for the daily aggregate.
     if (window.DefiIntel) {
       const unlimitedCount = rows.reduce(function (n, r) { return n + (r.isUnlimited ? 1 : 0); }, 0);
-      window.DefiIntel.log("approvals_scan", { metadata: { unlimitedApprovals: unlimitedCount, totalRows: rows.length } });
+      window.DefiIntel.log("approvals_scan", {
+        metadata: { chainId: chainId, unlimitedApprovals: unlimitedCount, totalRows: rows.length },
+      });
     }
   }
+
+  /* --------------------------------------------------------------------- */
+  /* Wiring                                                                */
+  /* --------------------------------------------------------------------- */
 
   function currentAddress() {
     return window.DefiWallet && window.DefiWallet.address;
@@ -294,7 +468,7 @@
     if (addr) {
       scan(addr);
     } else {
-      renderEmpty(container, "Connect a wallet to scan token approvals on Ethereum.");
+      renderEmpty(container, "Connect a wallet to scan token approvals on Ethereum, Polygon, or Arbitrum.");
     }
   }
 
