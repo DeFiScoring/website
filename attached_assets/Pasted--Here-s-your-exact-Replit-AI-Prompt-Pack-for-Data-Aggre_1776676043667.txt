@@ -1,0 +1,167 @@
+**✅ Here’s your exact “Replit AI Prompt Pack”** for **“Data Aggregation (The Missing Link)”**
+
+This adds **real-time, non-hardcoded data** using:
+- **DeFiLlama API** → TVL & protocol data
+- **CoinGecko API** → live prices
+- **The Graph** → protocol-specific events (Aave V3 as example)
+
+All fetches happen client-side in vanilla JS (no backend needed for MVP, fully compatible with Jekyll + Cloudflare Pages).
+
+Copy and paste these **one by one** into the Replit AI chat **in your main Jekyll Repl** (`DeFiScoring/website`).
+
+---
+
+### Prompt 1: Create the data-aggregation.js file
+```
+Create a new file exactly at assets/js/data-aggregation.js with this complete, ready-to-use code for real-time DeFi data aggregation:
+
+// assets/js/data-aggregation.js
+// Real-time Data Aggregation: DeFiLlama + CoinGecko + The Graph
+
+async function fetchDeFiData() {
+  const container = document.getElementById('data-aggregation-container');
+  if (!container) return;
+
+  container.innerHTML = `<div class="text-center py-8"><p class="text-gray-500">Fetching live market data...</p></div>`;
+
+  try {
+    // 1. DeFiLlama - Top protocols by TVL
+    const llamaRes = await fetch('https://api.llama.fi/protocols');
+    const llamaData = await llamaRes.json();
+    const topProtocols = llamaData.slice(0, 6).map(p => ({
+      name: p.name,
+      tvl: (p.tvl / 1e9).toFixed(2) + 'B',
+      category: p.category || 'DeFi'
+    }));
+
+    // 2. CoinGecko - Live prices
+    const cgRes = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,usd-coin&vs_currencies=usd');
+    const cgData = await cgRes.json();
+
+    // 3. The Graph - Aave V3 Ethereum sample data (recent borrows + total supply)
+    const graphQuery = {
+      query: `{
+        markets(first: 5, orderBy: totalSupply, orderDirection: desc) {
+          name
+          totalSupply
+          totalBorrows
+        }
+      }`
+    };
+    const graphRes = await fetch('https://api.thegraph.com/subgraphs/name/aave/protocol-v3', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(graphQuery)
+    });
+    const graphData = await graphRes.json();
+
+    // Render everything
+    let html = `
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- DeFiLlama TVL -->
+        <div class="bg-white dark:bg-gray-900 rounded-3xl shadow-xl p-6">
+          <h3 class="font-semibold mb-4 flex items-center gap-2">📊 Top TVL Protocols (DeFiLlama)</h3>
+          <ul class="space-y-3">
+            ${topProtocols.map(p => `
+              <li class="flex justify-between text-sm">
+                <span>${p.name}</span>
+                <span class="font-medium">${p.tvl}</span>
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+
+        <!-- CoinGecko Prices -->
+        <div class="bg-white dark:bg-gray-900 rounded-3xl shadow-xl p-6">
+          <h3 class="font-semibold mb-4 flex items-center gap-2">💰 Live Prices (CoinGecko)</h3>
+          <div class="space-y-4">
+            <div class="flex justify-between"><span>BTC</span><span class="font-mono">$${cgData.bitcoin.usd.toLocaleString()}</span></div>
+            <div class="flex justify-between"><span>ETH</span><span class="font-mono">$${cgData.ethereum.usd.toLocaleString()}</span></div>
+            <div class="flex justify-between"><span>USDC</span><span class="font-mono">$${cgData['usd-coin'].usd}</span></div>
+          </div>
+        </div>
+
+        <!-- The Graph - Aave V3 Insights -->
+        <div class="bg-white dark:bg-gray-900 rounded-3xl shadow-xl p-6">
+          <h3 class="font-semibold mb-4 flex items-center gap-2">🔗 Aave V3 (The Graph)</h3>
+          <ul class="space-y-3 text-sm">
+            ${graphData.data.markets.map(m => `
+              <li>
+                <span class="font-medium">${m.name}</span><br>
+                <span class="text-green-600">Supply: $${(m.totalSupply / 1e18).toFixed(0)}B</span><br>
+                <span class="text-orange-600">Borrows: $${(m.totalBorrows / 1e18).toFixed(0)}B</span>
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+      </div>
+    `;
+
+    container.innerHTML = html;
+
+  } catch (error) {
+    container.innerHTML = `<p class="text-red-500 text-center py-8">⚠️ Data fetch failed. Please check console.</p>`;
+    console.error('Data aggregation error:', error);
+  }
+}
+
+// Auto-refresh every 60 seconds (optional)
+window.fetchDeFiData = fetchDeFiData;
+setInterval(() => { if (document.getElementById('data-aggregation-container')) fetchDeFiData(); }, 60000);
+```
+
+### Prompt 2: Add the data aggregation section to the dashboard
+```
+Update dashboard/index.md and insert this new section right after the existing DeFi Credit Score block (or at the bottom of the dashboard).
+
+Add this exact block:
+
+<h2 class="text-3xl font-bold mb-6 mt-12">📡 Live Market Data Aggregation</h2>
+<p class="text-gray-600 dark:text-gray-400 mb-6">Real-time TVL from DeFiLlama • Prices from CoinGecko • Protocol events from The Graph</p>
+<div id="data-aggregation-container" class="mb-12"></div>
+
+<script src="/assets/js/data-aggregation.js"></script>
+
+<script>
+  // Auto-load data when page loads
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      window.fetchDeFiData();
+    }, 1200);
+  });
+</script>
+
+Make sure this appears after the score-display.js script tag so everything loads in order.
+```
+
+### Prompt 3: Link it from the main navigation (optional polish)
+```
+In your existing header or nav (probably _includes/header.html or similar), add a new menu item or quick link called "Live Market Data" that scrolls to the new section on the dashboard page.
+```
+
+### Prompt 4: Test the data aggregation
+```
+Save all files. The Jekyll server should auto-reload.
+
+In the live preview:
+1. Go to the dashboard page
+2. Confirm the new "Live Market Data Aggregation" section appears
+3. Verify it shows:
+   - Top 6 protocols with TVL from DeFiLlama
+   - Live BTC/ETH/USDC prices from CoinGecko
+   - Aave V3 supply/borrows from The Graph
+4. Open browser console and confirm no CORS or fetch errors
+5. Refresh the page or wait 60 seconds to see auto-refresh
+
+Tell me if any API calls failed so we can tweak the endpoints.
+```
+
+---
+
+**After you paste all 4 prompts:**
+
+Your dashboard will now pull **real live data** instead of hardcoded values — this is the exact “Missing Link” that makes your scoring platform feel professional and production-ready.
+
+Once Replit confirms it works, reply with **“Data aggregation done”** and I’ll give you the next prompt pack (e.g. “Add D1/KV caching for profiles” or “Integrate real on-chain wallet activity into the AI profiler”).
+
+This feature alone will make your site stand out massively. Just paste the prompts and let’s get real data flowing! 🚀

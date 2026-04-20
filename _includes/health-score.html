@@ -1,0 +1,57 @@
+{%- comment -%}
+  DeFiScoring – health-score.html
+  "DeFi Health Score" dashboard widget. Connect a wallet, get a 300–850 score
+  with pillar breakdown and historical trend chart (D1-backed). Drop in any
+  Jekyll page that already loads Chart.js (default in dashboard layout) — or
+  it'll lazy-load Chart.js on demand.
+{%- endcomment -%}
+<div class="defi-health" id="defi-health">
+  <div class="defi-health__head">
+    <div>
+      <h3 class="defi-health__title">DeFi Health Score</h3>
+      <p class="defi-health__subtitle">
+        A 300–850 reputation score from your on-chain behaviour:
+        Aave loan reliability, Uniswap V3 liquidity provision,
+        Snapshot governance participation, and account age.
+      </p>
+    </div>
+    <div class="defi-health__actions">
+      <button type="button" class="defi-btn defi-btn--primary" id="defi-health-connect">Connect Wallet</button>
+      <button type="button" class="defi-btn defi-btn--ghost" id="defi-health-refresh" hidden>Refresh</button>
+      <a class="defi-btn defi-btn--ghost" id="defi-health-share" hidden target="_blank" rel="noopener">Share on X</a>
+    </div>
+  </div>
+
+  <div class="defi-health__wallet" id="defi-health-wallet" hidden></div>
+  <div class="defi-health__notice" id="defi-health-notice" hidden></div>
+
+  <div class="defi-health__body" id="defi-health-body" hidden>
+    <div class="defi-health__gauge-wrap">
+      <svg class="defi-health__gauge" viewBox="0 0 200 120" aria-hidden="true">
+        <path class="defi-health__gauge-track" d="M20 110 A80 80 0 0 1 180 110" fill="none" stroke-width="14"/>
+        <path class="defi-health__gauge-fill"  d="M20 110 A80 80 0 0 1 180 110" fill="none" stroke-width="14" id="defi-health-arc"/>
+      </svg>
+      <div class="defi-health__gauge-center">
+        <div class="defi-health__score" id="defi-health-score">—</div>
+        <div class="defi-health__band" id="defi-health-band"></div>
+      </div>
+    </div>
+
+    <div class="defi-health__breakdown" id="defi-health-breakdown"></div>
+
+    <div class="defi-health__adjustments" id="defi-health-adjustments" hidden></div>
+
+    <div class="defi-health__trend">
+      <div class="defi-health__trend-title">Score trend</div>
+      <canvas id="defi-health-chart" height="120" aria-label="Health score history"></canvas>
+      <div class="defi-health__trend-empty" id="defi-health-trend-empty" hidden>
+        No history yet — your score will be saved after each refresh.
+      </div>
+    </div>
+
+    <p class="defi-health__methodology" id="defi-health-methodology"></p>
+  </div>
+</div>
+
+<script src="{{ '/assets/js/wallet-connect.js' | relative_url }}" defer></script>
+<script src="{{ '/assets/js/health-score.js' | relative_url }}" defer></script>

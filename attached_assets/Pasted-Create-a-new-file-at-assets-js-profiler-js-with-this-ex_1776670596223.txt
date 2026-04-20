@@ -1,0 +1,55 @@
+Create a new file at assets/js/profiler.js with this exact code (it will call the AI Worker you just deployed):
+
+async function runProfiler() {
+  if (!window.userWallet) {
+    alert("Please connect your wallet first on the dashboard!");
+    return;
+  }
+
+  const button = document.querySelector('button');
+  button.innerHTML = 'Analyzing with AI...';
+  button.disabled = true;
+
+  try {
+    const res = await fetch('https://defiscoring-risk-profiler.yourusername.workers.dev', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        wallet: window.userWallet,
+        deFiScore: window.currentDeFiScore || 720,        // replace with your real score variable later
+        recentActivity: "Active borrower on Aave and Morpho, 1 liquidation in last 90 days, multiple supply/borrow actions on Base and Ethereum"  // you can make this dynamic later
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      let html = `
+        <div class="space-y-6">
+          <div>
+            <span class="inline-block px-4 py-2 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-2xl text-sm font-semibold">${data.profile.riskProfile} Risk Profile</span>
+          </div>
+          <p class="text-lg leading-relaxed">${data.profile.summary}</p>
+          
+          <div class="grid gap-4">
+            ${data.profile.recommendations.map(r => `
+              <div class="border border-gray-200 dark:border-gray-700 p-5 rounded-2xl">
+                <div class="flex justify-between items-start">
+                  <h4 class="font-bold text-xl">${r.project}</h4>
+                  <span class="text-xs px-3 py-1 rounded-full ${r.riskLevel === 'Low' ? 'bg-green-100 text-green-700' : r.riskLevel === 'Medium' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}">${r.riskLevel}</span>
+                </div>
+                <p class="text-gray-600 dark:text-gray-400 mt-2">${r.reason}</p>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+      document.getElementById('profile-result').innerHTML = html;
+    }
+  } catch (e) {
+    document.getElementById('profile-result').innerHTML = `<p class="text-red-500">Error connecting to AI profiler. Please try again.</p>`;
+  } finally {
+    button.innerHTML = 'Generate My Personalized Risk Profile';
+    button.disabled = false;
+  }
+}

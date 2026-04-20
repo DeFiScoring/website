@@ -1,0 +1,62 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "defiscoring",
+  "main": "worker/index.js",
+  "compatibility_date": "2025-04-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "account_id": "c016d64a9a4f4a2900fb3385bd08144f",
+  "assets": {
+    "directory": "./_site",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": true
+  },
+  "build": {
+    "command": "bundle exec jekyll build 2>/dev/null || true"
+  },
+  "ai": {
+    "binding": "AI"
+  },
+  "kv_namespaces": [
+    {
+      "binding": "PROFILE_CACHE",
+      "id": "5ff718ea7c8d4df1b23b2924dec9bf91"
+    },
+    {
+      "binding": "DEFI_CACHE",
+      "id": "c2559e9a326f458591367b20d0457cf7"
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "HEALTH_DB",
+      "database_name": "defi_health",
+      "database_id": "ceeb038c-2c61-40f7-9c36-350473236a59",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "vars": {
+    "CACHE_TTL_SECONDS": "600",
+    "SCORE_CACHE_TTL_SECONDS": "21600",
+    "PROTOCOL_CATALOG_URL": "https://defiscoring.com/assets/data/protocols.json",
+    "PROTOCOL_CATALOG_TTL_SECONDS": "3600",
+    "EXPOSURE_CACHE_TTL_SECONDS": "600",
+    "AUDIT_CACHE_TTL_SECONDS": "2592000",
+    "AUDIT_MAX_SOURCE_CHARS": "28000",
+    "HEALTH_CACHE_TTL_SECONDS": "1800",
+    "ETH_RPC_URL": "https://ethereum-rpc.publicnode.com",
+    "SNAPSHOT_API_URL": "https://hub.snapshot.org/graphql",
+    "ALLOWED_ORIGINS": "*",
+    "GITHUB_REPO_OWNER": "DeFiScoring",
+    "GITHUB_REPO_NAME": "website"
+  },
+  // Secrets (NOT vars — set via `wrangler secret put NAME`):
+  //   GITHUB_TOKEN  – classic PAT (`repo` scope) for /api/report-issue
+  //   ADMIN_TOKEN   – bearer token for /api/intel/{summary,export}
+  //   INTEL_SALT    – HMAC pepper for hashing wallets in /api/intel/event
+  //   ETHERSCAN_API_KEY, ARB_RPC_URL – on-chain enrichment
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  }
+}

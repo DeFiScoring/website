@@ -1,0 +1,405 @@
+2026-04-20T07:50:39.764Z	Initializing build environment...
+2026-04-20T07:50:39.764Z	Initializing build environment...
+2026-04-20T07:54:31.356Z	Initializing build environment...
+2026-04-20T07:54:32.994Z	Success: Finished initializing build environment
+2026-04-20T07:54:33.598Z	Cloning repository...
+2026-04-20T07:54:36.891Z	No build output detected to cache. Skipping.
+2026-04-20T07:54:36.891Z	No dependencies detected to cache. Skipping.
+2026-04-20T07:54:37.149Z	Detected the following tools from environment: ruby@3.3.5
+2026-04-20T07:54:37.150Z	Installing ruby 3.3.5
+2026-04-20T07:59:25.817Z	Installing project dependencies: BUNDLE_WITHOUT="development test" bundle install
+2026-04-20T07:59:26.070Z	Bundler 2.5.16 is running, but your lockfile was generated with 2.4.10. Installing Bundler 2.4.10 and restarting using that version.
+2026-04-20T07:59:27.225Z	Fetching gem metadata from https://rubygems.org/.
+2026-04-20T07:59:27.231Z	Fetching bundler 2.4.10
+2026-04-20T07:59:27.318Z	Installing bundler 2.4.10
+2026-04-20T07:59:30.981Z	Fetching gem metadata from https://rubygems.org/..........
+2026-04-20T07:59:30.983Z	Fetching https://github.com/eventmachine/eventmachine.git
+2026-04-20T07:59:33.763Z	Fetching rake 13.4.2
+2026-04-20T07:59:33.854Z	Installing rake 13.4.2
+2026-04-20T07:59:33.988Z	Fetching public_suffix 7.0.5
+2026-04-20T07:59:33.988Z	Fetching base64 0.3.0
+2026-04-20T07:59:34.053Z	Installing base64 0.3.0
+2026-04-20T07:59:34.059Z	Installing public_suffix 7.0.5
+2026-04-20T07:59:34.077Z	Fetching bigdecimal 4.1.2
+2026-04-20T07:59:34.125Z	Installing bigdecimal 4.1.2 with native extensions
+2026-04-20T07:59:34.128Z	Using bundler 2.4.10
+2026-04-20T07:59:34.131Z	Fetching colorator 1.1.0
+2026-04-20T07:59:34.175Z	Installing colorator 1.1.0
+2026-04-20T07:59:34.197Z	Fetching concurrent-ruby 1.3.6
+2026-04-20T07:59:34.258Z	Installing concurrent-ruby 1.3.6
+2026-04-20T07:59:34.690Z	Fetching csv 3.3.5
+2026-04-20T07:59:34.729Z	Installing csv 3.3.5
+2026-04-20T07:59:34.831Z	Using eventmachine 1.2.7 from https://github.com/eventmachine/eventmachine.git (at v1.2.7@9cb13a8)
+2026-04-20T07:59:43.965Z	Fetching http_parser.rb 0.8.1
+2026-04-20T07:59:44.023Z	Installing http_parser.rb 0.8.1 with native extensions
+2026-04-20T07:59:45.420Z	Fetching ffi 1.17.4 (x86_64-linux-gnu)
+2026-04-20T07:59:45.498Z	Installing ffi 1.17.4 (x86_64-linux-gnu)
+2026-04-20T07:59:45.810Z	Fetching forwardable-extended 2.6.0
+2026-04-20T07:59:45.848Z	Installing forwardable-extended 2.6.0
+2026-04-20T07:59:45.866Z	Fetching logger 1.7.0
+2026-04-20T07:59:45.903Z	Installing logger 1.7.0
+2026-04-20T07:59:45.930Z	Fetching rb-fsevent 0.11.2
+2026-04-20T07:59:45.972Z	Installing rb-fsevent 0.11.2
+2026-04-20T07:59:46.026Z	Fetching rexml 3.4.4
+2026-04-20T07:59:46.072Z	Installing rexml 3.4.4
+2026-04-20T07:59:46.193Z	Fetching liquid 4.0.4
+2026-04-20T07:59:46.236Z	Installing liquid 4.0.4
+2026-04-20T07:59:46.402Z	Fetching mercenary 0.4.0
+2026-04-20T07:59:46.442Z	Installing mercenary 0.4.0
+2026-04-20T07:59:46.499Z	Fetching rouge 4.7.0
+2026-04-20T07:59:46.565Z	Installing rouge 4.7.0
+2026-04-20T07:59:47.376Z	Fetching safe_yaml 1.0.5
+2026-04-20T07:59:47.406Z	Installing safe_yaml 1.0.5
+2026-04-20T07:59:47.491Z	Fetching unicode-display_width 2.6.0
+2026-04-20T07:59:47.523Z	Installing unicode-display_width 2.6.0
+2026-04-20T07:59:47.545Z	Fetching webrick 1.9.2
+2026-04-20T07:59:47.579Z	Installing webrick 1.9.2
+2026-04-20T07:59:47.687Z	Fetching addressable 2.9.0
+2026-04-20T07:59:47.718Z	Installing addressable 2.9.0
+2026-04-20T07:59:47.743Z	Fetching i18n 1.14.8
+2026-04-20T07:59:47.781Z	Installing i18n 1.14.8
+2026-04-20T07:59:47.864Z	Fetching google-protobuf 4.34.1 (x86_64-linux-gnu)
+2026-04-20T07:59:47.946Z	Installing google-protobuf 4.34.1 (x86_64-linux-gnu)
+2026-04-20T07:59:48.118Z	Fetching rb-inotify 0.11.1
+2026-04-20T07:59:48.157Z	Installing rb-inotify 0.11.1
+2026-04-20T07:59:48.200Z	Fetching pathutil 0.16.2
+2026-04-20T07:59:48.245Z	Installing pathutil 0.16.2
+2026-04-20T07:59:48.262Z	Fetching kramdown 2.5.2
+2026-04-20T07:59:48.329Z	Installing kramdown 2.5.2
+2026-04-20T07:59:49.319Z	Fetching terminal-table 3.0.2
+2026-04-20T07:59:49.360Z	Installing terminal-table 3.0.2
+2026-04-20T07:59:49.422Z	Fetching sass-embedded 1.99.0 (x86_64-linux-gnu)
+2026-04-20T07:59:49.660Z	Installing sass-embedded 1.99.0 (x86_64-linux-gnu)
+2026-04-20T07:59:49.894Z	Fetching listen 3.10.0
+2026-04-20T07:59:49.947Z	Installing listen 3.10.0
+2026-04-20T07:59:50.014Z	Fetching kramdown-parser-gfm 1.1.0
+2026-04-20T07:59:50.059Z	Installing kramdown-parser-gfm 1.1.0
+2026-04-20T07:59:50.121Z	Fetching jekyll-sass-converter 3.1.0
+2026-04-20T07:59:50.161Z	Installing jekyll-sass-converter 3.1.0
+2026-04-20T07:59:50.177Z	Fetching jekyll-watch 2.2.1
+2026-04-20T07:59:50.217Z	Installing jekyll-watch 2.2.1
+2026-04-20T07:59:50.807Z	Fetching em-websocket 0.5.3
+2026-04-20T07:59:50.847Z	Installing em-websocket 0.5.3
+2026-04-20T07:59:50.938Z	Fetching jekyll 4.3.4
+2026-04-20T07:59:50.983Z	Installing jekyll 4.3.4
+2026-04-20T07:59:51.191Z	Fetching jekyll-archives 2.3.0
+2026-04-20T07:59:51.191Z	Fetching jekyll-feed 0.17.0
+2026-04-20T07:59:51.252Z	Installing jekyll-archives 2.3.0
+2026-04-20T07:59:51.255Z	Installing jekyll-feed 0.17.0
+2026-04-20T07:59:51.269Z	Fetching jekyll-paginate-v2 3.0.0
+2026-04-20T07:59:51.312Z	Installing jekyll-paginate-v2 3.0.0
+2026-04-20T07:59:52.238Z	Bundle complete! 15 Gemfile dependencies, 38 gems now installed.
+2026-04-20T07:59:52.238Z	Gems in the groups 'development' and 'test' were not installed.
+2026-04-20T07:59:52.238Z	Use `bundle info [gemname]` to see where a bundled gem is installed.
+2026-04-20T07:59:52.424Z	Executing user build command: bundle exec jekyll build
+2026-04-20T07:59:53.131Z	Configuration file: /opt/buildhome/repo/_config.yml
+2026-04-20T07:59:53.152Z	            Source: /opt/buildhome/repo
+2026-04-20T07:59:53.152Z	       Destination: /opt/buildhome/repo/_site
+2026-04-20T07:59:53.152Z	 Incremental build: disabled. Enable with --incremental
+2026-04-20T07:59:53.152Z	      Generating... 
+2026-04-20T07:59:53.567Z	       Jekyll Feed: Generating feed for posts
+2026-04-20T07:59:53.568Z	         AutoPages: Disabled/Not configured in site.config.
+2026-04-20T07:59:53.568Z	        Pagination: ----------------------------
+2026-04-20T07:59:53.572Z	        Pagination: Page: shop/index-2.html
+2026-04-20T07:59:53.572Z	        Pagination:  Active configuration
+2026-04-20T07:59:53.572Z	        Pagination:   Enabled:          true
+2026-04-20T07:59:53.572Z	        Pagination:   Items per page:   6
+2026-04-20T07:59:53.572Z	        Pagination:   Permalink:        /page/:num/
+2026-04-20T07:59:53.572Z	        Pagination:   Title:            :title - page :num
+2026-04-20T07:59:53.572Z	        Pagination:   Limit:            0
+2026-04-20T07:59:53.572Z	        Pagination:   Sort by:          position
+2026-04-20T07:59:53.572Z	        Pagination:   Sort reverse:     false
+2026-04-20T07:59:53.572Z	        Pagination:  Active Filters
+2026-04-20T07:59:53.572Z	        Pagination:   Collection:       shop_items
+2026-04-20T07:59:53.572Z	        Pagination:   Offset:           0
+2026-04-20T07:59:53.572Z	        Pagination:   Category:         [Not set]
+2026-04-20T07:59:53.572Z	        Pagination:   Tag:              
+2026-04-20T07:59:53.573Z	        Pagination:   Locale:           
+2026-04-20T07:59:53.573Z	        Pagination:  Filtering by: Category   12 => 12
+2026-04-20T07:59:53.573Z	        Pagination:  Filtering by: Tag        12 => 12
+2026-04-20T07:59:53.573Z	        Pagination:  Filtering by: Locale     12 => 12
+2026-04-20T07:59:53.573Z	        Pagination: Rolling through the date fields for all documents
+2026-04-20T07:59:53.573Z	        Pagination: ----------------------------
+2026-04-20T07:59:53.573Z	        Pagination: Page: blogs/index-boxed-classic-sidebar.html
+2026-04-20T07:59:53.573Z	        Pagination:  Active configuration
+2026-04-20T07:59:53.574Z	        Pagination:   Enabled:          true
+2026-04-20T07:59:53.574Z	        Pagination:   Items per page:   7
+2026-04-20T07:59:53.574Z	        Pagination:   Permalink:        /page/:num/
+2026-04-20T07:59:53.574Z	        Pagination:   Title:            :title - page :num
+2026-04-20T07:59:53.574Z	        Pagination:   Limit:            0
+2026-04-20T07:59:53.574Z	        Pagination:   Sort by:          date
+2026-04-20T07:59:53.574Z	        Pagination:   Sort reverse:     true
+2026-04-20T07:59:53.574Z	        Pagination:  Active Filters
+2026-04-20T07:59:53.574Z	        Pagination:   Collection:       posts
+2026-04-20T07:59:53.574Z	        Pagination:   Offset:           0
+2026-04-20T07:59:53.574Z	        Pagination:   Category:         [Not set]
+2026-04-20T07:59:53.574Z	        Pagination:   Tag:              
+2026-04-20T07:59:53.574Z	        Pagination:   Locale:           
+2026-04-20T07:59:53.574Z	        Pagination:  Filtering by: Category   20 => 20
+2026-04-20T07:59:53.574Z	        Pagination:  Filtering by: Tag        20 => 20
+2026-04-20T07:59:53.574Z	        Pagination:  Filtering by: Locale     20 => 20
+2026-04-20T07:59:53.574Z	        Pagination: Rolling through the date fields for all documents
+2026-04-20T07:59:53.574Z	        Pagination: ----------------------------
+2026-04-20T07:59:53.574Z	        Pagination: Page: blogs/index-boxed-classic.html
+2026-04-20T07:59:53.574Z	        Pagination:  Active configuration
+2026-04-20T07:59:53.574Z	        Pagination:   Enabled:          true
+2026-04-20T07:59:53.574Z	        Pagination:   Items per page:   7
+2026-04-20T07:59:53.574Z	        Pagination:   Permalink:        /page/:num/
+2026-04-20T07:59:53.574Z	        Pagination:   Title:            :title - page :num
+2026-04-20T07:59:53.574Z	        Pagination:   Limit:            0
+2026-04-20T07:59:53.574Z	        Pagination:   Sort by:          date
+2026-04-20T07:59:53.574Z	        Pagination:   Sort reverse:     true
+2026-04-20T07:59:53.574Z	        Pagination:  Active Filters
+2026-04-20T07:59:53.574Z	        Pagination:   Collection:       posts
+2026-04-20T07:59:53.574Z	        Pagination:   Offset:           0
+2026-04-20T07:59:53.575Z	        Pagination:   Category:         [Not set]
+2026-04-20T07:59:53.575Z	        Pagination:   Tag:              
+2026-04-20T07:59:53.575Z	        Pagination:   Locale:           
+2026-04-20T07:59:53.575Z	        Pagination:  Filtering by: Category   20 => 20
+2026-04-20T07:59:53.575Z	        Pagination:  Filtering by: Tag        20 => 20
+2026-04-20T07:59:53.575Z	        Pagination:  Filtering by: Locale     20 => 20
+2026-04-20T07:59:53.575Z	        Pagination: Rolling through the date fields for all documents
+2026-04-20T07:59:53.575Z	        Pagination: ----------------------------
+2026-04-20T07:59:53.575Z	        Pagination: Page: blogs/index-boxed-grid-sidebar.html
+2026-04-20T07:59:53.575Z	        Pagination:  Active configuration
+2026-04-20T07:59:53.575Z	        Pagination:   Enabled:          true
+2026-04-20T07:59:53.575Z	        Pagination:   Items per page:   9
+2026-04-20T07:59:53.575Z	        Pagination:   Permalink:        /page/:num/
+2026-04-20T07:59:53.575Z	        Pagination:   Title:            :title - page :num
+2026-04-20T07:59:53.575Z	        Pagination:   Limit:            0
+2026-04-20T07:59:53.575Z	        Pagination:   Sort by:          date
+2026-04-20T07:59:53.575Z	        Pagination:   Sort reverse:     true
+2026-04-20T07:59:53.575Z	        Pagination:  Active Filters
+2026-04-20T07:59:53.575Z	        Pagination:   Collection:       posts
+2026-04-20T07:59:53.575Z	        Pagination:   Offset:           0
+2026-04-20T07:59:53.575Z	        Pagination:   Category:         [Not set]
+2026-04-20T07:59:53.575Z	        Pagination:   Tag:              
+2026-04-20T07:59:53.575Z	        Pagination:   Locale:           
+2026-04-20T07:59:53.575Z	        Pagination:  Filtering by: Category   20 => 20
+2026-04-20T07:59:53.580Z	        Pagination:  Filtering by: Tag        20 => 20
+2026-04-20T07:59:53.580Z	        Pagination:  Filtering by: Locale     20 => 20
+2026-04-20T07:59:53.580Z	        Pagination: Rolling through the date fields for all documents
+2026-04-20T07:59:53.580Z	        Pagination: ----------------------------
+2026-04-20T07:59:53.580Z	        Pagination: Page: blogs/index-boxed-grid.html
+2026-04-20T07:59:53.581Z	        Pagination:  Active configuration
+2026-04-20T07:59:53.581Z	        Pagination:   Enabled:          true
+2026-04-20T07:59:53.581Z	        Pagination:   Items per page:   9
+2026-04-20T07:59:53.581Z	        Pagination:   Permalink:        /page/:num/
+2026-04-20T07:59:53.581Z	        Pagination:   Title:            :title - page :num
+2026-04-20T07:59:53.581Z	        Pagination:   Limit:            0
+2026-04-20T07:59:53.581Z	        Pagination:   Sort by:          date
+2026-04-20T07:59:53.582Z	        Pagination:   Sort reverse:     true
+2026-04-20T07:59:53.582Z	        Pagination:  Active Filters
+2026-04-20T07:59:53.582Z	        Pagination:   Collection:       posts
+2026-04-20T07:59:53.582Z	        Pagination:   Offset:           0
+2026-04-20T07:59:53.582Z	        Pagination:   Category:         [Not set]
+2026-04-20T07:59:53.582Z	        Pagination:   Tag:              
+2026-04-20T07:59:53.582Z	        Pagination:   Locale:           
+2026-04-20T07:59:53.582Z	        Pagination:  Filtering by: Category   20 => 20
+2026-04-20T07:59:53.582Z	        Pagination:  Filtering by: Tag        20 => 20
+2026-04-20T07:59:53.582Z	        Pagination:  Filtering by: Locale     20 => 20
+2026-04-20T07:59:53.582Z	        Pagination: Rolling through the date fields for all documents
+2026-04-20T07:59:53.582Z	        Pagination: ----------------------------
+2026-04-20T07:59:53.582Z	        Pagination: Page: blogs/index-classic-grid-sidebar.html
+2026-04-20T07:59:53.582Z	        Pagination:  Active configuration
+2026-04-20T07:59:53.582Z	        Pagination:   Enabled:          true
+2026-04-20T07:59:53.582Z	        Pagination:   Items per page:   8
+2026-04-20T07:59:53.583Z	        Pagination:   Permalink:        /page/:num/
+2026-04-20T07:59:53.583Z	        Pagination:   Title:            :title - page :num
+2026-04-20T07:59:53.583Z	        Pagination:   Limit:            0
+2026-04-20T07:59:53.583Z	        Pagination:   Sort by:          date
+2026-04-20T07:59:53.583Z	        Pagination:   Sort reverse:     true
+2026-04-20T07:59:53.583Z	        Pagination:  Active Filters
+2026-04-20T07:59:53.583Z	        Pagination:   Collection:       posts
+2026-04-20T07:59:53.583Z	        Pagination:   Offset:           0
+2026-04-20T07:59:53.583Z	        Pagination:   Category:         [Not set]
+2026-04-20T07:59:53.583Z	        Pagination:   Tag:              
+2026-04-20T07:59:53.583Z	        Pagination:   Locale:           
+2026-04-20T07:59:53.583Z	        Pagination:  Filtering by: Category   20 => 20
+2026-04-20T07:59:53.583Z	        Pagination:  Filtering by: Tag        20 => 20
+2026-04-20T07:59:53.583Z	        Pagination:  Filtering by: Locale     20 => 20
+2026-04-20T07:59:53.583Z	        Pagination: Rolling through the date fields for all documents
+2026-04-20T07:59:53.583Z	        Pagination: ----------------------------
+2026-04-20T07:59:53.583Z	        Pagination: Page: blogs/index-classic-grid.html
+2026-04-20T07:59:53.583Z	        Pagination:  Active configuration
+2026-04-20T07:59:53.583Z	        Pagination:   Enabled:          true
+2026-04-20T07:59:53.584Z	        Pagination:   Items per page:   9
+2026-04-20T07:59:53.584Z	        Pagination:   Permalink:        /page/:num/
+2026-04-20T07:59:53.584Z	        Pagination:   Title:            :title - page :num
+2026-04-20T07:59:53.584Z	        Pagination:   Limit:            0
+2026-04-20T07:59:53.584Z	        Pagination:   Sort by:          date
+2026-04-20T07:59:53.584Z	        Pagination:   Sort reverse:     true
+2026-04-20T07:59:53.584Z	        Pagination:  Active Filters
+2026-04-20T07:59:53.584Z	        Pagination:   Collection:       posts
+2026-04-20T07:59:53.584Z	        Pagination:   Offset:           0
+2026-04-20T07:59:53.584Z	        Pagination:   Category:         [Not set]
+2026-04-20T07:59:53.584Z	        Pagination:   Tag:              
+2026-04-20T07:59:53.584Z	        Pagination:   Locale:           
+2026-04-20T07:59:53.584Z	        Pagination:  Filtering by: Category   20 => 20
+2026-04-20T07:59:53.584Z	        Pagination:  Filtering by: Tag        20 => 20
+2026-04-20T07:59:53.584Z	        Pagination:  Filtering by: Locale     20 => 20
+2026-04-20T07:59:53.584Z	        Pagination: Rolling through the date fields for all documents
+2026-04-20T07:59:53.584Z	        Pagination: ----------------------------
+2026-04-20T07:59:53.584Z	        Pagination: Page: blogs/index-classic-sidebar.html
+2026-04-20T07:59:53.584Z	        Pagination:  Active configuration
+2026-04-20T07:59:53.584Z	        Pagination:   Enabled:          true
+2026-04-20T07:59:53.584Z	        Pagination:   Items per page:   7
+2026-04-20T07:59:53.585Z	        Pagination:   Permalink:        /page/:num/
+2026-04-20T07:59:53.585Z	        Pagination:   Title:            :title - page :num
+2026-04-20T07:59:53.585Z	        Pagination:   Limit:            0
+2026-04-20T07:59:53.585Z	        Pagination:   Sort by:          date
+2026-04-20T07:59:53.585Z	        Pagination:   Sort reverse:     true
+2026-04-20T07:59:53.585Z	        Pagination:  Active Filters
+2026-04-20T07:59:53.585Z	        Pagination:   Collection:       posts
+2026-04-20T07:59:53.585Z	        Pagination:   Offset:           0
+2026-04-20T07:59:53.585Z	        Pagination:   Category:         [Not set]
+2026-04-20T07:59:53.585Z	        Pagination:   Tag:              
+2026-04-20T07:59:53.585Z	        Pagination:   Locale:           
+2026-04-20T07:59:53.586Z	        Pagination:  Filtering by: Category   20 => 20
+2026-04-20T07:59:53.586Z	        Pagination:  Filtering by: Tag        20 => 20
+2026-04-20T07:59:53.586Z	        Pagination:  Filtering by: Locale     20 => 20
+2026-04-20T07:59:53.586Z	        Pagination: Rolling through the date fields for all documents
+2026-04-20T07:59:53.586Z	        Pagination: ----------------------------
+2026-04-20T07:59:53.586Z	        Pagination: Page: blogs/index-classic.html
+2026-04-20T07:59:53.586Z	        Pagination:  Active configuration
+2026-04-20T07:59:53.586Z	        Pagination:   Enabled:          true
+2026-04-20T07:59:53.586Z	        Pagination:   Items per page:   8
+2026-04-20T07:59:53.586Z	        Pagination:   Permalink:        /page/:num/
+2026-04-20T07:59:53.586Z	        Pagination:   Title:            :title - page :num
+2026-04-20T07:59:53.586Z	        Pagination:   Limit:            0
+2026-04-20T07:59:53.586Z	        Pagination:   Sort by:          date
+2026-04-20T07:59:53.586Z	        Pagination:   Sort reverse:     true
+2026-04-20T07:59:53.586Z	        Pagination:  Active Filters
+2026-04-20T07:59:53.586Z	        Pagination:   Collection:       posts
+2026-04-20T07:59:53.586Z	        Pagination:   Offset:           0
+2026-04-20T07:59:53.586Z	        Pagination:   Category:         [Not set]
+2026-04-20T07:59:53.586Z	        Pagination:   Tag:              
+2026-04-20T07:59:53.586Z	        Pagination:   Locale:           
+2026-04-20T07:59:53.586Z	        Pagination:  Filtering by: Category   20 => 20
+2026-04-20T07:59:53.586Z	        Pagination:  Filtering by: Tag        20 => 20
+2026-04-20T07:59:53.587Z	        Pagination:  Filtering by: Locale     20 => 20
+2026-04-20T07:59:53.587Z	        Pagination: Rolling through the date fields for all documents
+2026-04-20T07:59:53.587Z	        Pagination: ----------------------------
+2026-04-20T07:59:53.587Z	        Pagination: Page: shop/index.html
+2026-04-20T07:59:53.587Z	        Pagination:  Active configuration
+2026-04-20T07:59:53.587Z	        Pagination:   Enabled:          true
+2026-04-20T07:59:53.587Z	        Pagination:   Items per page:   6
+2026-04-20T07:59:53.587Z	        Pagination:   Permalink:        /page/:num/
+2026-04-20T07:59:53.587Z	        Pagination:   Title:            :title - page :num
+2026-04-20T07:59:53.587Z	        Pagination:   Limit:            0
+2026-04-20T07:59:53.587Z	        Pagination:   Sort by:          position
+2026-04-20T07:59:53.587Z	        Pagination:   Sort reverse:     false
+2026-04-20T07:59:53.587Z	        Pagination:  Active Filters
+2026-04-20T07:59:53.587Z	        Pagination:   Collection:       shop_items
+2026-04-20T07:59:53.587Z	        Pagination:   Offset:           0
+2026-04-20T07:59:53.587Z	        Pagination:   Category:         [Not set]
+2026-04-20T07:59:53.587Z	        Pagination:   Tag:              
+2026-04-20T07:59:53.587Z	        Pagination:   Locale:           
+2026-04-20T07:59:53.587Z	        Pagination:  Filtering by: Category   12 => 12
+2026-04-20T07:59:53.587Z	        Pagination:  Filtering by: Tag        12 => 12
+2026-04-20T07:59:53.587Z	        Pagination:  Filtering by: Locale     12 => 12
+2026-04-20T07:59:53.587Z	        Pagination: Rolling through the date fields for all documents
+2026-04-20T07:59:53.587Z	        Pagination: ----------------------------
+2026-04-20T07:59:53.587Z	        Pagination: Page: blogs/index.html
+2026-04-20T07:59:53.588Z	        Pagination:  Active configuration
+2026-04-20T07:59:53.588Z	        Pagination:   Enabled:          true
+2026-04-20T07:59:53.588Z	        Pagination:   Items per page:   9
+2026-04-20T07:59:53.588Z	        Pagination:   Permalink:        /page/:num/
+2026-04-20T07:59:53.588Z	        Pagination:   Title:            :title - page :num
+2026-04-20T07:59:53.588Z	        Pagination:   Limit:            0
+2026-04-20T07:59:53.588Z	        Pagination:   Sort by:          date
+2026-04-20T07:59:53.588Z	        Pagination:   Sort reverse:     true
+2026-04-20T07:59:53.588Z	        Pagination:  Active Filters
+2026-04-20T07:59:53.588Z	        Pagination:   Collection:       posts
+2026-04-20T07:59:53.588Z	        Pagination:   Offset:           0
+2026-04-20T07:59:53.588Z	        Pagination:   Category:         [Not set]
+2026-04-20T07:59:53.588Z	        Pagination:   Tag:              
+2026-04-20T07:59:53.588Z	        Pagination:   Locale:           
+2026-04-20T07:59:53.588Z	        Pagination:  Filtering by: Category   20 => 20
+2026-04-20T07:59:53.588Z	        Pagination:  Filtering by: Tag        20 => 20
+2026-04-20T07:59:53.589Z	        Pagination:  Filtering by: Locale     20 => 20
+2026-04-20T07:59:53.589Z	        Pagination: Rolling through the date fields for all documents
+2026-04-20T07:59:53.589Z	        Pagination: Complete, processed 11 pagination page(s)
+2026-04-20T07:59:56.397Z	                    done in 3.227 seconds.
+2026-04-20T07:59:56.397Z	 Auto-regeneration: disabled. Use --watch to enable.
+2026-04-20T07:59:56.432Z	Success: Build command completed
+2026-04-20T07:59:57.122Z	Executing user deploy command: npx wrangler deploy
+2026-04-20T07:59:58.580Z	npm warn exec The following package was not found and will be installed: wrangler@4.83.0
+2026-04-20T08:00:08.000Z	
+2026-04-20T08:00:08.001Z	 ⛅️ wrangler 4.83.0
+2026-04-20T08:00:08.001Z	───────────────────
+2026-04-20T08:00:08.111Z	▲ [WARNING] No lock file has been detected in the current working directory. This might indicate that the project is part of a workspace. Auto-configuration of projects inside workspaces is limited. See https://developers.cloudflare.com/workers/framework-guides/automatic-configuration/#workspaces
+2026-04-20T08:00:08.111Z	
+2026-04-20T08:00:08.111Z	
+2026-04-20T08:00:08.115Z	
+2026-04-20T08:00:08.115Z	Detected Project Settings:
+2026-04-20T08:00:08.115Z	 - Worker Name: defiscoring
+2026-04-20T08:00:08.115Z	 - Framework: Static
+2026-04-20T08:00:08.116Z	 - Build Command: npx bundle exec jekyll build
+2026-04-20T08:00:08.116Z	 - Output Directory: _site
+2026-04-20T08:00:08.116Z	
+2026-04-20T08:00:08.116Z	? Do you want to modify these settings?
+2026-04-20T08:00:08.117Z	🤖 Using fallback value in non-interactive context: no
+2026-04-20T08:00:08.118Z	
+2026-04-20T08:00:08.118Z	📄 Create wrangler.jsonc:
+2026-04-20T08:00:08.118Z	  {
+2026-04-20T08:00:08.118Z	    "$schema": "node_modules/wrangler/config-schema.json",
+2026-04-20T08:00:08.118Z	    "name": "defiscoring",
+2026-04-20T08:00:08.118Z	    "compatibility_date": "2026-04-20",
+2026-04-20T08:00:08.118Z	    "observability": {
+2026-04-20T08:00:08.118Z	      "enabled": true
+2026-04-20T08:00:08.118Z	    },
+2026-04-20T08:00:08.118Z	    "assets": {
+2026-04-20T08:00:08.118Z	      "directory": "_site"
+2026-04-20T08:00:08.118Z	    },
+2026-04-20T08:00:08.118Z	    "compatibility_flags": [
+2026-04-20T08:00:08.118Z	      "nodejs_compat"
+2026-04-20T08:00:08.118Z	    ]
+2026-04-20T08:00:08.119Z	  }
+2026-04-20T08:00:08.119Z	
+2026-04-20T08:00:08.119Z	? Proceed with setup?
+2026-04-20T08:00:08.119Z	🤖 Using fallback value in non-interactive context: yes
+2026-04-20T08:00:08.176Z	├ Adding Wrangler files to the .gitignore file
+2026-04-20T08:00:08.176Z	│ created .gitignore file
+2026-04-20T08:00:08.176Z	│
+2026-04-20T08:00:08.176Z	[build] Running: npx bundle exec jekyll build
+2026-04-20T08:00:08.754Z	[build] npm error could not determine executable to run
+2026-04-20T08:00:08.755Z	[build] 
+2026-04-20T08:00:08.756Z	[build] npm error A complete log of this run can be found in: /opt/buildhome/.npm/_logs/2026-04-20T08_00_08_324Z-debug-0.log
+2026-04-20T08:00:08.756Z	[build] 
+2026-04-20T08:00:09.224Z	✘ [ERROR] Error: Command failed with exit code 1: npx bundle exec jekyll build
+2026-04-20T08:00:09.225Z	
+2026-04-20T08:00:09.225Z	  npm error could not determine executable to run
+2026-04-20T08:00:09.225Z	  npm error A complete log of this run can be found in: /opt/buildhome/.npm/_logs/2026-04-20T08_00_08_324Z-debug-0.log
+2026-04-20T08:00:09.225Z	      at makeError (/opt/buildhome/.npm/_npx/32026684e21afda6/node_modules/wrangler/wrangler-dist/cli.js:53869:18)
+2026-04-20T08:00:09.225Z	      at handlePromise (/opt/buildhome/.npm/_npx/32026684e21afda6/node_modules/wrangler/wrangler-dist/cli.js:54336:29)
+2026-04-20T08:00:09.225Z	      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+2026-04-20T08:00:09.225Z	      at async runCommand (/opt/buildhome/.npm/_npx/32026684e21afda6/node_modules/wrangler/wrangler-dist/cli.js:135493:5)
+2026-04-20T08:00:09.225Z	      at async runAutoConfig (/opt/buildhome/.npm/_npx/32026684e21afda6/node_modules/wrangler/wrangler-dist/cli.js:232050:7)
+2026-04-20T08:00:09.225Z	      at async Object.handler (/opt/buildhome/.npm/_npx/32026684e21afda6/node_modules/wrangler/wrangler-dist/cli.js:233348:41)
+2026-04-20T08:00:09.225Z	      at async /opt/buildhome/.npm/_npx/32026684e21afda6/node_modules/wrangler/wrangler-dist/cli.js:182085:26
+2026-04-20T08:00:09.226Z	      at async Object.handler (/opt/buildhome/.npm/_npx/32026684e21afda6/node_modules/wrangler/wrangler-dist/cli.js:182034:7) {
+2026-04-20T08:00:09.226Z	    shortMessage: 'Command failed with exit code 1: npx bundle exec jekyll build',
+2026-04-20T08:00:09.226Z	    command: 'npx bundle exec jekyll build',
+2026-04-20T08:00:09.226Z	    escapedCommand: 'npx bundle exec jekyll build',
+2026-04-20T08:00:09.226Z	    exitCode: 1,
+2026-04-20T08:00:09.226Z	    signal: undefined,
+2026-04-20T08:00:09.226Z	    signalDescription: undefined,
+2026-04-20T08:00:09.226Z	    stdout: '',
+2026-04-20T08:00:09.226Z	    stderr: 'npm error could not determine executable to run\n' +
+2026-04-20T08:00:09.226Z	      'npm error A complete log of this run can be found in: /opt/buildhome/.npm/_logs/2026-04-20T08_00_08_324Z-debug-0.log',
+2026-04-20T08:00:09.226Z	    failed: true,
+2026-04-20T08:00:09.226Z	    timedOut: false,
+2026-04-20T08:00:09.226Z	    isCanceled: false,
+2026-04-20T08:00:09.226Z	    killed: false
+2026-04-20T08:00:09.226Z	  }
+2026-04-20T08:00:09.226Z	
+2026-04-20T08:00:09.226Z	
+2026-04-20T08:00:09.228Z	
+2026-04-20T08:00:09.228Z	Cloudflare collects anonymous telemetry about your usage of Wrangler. Learn more at https://github.com/cloudflare/workers-sdk/tree/main/packages/wrangler/telemetry.md
+2026-04-20T08:00:09.229Z	
+2026-04-20T08:00:09.230Z	✘ [ERROR] Running custom build `npx bundle exec jekyll build` failed. There are likely more logs from your build command above.
+2026-04-20T08:00:09.230Z	
+2026-04-20T08:00:09.230Z	
+2026-04-20T08:00:09.240Z	🪵  Logs were written to "/opt/buildhome/.config/.wrangler/logs/wrangler-2026-04-20_08-00-07_711.log"
+2026-04-20T08:00:09.779Z	Failed: error occurred while running deploy command

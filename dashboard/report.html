@@ -1,0 +1,67 @@
+---
+layout: dashboard
+permalink: /dashboard/report/
+title: Report an Issue – DeFi Scoring
+dashboard_section: report
+dashboard_title: Report an Issue
+dashboard_subtitle: Bugs, feature requests, and feedback are filed straight into the public GitHub repo.
+sitemap: false
+---
+
+<section class="defi-section" style="margin-bottom:18px">
+  <div class="defi-card">
+    <div class="defi-card__title">How this works</div>
+    <p style="margin:8px 0 0;color:var(--defi-text-dim);font-size:14px;line-height:1.6">
+      The form below creates a real issue in our public GitHub repository.
+      Submission is proxied through our Cloudflare Worker, so your browser
+      never sees a GitHub token. Your wallet address (if connected),
+      current page URL, and User-Agent string are appended automatically
+      so we can reproduce. Don't include private keys, seed phrases, or
+      anything else you wouldn't post on a public bug tracker.
+    </p>
+  </div>
+</section>
+
+<section class="defi-section">
+  <div class="defi-card" style="max-width:720px">
+    <form id="report-issue-form" autocomplete="off" style="display:flex;flex-direction:column;gap:16px">
+
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <label for="issue-type" style="font-size:11px;color:var(--defi-text-dim);text-transform:uppercase;letter-spacing:.06em;font-weight:600">Type</label>
+        <select id="issue-type" class="defi-select">
+          <option value="bug">Bug — something is broken</option>
+          <option value="feature">Feature request — something is missing</option>
+          <option value="feedback">Feedback — general comment</option>
+        </select>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <label for="issue-title" style="font-size:11px;color:var(--defi-text-dim);text-transform:uppercase;letter-spacing:.06em;font-weight:600">Title</label>
+        <input id="issue-title" class="defi-input" type="text" maxlength="200"
+               placeholder="e.g. Score not updating after wallet switch" required>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <label for="issue-description" style="font-size:11px;color:var(--defi-text-dim);text-transform:uppercase;letter-spacing:.06em;font-weight:600">Description</label>
+        <textarea id="issue-description" class="defi-input" rows="7" maxlength="8000"
+                  placeholder="What did you do, what did you expect, what happened instead?" required
+                  style="resize:vertical;min-height:160px;font-family:inherit"></textarea>
+      </div>
+
+      <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <button id="report-button" type="submit" class="defi-btn defi-btn--primary">Submit to GitHub</button>
+        <span style="font-size:12px;color:var(--defi-text-dim)">
+          Posts to
+          <a href="https://github.com/{{ site.defi.repo_owner | default: 'DeFiScoring' }}/{{ site.defi.repo_name | default: 'website' }}/issues"
+             target="_blank" rel="noopener" style="color:var(--defi-accent)">
+            github.com/{{ site.defi.repo_owner | default: 'DeFiScoring' }}/{{ site.defi.repo_name | default: 'website' }}
+          </a>.
+        </span>
+      </div>
+
+      <div id="report-result" aria-live="polite"></div>
+    </form>
+  </div>
+</section>
+
+<script src="{{ '/assets/js/report-issue.js' | relative_url }}" defer></script>

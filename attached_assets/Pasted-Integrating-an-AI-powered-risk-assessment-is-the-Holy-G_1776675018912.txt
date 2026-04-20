@@ -1,0 +1,55 @@
+Integrating an AI-powered risk assessment is the "Holy Grail" for DeFi users in 2026. They no longer trust a single "score" number; they want a readable narrative that explains *how* their money could be lost.
+
+By using your **Cloudflare + Jekyll** stack, you can build a system where the "Audit Report" is generated on-demand by an LLM and cached at the edge for performance.
+
+### 1. The High-Value "Why" (The AI Narrative)
+To make this high-demand, your AI shouldn't just look for bugs; it should look for **Trust Assumptions**.
+* **Centralization Risk:** "The developer can rug-pull by changing the fee to 100%."
+* **Upgradeability:** "The contract is a Proxy; the logic can change without a timelock."
+* **Economic Flaws:** "The price oracle is vulnerable to flash-loan manipulation."
+
+---
+
+### 2. The Replit Agent Master Prompt
+This prompt is designed to build the "AI Brain" of your site using the **2026 Cloudflare AI Gateway** (which allows you to call Claude/OpenAI with one unified API).
+
+> **"Build a DeFi AI Auditor Worker using Cloudflare Workers and the AI Gateway.**
+>
+> **Objective:** Create an API that fetches smart contract source code and generates a human-readable risk summary using an LLM.
+>
+> **Task 1: Code Retrieval Logic**
+> * Use the **Etherscan API** (`getsourcecode`) to fetch the Solidity source code for any given contract address. 
+> * If the contract is a Proxy, the worker should attempt to fetch the implementation contract code as well.
+>
+> **Task 2: AI Analysis (LLM Integration)**
+> * Use the **Cloudflare AI Gateway** to call **Claude 3.5 Sonnet** (or GPT-4o).
+> * **System Prompt:** 'You are a Senior Smart Contract Auditor. Analyze the provided Solidity code. Identify: 1. Admin Privileges (Can they steal funds?), 2. Upgradeability (Is there a timelock?), 3. Oracle reliance. Return a JSON object with a Safety Score (0-100) and a 3-sentence summary of the biggest risk.'
+>
+> **Task 3: Handling Large Files**
+> * Smart contracts can be huge. Implement a 'Code Truncator' that prioritizes specific sections (like `onlyOwner` modifiers, `transfer` logic, and `constructor` settings) to stay within LLM token limits.
+>
+> **Task 4: Jekyll Integration Script**
+> * Provide a JS script for my Jekyll site that:
+>     1. Detects a `0x...` address on the page.
+>     2. Fetches the AI analysis from the Worker.
+>     3. Displays an 'AI Insights' box with a 'Why this score?' section.
+>
+> **Task 5: Cost Management**
+> * Use **Cloudflare KV** to cache every AI audit for 30 days. If someone else scans the same address, serve the cached report instead of calling the LLM again (to save money)."
+
+---
+
+### 3. Visualizing the AI Audit Flow
+
+
+
+---
+
+### 4. Technical Nuances for 2026
+* **The Proxy Problem:** Most DeFi protocols (Uniswap, Aave) use Proxies. If you scan the "Main" address, the AI will just see a generic router. You *must* instruct the Worker to check the `Implementation` slot to see the real logic.
+* **Explainability as a Feature:** Instead of just a text block, have the AI return "Tags" (e.g., `#Centralized`, `#ComplexLogic`, `#NoAudit`). You can then style these as colorful badges on your Jekyll site.
+
+### 5. Why this is "High Demand"
+Standard audits are static PDFs that go out of date. An **AI-on-Demand** audit allows a user to check a new "Yield Farm" that launched 10 minutes ago. In 2026, where "Agentic Web3" is rising, providing a "Security API" for other bots to consume is a massive business opportunity.
+
+**Should I add a step to the prompt that allows the AI to compare the code against the "Official Audit" PDF to see if they actually fixed the issues found?**

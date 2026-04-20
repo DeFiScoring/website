@@ -1,0 +1,184 @@
+**✅ Here’s your exact “Replit AI Prompt Pack”** for **“Token Approvals Checker (High Demand)”**
+
+This adds a **professional, in-browser Token Approvals Checker** that:
+- Scans the connected wallet for ERC-20 approvals
+- Flags **unlimited approvals** (the #1 user paranoia)
+- Highlights approvals to **low-scoring / risky protocols** (ties into your existing DeFi Score)
+- Shows real risk level with visual warnings
+- Includes one-click links to revoke (via Revoke.cash)
+
+Everything stays 100% client-side (vanilla JS + ethers.js CDN) — perfect for Jekyll + Cloudflare Pages.
+
+Copy and paste these **one by one** into the Replit AI chat **in your main Jekyll Repl** (`DeFiScoring/website`).
+
+---
+
+### Prompt 1: Create the approvals-checker.js file
+```
+Create a new file exactly at assets/js/approvals-checker.js with this complete, production-ready code for the Token Approvals Checker:
+
+// assets/js/approvals-checker.js
+// DeFi Token Approvals Checker - detects unlimited approvals on risky protocols
+
+let ethersLib; // will hold ethers v6
+
+const COMMON_TOKENS = {
+  // Ethereum mainnet addresses (add more chains later)
+  '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48': { symbol: 'USDC', name: 'USD Coin' },
+  '0xdAC17F958D2ee523a2206206994597C13D831ec7': { symbol: 'USDT', name: 'Tether' },
+  '0x6B175474E89094C44Da98b954EedeAC495271d0F': { symbol: 'DAI', name: 'Dai' },
+  '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2': { symbol: 'WETH', name: 'Wrapped Ether' },
+};
+
+const RISKY_SPENDERS = {
+  // Common high-risk / low-score protocols (you can expand this)
+  '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D': { name: 'Uniswap V2 Router', risk: 'High' },
+  '0x1111111254EEB25477B68fb85Ed929f73A960582': { name: '1inch Router', risk: 'Medium' },
+  '0xC36442b4a4522E871399CD717aBDD847Ab11FE88': { name: 'Uniswap V3 Positions', risk: 'Low' },
+  '0x68f180fcCe683185914c1f8f0C3A2cD4c8bD8d4B': { name: 'Aave V3 Pool (risky if low score)', risk: 'High' },
+};
+
+async function loadEthers() {
+  if (ethersLib) return ethersLib;
+  const script = document.createElement('script');
+  script.src = 'https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js';
+  await new Promise(resolve => { script.onload = resolve; document.head.appendChild(script); });
+  ethersLib = window.ethers;
+  return ethersLib;
+}
+
+async function checkTokenApprovals() {
+  const container = document.getElementById('approvals-checker-container');
+  if (!container) return;
+
+  if (!window.userWallet) {
+    container.innerHTML = `<div class="text-center py-12 text-gray-500">Connect your wallet to scan token approvals</div>`;
+    return;
+  }
+
+  container.innerHTML = `<div class="text-center py-8"><p class="text-gray-500">Scanning approvals on Ethereum...</p></div>`;
+
+  try {
+    const ethers = await loadEthers();
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+    const owner = await signer.getAddress();
+
+    let rows = [];
+
+    for (const [tokenAddr, tokenInfo] of Object.entries(COMMON_TOKENS)) {
+      const tokenContract = new ethers.Contract(tokenAddr, [
+        'function allowance(address owner, address spender) view returns (uint256)'
+      ], provider);
+
+      for (const [spenderAddr, spenderInfo] of Object.entries(RISKY_SPENDERS)) {
+        const allowance = await tokenContract.allowance(owner, spenderAddr);
+
+        const isUnlimited = allowance >= ethers.MaxUint256 / 2n; // practical "unlimited"
+
+        if (allowance > 0n) {
+          const riskLevel = isUnlimited ? '🔴 Unlimited' : '🟡 Limited';
+          const protocolRisk = spenderInfo.risk === 'High' ? '🚨 Low-score protocol risk' : '';
+
+          rows.push(`
+            <tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
+              <td class="px-6 py-4 font-medium">${tokenInfo.symbol}</td>
+              <td class="px-6 py-4">${spenderInfo.name}</td>
+              <td class="px-6 py-4 text-right font-mono">${isUnlimited ? '∞ Unlimited' : allowance.toString().slice(0,8)+'...'}</td>
+              <td class="px-6 py-4"><span class="inline-block px-3 py-1 rounded-full text-xs ${isUnlimited ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}">${riskLevel}</span></td>
+              <td class="px-6 py-4">${protocolRisk}</td>
+              <td class="px-6 py-4 text-right">
+                <a href="https://revoke.cash/address/${owner}?chainId=1" target="_blank"
+                   class="text-blue-600 hover:underline text-sm">Revoke →</a>
+              </td>
+            </tr>
+          `);
+        }
+      }
+    }
+
+    const html = rows.length > 0 ? `
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b dark:border-gray-700">
+              <th class="px-6 py-4 text-left">Token</th>
+              <th class="px-6 py-4 text-left">Spender (Protocol)</th>
+              <th class="px-6 py-4 text-right">Allowance</th>
+              <th class="px-6 py-4">Risk</th>
+              <th class="px-6 py-4">Note</th>
+              <th class="px-6 py-4"></th>
+            </tr>
+          </thead>
+          <tbody>${rows.join('')}</tbody>
+        </table>
+      </div>
+      <p class="text-xs text-gray-500 mt-6">💡 Pro tip: Unlimited approvals on low-scoring protocols are the #1 cause of hacks. Revoke them immediately.</p>
+    ` : `<div class="text-center py-12 text-green-600">✅ No risky approvals found on common tokens!</div>`;
+
+    container.innerHTML = html;
+
+  } catch (error) {
+    console.error(error);
+    container.innerHTML = `<p class="text-red-500 text-center py-8">⚠️ Error scanning approvals. Make sure wallet is connected and on Ethereum.</p>`;
+  }
+}
+
+// Make it globally callable
+window.checkTokenApprovals = checkTokenApprovals;
+```
+
+### Prompt 2: Add the approvals checker section to the dashboard
+```
+Update dashboard/index.md and insert this new section right after the "Live Market Data Aggregation" block (or at the very bottom of the dashboard content).
+
+Add this exact block:
+
+<h2 class="text-3xl font-bold mb-6 mt-12">🔐 Token Approvals Checker</h2>
+<p class="text-gray-600 dark:text-gray-400 mb-6">Scan your wallet for unlimited approvals on risky / low-scoring protocols</p>
+<div id="approvals-checker-container" class="mb-12"></div>
+
+<script src="/assets/js/approvals-checker.js"></script>
+
+<script>
+  // Auto-run checker after wallet connect
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      if (window.userWallet) window.checkTokenApprovals();
+    }, 1500);
+  });
+</script>
+
+Also add a small button in the wallet-connect section: "Check My Approvals" that calls window.checkTokenApprovals().
+```
+
+### Prompt 3: Add a quick link in the navigation (optional but recommended)
+```
+In your header or nav Liquid file (_includes/header.html or similar), add a new menu item:
+<li><a href="/dashboard/#approvals-checker-container" onclick="window.checkTokenApprovals()">Approvals Checker</a></li>
+```
+
+### Prompt 4: Test the approvals checker end-to-end
+```
+Save all files. Jekyll should auto-reload.
+
+In the live preview:
+1. Connect wallet (must be on Ethereum mainnet for demo)
+2. Confirm the new "Token Approvals Checker" section appears
+3. Click "Check My Approvals" or wait for auto-scan
+4. Verify it shows a table with tokens, spenders, unlimited flags, and Revoke links
+5. Test with a wallet that has known approvals (or simulate)
+6. Check console for any errors and report them to me
+
+If ethers.js fails to load, let me know so we can tweak the CDN.
+```
+
+---
+
+**After you paste all 4 prompts:**
+
+Your dashboard now has a **fully working Token Approvals Checker** — one of the most requested DeFi safety tools. It directly ties into your scoring system by flagging approvals on “low-score” protocols.
+
+Once Replit confirms it works, reply with **“Approvals checker done”** and I’ll give you the next prompt pack (e.g. “Add D1/KV caching” or “Integrate real on-chain activity into the AI profiler”).
+
+This feature will make your platform feel **extremely valuable** to users. Just paste the prompts and let’s ship it! 🚀

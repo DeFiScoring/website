@@ -1,0 +1,97 @@
+---
+layout: dashboard
+permalink: /dashboard/
+title: Overview
+dashboard_section: home
+dashboard_title: Overview
+dashboard_subtitle: Your DeFi credit health at a glance.
+sitemap: false
+---
+
+<a href="/dashboard/risk-profiler/" class="defi-card defi-cta-card" style="display:flex;align-items:center;justify-content:space-between;gap:18px;text-decoration:none;color:var(--defi-text);background:linear-gradient(135deg, rgba(91,140,255,0.18), rgba(138,92,255,0.18));border-color:var(--defi-accent);margin-bottom:18px">
+  <div>
+    <div style="font-size:11px;font-weight:700;letter-spacing:0.6px;text-transform:uppercase;color:var(--defi-accent)">New · AI-powered</div>
+    <div style="font-size:20px;font-weight:700;margin-top:6px">Get Your AI Risk Profile &amp; Project Recommendations</div>
+    <div style="font-size:13px;color:var(--defi-text-dim);margin-top:6px">Match your wallet to a target risk profile and receive tailored DeFi project picks.</div>
+  </div>
+  <span class="defi-btn defi-btn--primary" style="white-space:nowrap">Open Profiler →</span>
+</a>
+
+<div id="defi-home-empty" class="defi-empty">
+  Connect a wallet to load your overview.
+</div>
+
+<div id="defi-home-grid" style="display:none">
+  <div class="defi-grid defi-grid--stats" style="margin-bottom:18px">
+    <div class="defi-card">
+      <div class="defi-card__title">Credit Score</div>
+      <div class="defi-card__value" id="stat-score">—</div>
+      <div class="defi-card__delta" id="stat-band">—</div>
+    </div>
+    <div class="defi-card">
+      <div class="defi-card__title">Portfolio Value</div>
+      <div class="defi-card__value" id="stat-value">—</div>
+      <div class="defi-card__delta">across Phase&nbsp;1 chains</div>
+    </div>
+    <div class="defi-card">
+      <div class="defi-card__title">Open Positions</div>
+      <div class="defi-card__value" id="stat-positions">—</div>
+      <div class="defi-card__delta">tracked protocols</div>
+    </div>
+    <div class="defi-card">
+      <div class="defi-card__title">Active Alerts</div>
+      <div class="defi-card__value" id="stat-alerts">—</div>
+      <div class="defi-card__delta">last 7 days</div>
+    </div>
+  </div>
+
+  <div class="defi-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px;margin-bottom:18px">
+    <div class="defi-card">
+      <div class="defi-card__title" style="display:flex;justify-content:space-between;align-items:center">
+        <span>DeFi Credit Score</span>
+        <button id="score-refresh-btn" class="defi-btn defi-btn--ghost" type="button" style="font-size:12px;padding:4px 10px">Refresh</button>
+      </div>
+      <div id="score-card-body" style="display:flex;align-items:center;gap:18px;margin-top:14px">
+        <div id="score-mini-circle" style="flex:0 0 auto"></div>
+        <div style="min-width:0;flex:1">
+          <div style="font-size:36px;font-weight:700;line-height:1.1" id="score-mini-value">—</div>
+          <div id="score-mini-band" class="defi-card__delta" style="margin-top:4px">—</div>
+          <div id="score-mini-meta" style="font-size:11px;color:var(--defi-text-dim);margin-top:6px">Computed from on-chain activity</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="defi-card">
+      <div class="defi-card__title">Score breakdown (factor weights)</div>
+      <div style="height:220px;margin-top:8px"><canvas id="breakdown-chart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="defi-card">
+    <div class="defi-card__title">Score trend (12 months)</div>
+    <div style="height:280px"><canvas id="score-trend"></canvas></div>
+    <div id="score-trend-note" class="defi-empty" style="display:none;margin-top:8px"></div>
+  </div>
+
+  <div id="home-status" class="defi-card__delta" style="margin-top:14px;font-size:12px;color:var(--defi-text-dim);display:none"></div>
+</div>
+
+<div style="margin-top:32px">
+  <div class="defi-card">
+    <div class="defi-card__title">Watchlist</div>
+    <p style="color:var(--defi-text-dim);font-size:13px;margin:6px 0 14px">
+      Track protocols and tokens. Synced to your account when the backend is online; otherwise saved in this browser.
+    </p>
+    <div id="defi-watchlist"></div>
+  </div>
+</div>
+
+<div style="margin-top:32px">
+  <h2 style="font-size:22px;font-weight:700;margin:0 0 6px">Live market data</h2>
+  <p style="color:var(--defi-text-dim);font-size:13px;margin:0 0 16px">
+    Real-time TVL from DeFiLlama · Spot prices from CoinGecko · Aave V3 chain breakdown.
+    No wallet required — auto-refreshes every 60 seconds.
+  </p>
+  <div id="data-aggregation-container"></div>
+</div>
+<script src="{{ '/assets/js/data-aggregation.js' | relative_url }}" defer></script>

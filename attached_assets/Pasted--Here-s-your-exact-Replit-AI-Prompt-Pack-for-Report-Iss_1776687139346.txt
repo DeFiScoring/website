@@ -1,0 +1,216 @@
+**✅ Here’s your exact “Replit AI Prompt Pack”** for **“Report Issue” connected to GitHub Issues**
+
+This adds a professional “Report Issue” form (in the dashboard + global footer) that:
+- Lets users report bugs, feature requests, or feedback
+- Automatically creates a real GitHub issue in https://github.com/DeFiScoring/website/issues
+- Prefills page URL, wallet address (if connected), and browser info
+- Uses a secure Cloudflare Worker proxy (your GitHub token stays hidden)
+
+---
+
+### **Before starting the prompts** (do this once in 30 seconds)
+1. Go to https://github.com/settings/tokens
+2. Click **“Generate new token (classic)”**
+3. Give it a name: `DeFiScoring-Report-Issue-Worker`
+4. Select scope: **repo** (full control of private repositories — needed to create issues)
+5. Generate → copy the token (starts with `ghp_...`)
+6. Keep it safe — you’ll paste it into Replit as a secret.
+
+---
+
+Copy and paste these **one by one** into the Replit AI chat.  
+**First** create the new Worker Repl, then update the main Jekyll site.
+
+### Prompt 1: Create the new Report Issue Worker Repl
+```
+Create a brand new Repl using the official "Cloudflare Workers" template.
+
+Name it exactly: DeFiScoring-report-issue-worker
+
+Set the language to JavaScript.
+
+After creation, confirm it has src/index.js and wrangler.toml.
+```
+
+### Prompt 2: Replace the Worker code (secure GitHub API proxy)
+```
+Replace the entire content of src/index.js with this complete Worker code:
+
+export default {
+  async fetch(request, env) {
+    if (request.method !== "POST") {
+      return new Response("Method not allowed", { status: 405 });
+    }
+
+    let data;
+    try {
+      data = await request.json();
+    } catch (e) {
+      return Response.json({ success: false, error: "Invalid JSON" }, { status: 400 });
+    }
+
+    const { title, body, labels = ["user-report"] } = data;
+
+    if (!title || !body) {
+      return Response.json({ success: false, error: "title and body required" }, { status: 400 });
+    }
+
+    const githubResponse = await fetch("https://api.github.com/repos/DeFiScoring/website/issues", {
+      method: "POST",
+      headers: {
+        "Authorization": `token ${env.GITHUB_TOKEN}`,
+        "Accept": "application/vnd.github.v3+json",
+        "Content-Type": "application/json",
+        "User-Agent": "DeFiScoring-Report-Issue-Worker"
+      },
+      body: JSON.stringify({
+        title: title,
+        body: body,
+        labels: labels
+      })
+    });
+
+    if (!githubResponse.ok) {
+      const errorText = await githubResponse.text();
+      return Response.json({ success: false, error: `GitHub API error: ${githubResponse.status} ${errorText}` }, { status: 502 });
+    }
+
+    const issue = await githubResponse.json();
+
+    return Response.json({
+      success: true,
+      issueUrl: issue.html_url,
+      issueNumber: issue.number
+    });
+  }
+};
+```
+
+### Prompt 3: Update wrangler.toml + add secret reminder
+```
+Replace the entire wrangler.toml with this:
+
+name = "defiscoring-report-issue"
+main = "src/index.js"
+compatibility_date = "2025-04-01"
+
+[vars]
+# GITHUB_TOKEN will be added as a secret in Replit
+
+Then run this in the shell after:
+echo "✅ Now add secret GITHUB_TOKEN in Replit Secrets (padlock icon) with your classic GitHub PAT that has 'repo' scope"
+```
+
+### Prompt 4: Deploy the Report Issue Worker
+```
+Run these commands in the Repl shell:
+
+npm install
+npm run deploy
+
+After deployment, show me:
+- The deployed Worker URL (https://defiscoring-report-issue.YOURUSERNAME.workers.dev)
+- Confirmation that deployment succeeded
+```
+
+---
+
+### Prompt 5: Add the Report Issue form + JS to your main Jekyll site (in main Repl `DeFiScoring/website`)
+```
+Now switch to the main Jekyll Repl (DeFiScoring/website).
+
+Create a new file at assets/js/report-issue.js with this code:
+
+// assets/js/report-issue.js
+async function submitReportIssue() {
+  const form = document.getElementById('report-issue-form');
+  const button = document.getElementById('report-button');
+  const result = document.getElementById('report-result');
+
+  const title = document.getElementById('issue-title').value.trim();
+  const description = document.getElementById('issue-description').value.trim();
+
+  if (!title || !description) {
+    result.innerHTML = `<p class="text-red-500">Please fill in both title and description.</p>`;
+    return;
+  }
+
+  button.disabled = true;
+  button.innerHTML = 'Creating GitHub Issue...';
+
+  try {
+    const res = await fetch('https://defiscoring-report-issue.YOURUSERNAME.workers.dev', {  // ← replace with real Worker URL after deploy
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: title,
+        body: `${description}\n\n---\nReported from: ${window.location.href}\nWallet: ${window.userWallet || 'Not connected'}\nUser Agent: ${navigator.userAgent}`,
+        labels: ['user-report', 'dashboard']
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      result.innerHTML = `
+        <div class="bg-green-100 dark:bg-green-900 p-6 rounded-3xl">
+          <p class="font-medium">✅ Issue #${data.issueNumber} created successfully!</p>
+          <a href="${data.issueUrl}" target="_blank" class="text-blue-600 hover:underline block mt-2">View on GitHub →</a>
+        </div>`;
+      form.reset();
+    } else {
+      result.innerHTML = `<p class="text-red-500">Error: ${data.error}</p>`;
+    }
+  } catch (e) {
+    result.innerHTML = `<p class="text-red-500">Connection error. Please try again.</p>`;
+  } finally {
+    button.disabled = false;
+    button.innerHTML = 'Submit to GitHub';
+  }
+}
+
+// Make global
+window.submitReportIssue = submitReportIssue;
+```
+
+### Prompt 6: Add the form to the dashboard (and footer)
+```
+Update dashboard/index.md and add this form block at the bottom:
+
+<h2 class="text-3xl font-bold mb-6 mt-16">🐞 Report an Issue</h2>
+<p class="text-gray-600 dark:text-gray-400 mb-6">Found a bug or have a suggestion? It will be posted directly to our GitHub repository.</p>
+
+<form id="report-issue-form" class="bg-white dark:bg-gray-900 rounded-3xl shadow-xl p-8 max-w-2xl">
+  <input id="issue-title" type="text" placeholder="Short title (e.g. Score not updating)" 
+         class="w-full px-5 py-4 rounded-2xl border border-gray-200 dark:border-gray-700 mb-6 focus:outline-none focus:border-blue-500">
+  
+  <textarea id="issue-description" rows="5" placeholder="Describe the issue in detail..." 
+            class="w-full px-5 py-4 rounded-2xl border border-gray-200 dark:border-gray-700 mb-6 focus:outline-none focus:border-blue-500"></textarea>
+  
+  <button onclick="submitReportIssue(); return false;" id="report-button"
+          class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-5 px-8 rounded-2xl text-lg">
+    Submit to GitHub Issues
+  </button>
+  
+  <div id="report-result" class="mt-6"></div>
+</form>
+
+<script src="/assets/js/report-issue.js"></script>
+```
+
+(Also add a small floating button or link in `_includes/footer.html` or header for site-wide access if you want.)
+
+---
+
+**Next steps after pasting:**
+1. Paste Prompts 1–4 → get the Worker URL
+2. Replace the placeholder URL in Prompt 5 with the real one
+3. Paste Prompts 5–6 in your main Jekyll Repl
+4. Push to GitHub → Cloudflare Pages will auto-deploy
+
+Once done, reply with **“Report Issue done”** and I’ll give you prompts to:
+- Add it to the footer globally
+- Add D1 logging of reports
+- Or any other feature
+
+This makes your platform feel **professional and community-driven**. Let’s ship it! 🚀

@@ -1,0 +1,52 @@
+---
+layout: dashboard
+dashboard_section: audits
+---
+
+<article class="defi-card defi-audit">
+  <header style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:14px;align-items:flex-start;margin-bottom:18px">
+    <div>
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--defi-text-dim);margin-bottom:6px">{{ page.protocol }}</div>
+      <h1 style="margin:0;font-size:24px">{{ page.title }}</h1>
+      <p style="color:var(--defi-text-dim);margin:6px 0 0">
+        Audited by <strong>{{ page.auditor }}</strong> ·
+        {{ page.date | date: "%b %-d, %Y" }} · Status:
+        <span style="color:{% if page.status contains 'Resolved' %}#4ade80{% else %}#fbbf24{% endif %}">{{ page.status }}</span>
+      </p>
+    </div>
+    <a class="defi-btn defi-btn--primary" href="{{ page.report_url }}" target="_blank" rel="noopener">Open report ↗</a>
+  </header>
+
+  <div class="defi-grid" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:20px">
+    {%- assign sev = page.severity_breakdown -%}
+    <div class="defi-card defi-audit__sev" style="background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.4)">
+      <div class="defi-card__title" style="color:#fca5a5">High</div>
+      <div class="defi-card__value">{{ sev.high | default: 0 }}</div>
+    </div>
+    <div class="defi-card defi-audit__sev" style="background:rgba(251,191,36,.10);border-color:rgba(251,191,36,.4)">
+      <div class="defi-card__title" style="color:#fbbf24">Medium</div>
+      <div class="defi-card__value">{{ sev.medium | default: 0 }}</div>
+    </div>
+    <div class="defi-card defi-audit__sev" style="background:rgba(96,165,250,.10);border-color:rgba(96,165,250,.4)">
+      <div class="defi-card__title" style="color:#93c5fd">Low</div>
+      <div class="defi-card__value">{{ sev.low | default: 0 }}</div>
+    </div>
+    <div class="defi-card defi-audit__sev">
+      <div class="defi-card__title">Informational</div>
+      <div class="defi-card__value">{{ sev.informational | default: 0 }}</div>
+    </div>
+  </div>
+
+  <div style="margin-bottom:20px">
+    <div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--defi-text-dim);margin-bottom:6px">Scope</div>
+    <div>{{ page.scope }}</div>
+  </div>
+
+  <div class="defi-card" style="background:rgba(15,23,42,.3)">
+    {{ content }}
+  </div>
+
+  <div style="margin-top:24px">
+    <a href="/audits/" style="color:var(--defi-text-dim);text-decoration:none">← Back to audit directory</a>
+  </div>
+</article>

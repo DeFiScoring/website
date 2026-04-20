@@ -1,0 +1,34 @@
+---
+layout: dashboard
+permalink: /dashboard/score/
+title: My Score
+dashboard_section: score
+dashboard_title: My Score
+dashboard_subtitle: Rule-based DeFi credit score (300–850).
+sitemap: false
+---
+
+<div id="score-empty" class="defi-empty">
+  Connect a wallet to compute your score.
+</div>
+
+<div id="score-main" style="display:none">
+  <div class="defi-card" style="margin-bottom:18px">
+    <div class="defi-score-wrap">
+      <div class="defi-score-circle" id="score-circle"></div>
+      <div class="defi-factors" id="score-factors"></div>
+    </div>
+    <div class="defi-card__delta" id="score-updated" style="margin-top:14px"></div>
+    <div id="score-notice" class="defi-card__delta" style="margin-top:8px;font-size:12px;color:var(--defi-text-dim);display:none"></div>
+  </div>
+
+  <div class="defi-card">
+    <div class="defi-card__title">How the score is built</div>
+    <p style="margin:0;color:var(--defi-text-dim);font-size:13px;line-height:1.6">
+      The score combines on-chain signals weighted as shown above:
+      payment history (no liquidations in the last 90 days), utilization (borrowed vs supplied),
+      account history length, activity diversity, and fraud / sybil signals.
+      Phase 1 covers Ethereum, Arbitrum, and Polygon. Phase 2 will add Optimism and Base.
+    </p>
+  </div>
+</div>

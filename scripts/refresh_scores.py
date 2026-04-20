@@ -1,0 +1,153 @@
+#!/usr/bin/env python3
+"""
+Refresh _data/scores.yml from the live Cloudflare Worker.
+
+Reads the protocol catalog from _data/protocols.yml, calls the deployed
+Worker's /api/score/:slug endpoint for each protocol, and writes the
+composite scores to _data/scores.yml. Jekyll picks up the file on next
+build, so the static site stays "static" but the content stays fresh.
+
+Run locally:  python scripts/refresh_scores.py
+GitHub Action: see .github/workflows/refresh-scores.yml
+Env vars:
+  WORKER_BASE_URL   Worker origin (default: https://defiscoring.guillaumelauzier.workers.dev)
+  REQUEST_TIMEOUT   Per-request timeout seconds (default: 20)
+"""
+from __future__ import annotations
+
+import json
+import os
+import sys
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+from urllib import request as urlrequest
+from urllib.error import HTTPError, URLError
+
+import yaml
+
+ROOT = Path(__file__).resolve().parent.parent
+PROTOCOLS_FILE = ROOT / "_data" / "protocols.yml"
+SCORES_FILE = ROOT / "_data" / "scores.yml"
+
+WORKER_BASE_URL = os.environ.get(
+    "WORKER_BASE_URL", "https://defiscoring.guillaumelauzier.workers.dev"
+).rstrip("/")
+REQUEST_TIMEOUT = int(os.environ.get("REQUEST_TIMEOUT", "20"))
+
+
+def load_protocols() -> list[dict]:
+    with PROTOCOLS_FILE.open("r", encoding="utf-8") as f:
+        data = yaml.safe_load(f) or {}
+    protocols = data.get("protocols") or []
+    if not protocols:
+        sys.exit("No protocols found in " + str(PROTOCOLS_FILE))
+    return protocols
+
+
+def fetch_score(slug: str) -> dict | None:
+    url = f"{WORKER_BASE_URL}/api/score/{slug}"
+    req = urlrequest.Request(url, headers={"Accept": "application/json", "User-Agent": "defiscoring-refresh/1"})
+    try:
+        with urlrequest.urlopen(req, timeout=REQUEST_TIMEOUT) as resp:
+            payload = json.loads(resp.read().decode("utf-8"))
+    except HTTPError as e:
+        body = e.read().decode("utf-8", errors="replace")[:200]
+        print(f"  ! HTTP {e.code} for {slug}: {body}", file=sys.stderr)
+        return None
+    except URLError as e:
+        print(f"  ! Network error for {slug}: {e.reason}", file=sys.stderr)
+        return None
+    except json.JSONDecodeError as e:
+        print(f"  ! Non-JSON for {slug}: {e}", file=sys.stderr)
+        return None
+
+    if not payload.get("success"):
+        print(f"  ! Worker reported failure for {slug}: {payload.get('error')}", file=sys.stderr)
+        return None
+    return payload
+
+
+def to_record(slug: str, name: str, category: str, payload: dict) -> dict:
+    pillars = payload.get("pillars") or {}
+    trust = pillars.get("trust") or {}
+    liveness = pillars.get("liveness") or {}
+    security = pillars.get("security") or {}
+    return {
+        "slug": slug,
+        "name": name,
+        "category": category,
+        "score": payload.get("score"),
+        "band": payload.get("band"),
+        "tvl_usd": liveness.get("tvl_usd"),
+        "tvl_change_7d_pct": liveness.get("tvl_change_7d_pct"),
+        "audit_count": trust.get("audit_count"),
+        "age_days": trust.get("age_days"),
+        "security_real": bool(security.get("real")) if security else False,
+        "fetched_at": payload.get("timestamp"),
+        "cached": bool(payload.get("cached")),
+    }
+
+
+def main() -> int:
+    protocols = load_protocols()
+    print(f"Refreshing scores for {len(protocols)} protocols via {WORKER_BASE_URL}")
+    rows: list[dict] = []
+    failures: list[str] = []
+
+    for p in protocols:
+        slug = p.get("slug")
+        if not slug:
+            continue
+        name = p.get("name") or slug
+        category = p.get("category") or "other"
+        print(f"  · {slug}", flush=True)
+        payload = fetch_score(slug)
+        if payload is None:
+            failures.append(slug)
+            # Keep a placeholder so the YAML is complete; UI can show "n/a".
+            rows.append({
+                "slug": slug,
+                "name": name,
+                "category": category,
+                "score": None,
+                "band": "unknown",
+                "tvl_usd": None,
+                "tvl_change_7d_pct": None,
+                "audit_count": None,
+                "age_days": None,
+                "security_real": False,
+                "fetched_at": None,
+                "cached": False,
+                "error": True,
+            })
+            continue
+        rows.append(to_record(slug, name, category, payload))
+        # Be polite with the Worker's KV cache and DeFiLlama upstream.
+        time.sleep(0.4)
+
+    output = {
+        "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "worker": WORKER_BASE_URL,
+        "protocol_count": len(rows),
+        "failure_count": len(failures),
+        "failures": failures,
+        "scores": rows,
+    }
+
+    SCORES_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with SCORES_FILE.open("w", encoding="utf-8") as f:
+        f.write("# Auto-generated by scripts/refresh_scores.py — DO NOT EDIT BY HAND.\n")
+        f.write("# Refreshed every 6 hours by .github/workflows/refresh-scores.yml.\n\n")
+        yaml.safe_dump(output, f, sort_keys=False, allow_unicode=True, width=120)
+
+    print(f"Wrote {SCORES_FILE.relative_to(ROOT)} ({len(rows)} rows, {len(failures)} failures)")
+    # Don't fail the workflow on partial failures — a partial refresh is
+    # better than no refresh. Only exit non-zero if everything failed.
+    if failures and len(failures) == len(rows):
+        return 2
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

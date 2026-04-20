@@ -1,0 +1,67 @@
+---
+layout: dashboard
+permalink: /dashboard/risk-chatbot/
+title: AI Risk Advisor – DeFi Scoring
+dashboard_section: chatbot
+dashboard_title: AI Risk Advisor
+dashboard_subtitle: A short conversation, then a personalised PDF risk-profile report.
+sitemap: false
+---
+
+<section class="defi-section" style="margin-bottom:18px">
+  <div class="defi-card" id="chat-consent" style="max-width:720px">
+    <div class="defi-card__title">Before we start</div>
+    <p style="margin:8px 0 14px;color:var(--defi-text-dim);font-size:14px;line-height:1.6">
+      Enter your email and the chatbot will ask 5–7 short questions about your DeFi
+      goals, experience and risk tolerance. At the end you'll get a personalised
+      risk-profile summary and can download it as a PDF.
+    </p>
+    <p style="margin:0 0 14px;font-size:12px;color:var(--defi-text-dim);line-height:1.55">
+      We store your email so we can let you know when new audit reports are
+      published. Conversation transcripts live in cache only and are deleted
+      automatically after one hour. We never share email addresses.
+    </p>
+
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">
+      <label for="chat-email" style="font-size:11px;color:var(--defi-text-dim);text-transform:uppercase;letter-spacing:.06em;font-weight:600">Email</label>
+      <input id="chat-email" class="defi-input" type="email" autocomplete="email"
+             placeholder="you@example.com" maxlength="254" required>
+    </div>
+
+    <label style="display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--defi-text);line-height:1.5;margin-bottom:14px">
+      <input id="chat-consent-checkbox" type="checkbox" style="margin-top:3px">
+      <span>I agree to receive occasional product updates from DeFi Scoring at this address. I can unsubscribe at any time.</span>
+    </label>
+
+    <button id="chat-start" type="button" class="defi-btn defi-btn--primary">Accept &amp; start chat</button>
+  </div>
+</section>
+
+<section class="defi-section" style="margin-bottom:18px">
+  <div class="defi-card" id="chat-panel" hidden style="max-width:760px">
+    <div class="defi-card__title">DeFi Risk Advisor</div>
+
+    <div id="chat-messages" class="chat-window"></div>
+
+    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+      <input id="chat-input" class="defi-input" type="text" placeholder="Type your answer and hit Enter…"
+             maxlength="1500" autocomplete="off" style="flex:1 1 260px;min-width:0">
+      <button id="chat-send"   type="button" class="defi-btn defi-btn--primary">Send</button>
+      <button id="chat-finish" type="button" class="defi-btn defi-btn--ghost">Finish &amp; report</button>
+    </div>
+
+    <div id="chat-status" aria-live="polite" style="margin-top:10px;font-size:12px;color:var(--defi-text-dim);min-height:1em"></div>
+  </div>
+</section>
+
+<section class="defi-section">
+  <div class="defi-card" id="chat-report" hidden style="max-width:760px">
+    <div id="chat-report-body"></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px">
+      <button id="chat-report-download" type="button" class="defi-btn defi-btn--primary">Download PDF</button>
+      <button id="chat-report-restart"  type="button" class="defi-btn defi-btn--ghost">Start a new chat</button>
+    </div>
+  </div>
+</section>
+
+<script src="{{ '/assets/js/risk-chatbot.js' | relative_url }}" defer></script>

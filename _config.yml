@@ -1,0 +1,67 @@
+# DeFi Scoring – Jekyll site configuration
+#
+# This site has been stripped down from the original Snowlake theme to keep the
+# codebase focused on the DeFi Scoring app surface (landing page, dashboard,
+# audit directory). E-commerce, agency, blog, and portfolio scaffolding has
+# been removed. Only the layouts and includes still under `_layouts/` and
+# `_includes/` are part of the active build.
+
+baseurl: ""
+url: "https://defiscoring.com"
+title: "DeFi Scoring"
+description: "On-chain credit scoring, portfolio risk heatmaps, and real-time alerts across Ethereum, Arbitrum, and Polygon."
+
+# DeFi Scoring runtime configuration. Override per-environment if needed.
+defi:
+  worker_url: "https://defiscoring.guillaumelauzier.workers.dev"
+  # Optional Cloudflare Web3 Gateway URLs (Cloudflare dashboard → Web3 →
+  # Create Gateway). Leaving these blank keeps the public free-tier RPCs.
+  rpc:
+    ethereum: ""
+    arbitrum: ""
+    polygon: ""
+
+# Build settings
+plugins:
+  - jekyll-feed
+
+# Active collections. The bulk of DeFi Scoring content is plain pages under
+# `dashboard/` and `audits/`. The `audits` collection is the only custom
+# collection we ship.
+collections:
+  audits:
+    output: true
+    permalink: /audits/:path/
+
+defaults:
+  - scope: { path: "", type: "audits" }
+    values: { layout: "audit" }
+
+# Files / folders Jekyll should ignore during build.
+exclude:
+  - README.md
+  - Gemfile
+  - Gemfile.lock
+  - vendor
+  - node_modules
+  - worker
+  - workers
+  - migrations
+  - scripts
+  - wrangler.jsonc
+  - cloudflare.toml
+  - netlify.toml
+  - github.toml
+  - replit.md
+  - attached_assets
+  - .github
+  - .wrangler
+  - .wranglerignore
+  - .ruby-version
+  - .replit
+  - .config
+  - .agents
+  - .local
+  - .DS_Store
+  - .cache
+  - .jekyll-cache

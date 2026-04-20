@@ -1,0 +1,221 @@
+---
+layout: dashboard
+permalink: /dashboard/market-intel/
+title: Market Intelligence – DeFi Scoring
+dashboard_section: intel
+dashboard_title: Market Intelligence Hub
+dashboard_subtitle: Aggregated, anonymized usage data. Admin-only.
+sitemap: false
+robots: noindex,nofollow
+---
+
+<section class="defi-section" style="margin-bottom:18px">
+  <div class="defi-card">
+    <div class="defi-card__title">Admin only</div>
+    <p style="margin:8px 0 0;color:var(--defi-text-dim);font-size:14px;line-height:1.6">
+      This page reads aggregated, opt-in telemetry from D1. The Worker
+      requires an <code>ADMIN_TOKEN</code> bearer token; paste it below
+      and it will be kept in <code>sessionStorage</code> for this tab only.
+      Numbers are real — if you see <em>no events recorded yet</em>, no
+      consenting users have hit the dashboard since the migration ran.
+    </p>
+    <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <input id="intel-admin-token" type="password" class="defi-input" placeholder="ADMIN_TOKEN"
+             style="max-width:340px;flex:1 1 220px" autocomplete="off">
+      <select id="intel-window" class="defi-select" style="max-width:180px">
+        <option value="7">Last 7 days</option>
+        <option value="30" selected>Last 30 days</option>
+        <option value="90">Last 90 days</option>
+        <option value="365">Last 365 days</option>
+      </select>
+      <button id="intel-refresh" type="button" class="defi-btn defi-btn--primary">Load</button>
+      <button id="intel-export" type="button" class="defi-btn defi-btn--ghost">Export CSV</button>
+    </div>
+    <div id="intel-status" aria-live="polite" style="margin-top:10px;font-size:12px;color:var(--defi-text-dim)"></div>
+  </div>
+</section>
+
+<section class="defi-section" id="intel-cards-section" hidden style="margin-bottom:18px">
+  <div class="defi-grid defi-grid--4">
+    <div class="defi-card defi-card--stat">
+      <div class="defi-card__label">Total events</div>
+      <div class="defi-card__big" id="intel-stat-events">—</div>
+    </div>
+    <div class="defi-card defi-card--stat">
+      <div class="defi-card__label">Unique wallets</div>
+      <div class="defi-card__big" id="intel-stat-wallets">—</div>
+    </div>
+    <div class="defi-card defi-card--stat">
+      <div class="defi-card__label">Avg DeFi Score</div>
+      <div class="defi-card__big" id="intel-stat-avg">—</div>
+    </div>
+    <div class="defi-card defi-card--stat">
+      <div class="defi-card__label">Aggressive %</div>
+      <div class="defi-card__big" id="intel-stat-agg">—</div>
+    </div>
+  </div>
+</section>
+
+<section class="defi-section" id="intel-breakdown-section" hidden style="margin-bottom:18px">
+  <div class="defi-grid defi-grid--2">
+    <div class="defi-card">
+      <div class="defi-card__title">By event type</div>
+      <table class="defi-table" id="intel-by-type"><tbody></tbody></table>
+    </div>
+    <div class="defi-card">
+      <div class="defi-card__title">By risk profile</div>
+      <table class="defi-table" id="intel-by-profile"><tbody></tbody></table>
+    </div>
+  </div>
+</section>
+
+<section class="defi-section" id="intel-daily-section" hidden>
+  <div class="defi-card">
+    <div class="defi-card__title">Daily aggregates</div>
+    <div style="overflow-x:auto">
+      <table class="defi-table" id="intel-daily">
+        <thead>
+          <tr>
+            <th>Date</th><th>Chain</th><th>Events</th><th>Unique wallets</th>
+            <th>Avg score</th><th>Aggressive</th><th>Moderate</th><th>Conservative</th>
+            <th>Unlimited approvals</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<script>
+(function () {
+  var TOKEN_KEY = "defi:intel:admin_token";
+  var tokenEl   = document.getElementById("intel-admin-token");
+  var windowEl  = document.getElementById("intel-window");
+  var statusEl  = document.getElementById("intel-status");
+  var refreshEl = document.getElementById("intel-refresh");
+  var exportEl  = document.getElementById("intel-export");
+
+  try { tokenEl.value = sessionStorage.getItem(TOKEN_KEY) || ""; } catch (_) {}
+
+  function workerUrl(path) {
+    var base = (window.DEFI_RISK_WORKER_URL || "").replace(/\/+$/, "");
+    return (base || "") + path;
+  }
+  function setStatus(msg, kind) {
+    statusEl.style.color = kind === "error" ? "var(--defi-danger,#ff5d6c)" : "var(--defi-text-dim)";
+    statusEl.textContent = msg || "";
+  }
+  function token() {
+    var t = (tokenEl.value || "").trim();
+    if (t) { try { sessionStorage.setItem(TOKEN_KEY, t); } catch (_) {} }
+    return t;
+  }
+
+  function fmtInt(n) { return (n == null ? "—" : Number(n).toLocaleString()); }
+  function fmtPct(n) { return (n == null ? "—" : (Number(n).toFixed(1) + "%")); }
+
+  async function load() {
+    var t = token();
+    if (!t) { setStatus("Enter your ADMIN_TOKEN first.", "error"); return; }
+    setStatus("Loading…");
+    try {
+      var res = await fetch(workerUrl("/api/intel/summary?days=" + encodeURIComponent(windowEl.value)), {
+        headers: { "Authorization": "Bearer " + t },
+      });
+      var data = null;
+      try { data = await res.json(); } catch (_) {}
+      if (res.status === 401) { setStatus("Unauthorized — check the token.", "error"); return; }
+      if (res.status === 503) { setStatus((data && data.error) || "Backend not configured.", "error"); return; }
+      if (!res.ok || !data || !data.success) { setStatus("Error: " + (data && data.error ? data.error : "HTTP " + res.status), "error"); return; }
+
+      render(data);
+      var n = data.totals.total_events || 0;
+      setStatus(n
+        ? ("Loaded " + fmtInt(n) + " events from the last " + data.window_days + " days.")
+        : "No events recorded yet for this window.");
+    } catch (e) {
+      setStatus("Network error: " + (e.message || e), "error");
+    }
+  }
+
+  function render(data) {
+    document.getElementById("intel-cards-section").hidden = false;
+    document.getElementById("intel-breakdown-section").hidden = false;
+    document.getElementById("intel-daily-section").hidden = false;
+
+    var t = data.totals;
+    document.getElementById("intel-stat-events").textContent  = fmtInt(t.total_events);
+    document.getElementById("intel-stat-wallets").textContent = fmtInt(t.unique_wallets);
+    document.getElementById("intel-stat-avg").textContent     = (t.avg_defi_score == null ? "—" : t.avg_defi_score);
+    document.getElementById("intel-stat-agg").textContent     = fmtPct(t.aggressive_percent);
+
+    var byType = data.by_event_type || {};
+    var typeBody = document.querySelector("#intel-by-type tbody");
+    typeBody.innerHTML = "";
+    ["score_render", "profiler_run", "approvals_scan"].forEach(function (k) {
+      var tr = document.createElement("tr");
+      tr.innerHTML = "<td>" + k + "</td><td style='text-align:right'>" + fmtInt(byType[k] || 0) + "</td>";
+      typeBody.appendChild(tr);
+    });
+
+    var pc = t.profile_counts || {};
+    var profBody = document.querySelector("#intel-by-profile tbody");
+    profBody.innerHTML = "";
+    ["Conservative", "Moderate", "Aggressive"].forEach(function (k) {
+      var tr = document.createElement("tr");
+      tr.innerHTML = "<td>" + k + "</td><td style='text-align:right'>" + fmtInt(pc[k] || 0) + "</td>";
+      profBody.appendChild(tr);
+    });
+
+    var dailyBody = document.querySelector("#intel-daily tbody");
+    dailyBody.innerHTML = "";
+    (data.daily || []).forEach(function (r) {
+      var avg = r.score_count ? Math.round(r.score_sum / r.score_count) : "—";
+      var tr  = document.createElement("tr");
+      tr.innerHTML =
+        "<td>" + r.date + "</td>" +
+        "<td>" + r.chain + "</td>" +
+        "<td style='text-align:right'>" + fmtInt(r.total_events) + "</td>" +
+        "<td style='text-align:right'>" + fmtInt(r.unique_wallets) + "</td>" +
+        "<td style='text-align:right'>" + avg + "</td>" +
+        "<td style='text-align:right'>" + fmtInt(r.aggressive_count) + "</td>" +
+        "<td style='text-align:right'>" + fmtInt(r.moderate_count) + "</td>" +
+        "<td style='text-align:right'>" + fmtInt(r.conservative_count) + "</td>" +
+        "<td style='text-align:right'>" + fmtInt(r.unlimited_approvals_count) + "</td>";
+      dailyBody.appendChild(tr);
+    });
+    if (!(data.daily || []).length) {
+      var tr = document.createElement("tr");
+      tr.innerHTML = "<td colspan='9' style='text-align:center;color:var(--defi-text-dim);padding:18px'>No daily aggregates in this window.</td>";
+      dailyBody.appendChild(tr);
+    }
+  }
+
+  function exportCsv() {
+    var t = token();
+    if (!t) { setStatus("Enter your ADMIN_TOKEN first.", "error"); return; }
+    var url = workerUrl("/api/intel/export?days=" + encodeURIComponent(windowEl.value));
+    setStatus("Requesting CSV…");
+    fetch(url, { headers: { "Authorization": "Bearer " + t } })
+      .then(function (r) {
+        if (r.status === 401) throw new Error("Unauthorized");
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.blob();
+      })
+      .then(function (blob) {
+        var a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "defiscoring-intel-" + new Date().toISOString().slice(0, 10) + ".csv";
+        document.body.appendChild(a); a.click(); a.remove();
+        setStatus("CSV downloaded.");
+      })
+      .catch(function (e) { setStatus("Export failed: " + (e.message || e), "error"); });
+  }
+
+  refreshEl.addEventListener("click", load);
+  exportEl.addEventListener("click", exportCsv);
+  // Auto-load if a token is already cached this tab.
+  if (tokenEl.value) load();
+})();
+</script>

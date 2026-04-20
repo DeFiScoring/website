@@ -1,0 +1,178 @@
+**✅ Here’s your exact “Replit AI Prompt Pack”** for **“Build basic score display + charts in dashboard”**
+
+Copy and paste these **one by one** into the Replit AI chat **in your main Jekyll Repl** (`DeFiScoring/website`).
+
+---
+
+### Prompt 1: Add Chart.js CDN to the dashboard page
+```
+In dashboard/index.md, add the Chart.js CDN script tag right before the closing </body> or at the bottom of the page (after the wallet-connect script).
+
+Use this exact script tag:
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+Also make sure the page already loads wallet-connect.js and profiler.js if they exist.
+```
+
+### Prompt 2: Create the score-display.js file
+```
+Create a new file exactly at assets/js/score-display.js with this complete, ready-to-use code:
+
+// assets/js/score-display.js
+// Basic DeFi Credit Score Display + Charts for Jekyll dashboard
+
+async function renderDeFiScore() {
+  const container = document.getElementById('defi-score-container');
+  if (!container) return;
+
+  if (!window.userWallet) {
+    container.innerHTML = `
+      <div class="text-center py-12">
+        <p class="text-xl text-gray-500 dark:text-gray-400">Connect your wallet above to see your DeFi Credit Score</p>
+      </div>
+    `;
+    return;
+  }
+
+  // Fake realistic score for demo (you can replace with real Worker call later)
+  const score = Math.floor(620 + Math.random() * 180); // 620–800 range
+  const grade = score >= 800 ? 'A+' : score >= 700 ? 'A' : score >= 650 ? 'B' : 'C';
+  const color = score >= 750 ? '#22c55e' : score >= 650 ? '#eab308' : '#ef4444';
+
+  // Score breakdown data
+  const breakdownData = {
+    labels: ['Payment History', 'Utilization', 'History Length', 'Credit Mix', 'Fraud Flags'],
+    values: [38, 33, 17, 8, 4]
+  };
+
+  // Historical score trend (last 6 months)
+  const historyLabels = ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'];
+  const historyData = [580, 610, 645, 680, 710, score];
+
+  container.innerHTML = `
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- Main Score Card -->
+      <div class="lg:col-span-1 bg-white dark:bg-gray-900 rounded-3xl shadow-xl p-8 text-center">
+        <h2 class="text-sm uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Your DeFi Credit Score</h2>
+        <div class="text-8xl font-bold" style="color: ${color}">${score}</div>
+        <div class="text-4xl font-semibold mt-1 mb-6">${grade}</div>
+        
+        <div class="relative w-40 h-40 mx-auto">
+          <svg class="w-40 h-40 -rotate-90" viewBox="0 0 42 42">
+            <circle cx="21" cy="21" r="15" fill="none" stroke="#e5e7eb" stroke-width="6"></circle>
+            <circle cx="21" cy="21" r="15" fill="none" stroke="${color}" stroke-width="6" 
+                    stroke-dasharray="${(score / 850) * 94} 94" stroke-linecap="round"></circle>
+          </svg>
+        </div>
+        
+        <button onclick="refreshScore()" 
+                class="mt-8 bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-2xl font-medium">
+          Refresh Score
+        </button>
+      </div>
+
+      <!-- Breakdown Chart -->
+      <div class="lg:col-span-1 bg-white dark:bg-gray-900 rounded-3xl shadow-xl p-8">
+        <h3 class="font-semibold mb-4">Score Breakdown</h3>
+        <canvas id="breakdownChart" class="w-full" height="280"></canvas>
+      </div>
+
+      <!-- History Chart -->
+      <div class="lg:col-span-1 bg-white dark:bg-gray-900 rounded-3xl shadow-xl p-8">
+        <h3 class="font-semibold mb-4">Score History (6 months)</h3>
+        <canvas id="historyChart" class="w-full" height="280"></canvas>
+      </div>
+    </div>
+  `;
+
+  // Create charts
+  setTimeout(() => {
+    // Breakdown bar chart
+    new Chart(document.getElementById('breakdownChart'), {
+      type: 'bar',
+      data: {
+        labels: breakdownData.labels,
+        datasets: [{
+          label: 'Weight %',
+          data: breakdownData.values,
+          backgroundColor: '#3b82f6',
+          borderRadius: 6
+        }]
+      },
+      options: { responsive: true, plugins: { legend: { display: false } } }
+    });
+
+    // History line chart
+    new Chart(document.getElementById('historyChart'), {
+      type: 'line',
+      data: {
+        labels: historyLabels,
+        datasets: [{
+          label: 'Score',
+          data: historyData,
+          borderColor: '#22c55e',
+          tension: 0.4,
+          borderWidth: 3,
+          pointRadius: 5
+        }]
+      },
+      options: { responsive: true, plugins: { legend: { display: false } } }
+    });
+  }, 100);
+}
+
+function refreshScore() {
+  renderDeFiScore();
+}
+
+// Make functions global so they can be called from markdown
+window.renderDeFiScore = renderDeFiScore;
+window.refreshScore = refreshScore;
+```
+
+### Prompt 3: Add the score display section to dashboard/index.md
+```
+Update dashboard/index.md and insert the full score display right after the wallet connect button / header section.
+
+Add this exact block:
+
+<h2 class="text-3xl font-bold mb-4">Your DeFi Credit Score</h2>
+<div id="defi-score-container" class="mb-12"></div>
+
+<script src="/assets/js/score-display.js"></script>
+
+<script>
+  // Auto-render score when page loads (after wallet connect)
+  window.addEventListener('load', () => {
+    // Small delay to let wallet-connect.js initialize
+    setTimeout(() => {
+      window.renderDeFiScore();
+    }, 800);
+  });
+</script>
+
+Make sure the wallet connect section is above this new score block.
+```
+
+### Prompt 4: Test the score display + charts
+```
+Save all files.
+The Jekyll server should auto-reload because of --watch.
+
+Test the following in the live preview:
+1. Connect wallet (using the existing wallet button)
+2. Confirm the score card appears with number, grade, progress circle, and two charts
+3. Click "Refresh Score" — it should update with a new random score
+4. Check dark mode works
+5. Tell me any styling issues so we can fix them with existing Liquid/Tailwind classes.
+```
+
+---
+
+**After you paste all 4 prompts:**
+
+You will have a **fully functional basic score display + two beautiful Chart.js graphs** live in your dashboard — completely static, no backend needed yet, and tied to the wallet connection you already built.
+
+Once Replit confirms it works, reply with **“Score display + charts done”** and I’ll immediately give you the next prompt pack for **“Create AI Worker Repl + deploy profiler”**.
+
+Let’s ship this visual score dashboard right now! Just paste the prompts one by one. 🚀

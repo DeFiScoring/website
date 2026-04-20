@@ -1,0 +1,64 @@
+To bridge the gap between your static Jekyll site and real-time DeFi data, you need a "Serverless Brain." By using **Cloudflare Workers**, you can fetch data, perform calculations, and cache results at the edge, so your website stays fast but the data stays fresh.
+
+Below is a precise, high-engineering prompt designed for the **Replit Agent** (or any LLM) to build this specific "DeFi Scoring Proxy."
+
+### 1. The Core Scoring Methodology (2026 Standard)
+Before prompting, we define the "Risk Score" ($S$) as a weighted index of three pillars:
+1.  **Trust ($T$):** Audit count and protocol age (sourced via Etherscan/DeFiLlama).
+2.  **Liveness ($L$):** TVL-to-MarketCap ratio and 24h volume (sourced via DeFiLlama).
+3.  **Security ($Sec$):** Presence of a Timelock and Decentralization of admin keys.
+
+$$S = (0.4 \times T) + (0.3 \times L) + (0.3 \times Sec)$$
+
+---
+
+### 2. The Replit Agent Master Prompt
+
+Copy and paste this prompt into Replit to generate the Worker code and the Jekyll integration:
+
+> **"Build a DeFi Risk Scoring Proxy using Cloudflare Workers and JavaScript.**
+>
+> **Objective:** Create a middleware API that fetches live protocol data, calculates a safety score, and serves it to a static Jekyll frontend.
+>
+> **Task 1: The Worker Logic**
+> * Develop a Cloudflare Worker that listens on `/api/score/:protocol`.
+> * Integrate the **DeFiLlama API** (`https://api.llama.fi/protocol/{protocol}`) to fetch TVL, Change_7D, and Audit history.
+> * Integrate **Etherscan API** to check the 'Age' of the smart contract (first transaction date).
+> * **Scoring Algorithm:** Implement a function that returns a score (0-100). Reward protocols older than 2 years and those with 2+ audits. Penalize protocols with high TVL volatility (>20% drop in 7 days).
+> * **Caching:** Use **Cloudflare KV** to store the results for 6 hours to avoid hitting API rate limits.
+>
+> **Task 2: Web3 Connectivity**
+> * Configure the Worker to use a **Cloudflare Web3 Gateway** as the RPC provider for any direct on-chain checks (like checking if a Timelock contract is active).
+>
+> **Task 3: Jekyll Frontend Integration**
+> * Provide a lightweight **Vanilla JS (Fetch API)** or **Alpine.js** snippet that I can paste into my Jekyll `_layouts/default.html`.
+> * The script should:
+>     1. Look for a `data-protocol` attribute on the page.
+>     2. Fetch the score from the Worker.
+>     3. Dynamically update a 'Risk Badge' (Green for 80+, Yellow for 50-79, Red for <50).
+>
+> **Constraint:** Use the latest Cloudflare Workers `wrangler.jsonc` format and ensure the code handles CORS so my GitHub Pages domain can access the API."
+
+---
+
+### 3. Architecture Visualization
+Understanding the flow is key to debugging. Your Jekyll site remains static, but the "Score" becomes a dynamic overlay:
+
+
+
+---
+
+### 4. How to Connect Your Cloudflare Services
+Once Replit generates the code, follow these steps to "wire" it up:
+
+| Step | Action | Why? |
+| :--- | :--- | :--- |
+| **1. Web3 Gateway** | Go to Cloudflare Dashboard > Web3. Create an **Ethereum Gateway**. | This replaces expensive Infura/Alchemy keys for reading on-chain data. |
+| **2. KV Namespace** | Create a KV namespace named `DEFI_CACHE`. | This keeps your site fast by not re-calculating scores on every single click. |
+| **3. Jekyll Data** | Add `protocol_id: uniswap` to your Jekyll page frontmatter. | This tells your JS which protocol to "ask" the Worker about. |
+| **4. Cloudflare Rules** | Set a **CORS Header** rule in Cloudflare. | This allows `yourname.github.io` to talk to `api.yourdomain.com`. |
+
+### 5. Pro-Tip: "The 2026 Competitive Edge"
+To make your scores high-demand, have the Worker check for **"Liquidity Concentration."** If 80% of a protocol's TVL is held by 5 wallets, the "Security" ($Sec$) score should automatically drop by 30 points. This "Whale Alert" is a feature most free scoring sites currently ignore.
+
+**Would you like me to refine the scoring math to specifically penalize protocols that have "unverified" source code on Etherscan?**

@@ -1,0 +1,41 @@
+{%- comment -%}
+  DeFiScoring – wallet-check.html
+  Drop-in "Connect Wallet → Risk Exposure" widget. Use anywhere in a Jekyll
+  page. Self-contained: pulls in wallet-connect.js + risk-scanner.js if not
+  already loaded by the layout. Styles live in assets/js/risk-scanner.js.
+{%- endcomment -%}
+<div class="defi-scanner" id="defi-scanner">
+  <div class="defi-scanner__header">
+    <div>
+      <h3 class="defi-scanner__title">Wallet risk exposure</h3>
+      <p class="defi-scanner__subtitle">
+        Connect a wallet to scan your token interactions across Ethereum,
+        Arbitrum, and Polygon. We cross-reference each contract against the
+        DeFiScoring catalog and flag positions in protocols below band 60.
+      </p>
+    </div>
+    <div class="defi-scanner__actions">
+      <button type="button" class="defi-btn defi-btn--primary" id="defi-scanner-connect">Connect Wallet</button>
+      <button type="button" class="defi-btn defi-btn--ghost" id="defi-scanner-rescan" hidden>Rescan</button>
+      <button type="button" class="defi-btn defi-btn--ghost" id="defi-scanner-disconnect" hidden>Disconnect</button>
+    </div>
+  </div>
+
+  <div class="defi-scanner__wallet" id="defi-scanner-wallet" hidden></div>
+  <div class="defi-scanner__notice" id="defi-scanner-notice" hidden></div>
+
+  <div class="defi-scanner__verdict" id="defi-scanner-verdict" hidden></div>
+
+  <div class="defi-scanner__results" id="defi-scanner-results" hidden>
+    <div class="defi-scanner__results-header">
+      <span>Protocol</span>
+      <span>Chain</span>
+      <span>Score</span>
+      <span>Status</span>
+    </div>
+    <div id="defi-scanner-rows"></div>
+  </div>
+</div>
+
+<script src="{{ '/assets/js/wallet-connect.js' | relative_url }}" defer></script>
+<script src="{{ '/assets/js/risk-scanner.js' | relative_url }}" defer></script>

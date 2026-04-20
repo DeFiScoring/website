@@ -1,0 +1,2680 @@
+/workspace$ git ls-files | grep .github/workflows
+.github/workflows/refresh-scores.yml
+~/workspace$ git push origin main --force
+Enumerating objects: 240, done.
+Counting objects: 100% (240/240), done.
+Delta compression using up to 8 threads
+Compressing objects: 100% (173/173), done.
+Writing objects: 100% (198/198), 124.90 KiB | 10.41 MiB/s, done.
+Total 198 (delta 124), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (124/124), completed with 26 local objects.
+To https://github.com/DeFiScoring/website
+ ! [remote rejected] main -> main (refusing to allow an OAuth App to create or update workflow `.github/workflows/refresh-scores.yml` without `workflow` scope)
+error: failed to push some refs to 'https://github.com/DeFiScoring/website'
+~/workspace$ rm -rf .git
+git init
+git add .
+git commit -m "Clean init (no workflows)"
+git remote add origin https://github.com/DeFiScoring/website.git
+git push -u origin main --force
+Initialized empty Git repository in /home/runner/workspace/.git/
+[main (root-commit) 611b907] Clean init (no workflows)
+ 2258 files changed, 205729 insertions(+)
+ create mode 100644 .github/workflows/refresh-scores.yml
+ create mode 100644 .gitignore
+ create mode 100644 .replit
+ create mode 100644 .ruby-version
+ create mode 100644 .wranglerignore
+ create mode 100644 404.html
+ create mode 100644 CNAME
+ create mode 100644 Gemfile
+ create mode 100644 Gemfile.lock
+ create mode 100644 README.md
+ create mode 100644 _audits/aave-v3-openzeppelin.md
+ create mode 100644 _audits/aave-v3-trail-of-bits.md
+ create mode 100644 _audits/compound-v3-chainsecurity.md
+ create mode 100644 _audits/compound-v3-openzeppelin.md
+ create mode 100644 _audits/uniswap-v3-abdk.md
+ create mode 100644 _audits/uniswap-v3-trail-of-bits.md
+ create mode 100644 _config.yml
+ create mode 100644 _data/protocols.yml
+ create mode 100644 _data/risk_profiles.yml
+ create mode 100644 _data/scores.yml
+ create mode 100644 _includes/dashboard/intel-consent.html
+ create mode 100644 _includes/dashboard/sidebar.html
+ create mode 100644 _includes/dashboard/wallet-bar.html
+ create mode 100644 _includes/health-score.html
+ create mode 100644 _includes/wallet-check.html
+ create mode 100644 _layouts/audit.html
+ create mode 100644 _layouts/dashboard.html
+ create mode 100644 _layouts/default.html
+ create mode 100644 assets/css/bootstrap.min.css
+ create mode 100644 assets/css/bootstrap.min.css.map
+ create mode 100644 assets/css/color/aqua.css
+ create mode 100644 assets/css/color/blue.css
+ create mode 100644 assets/css/color/brown.css
+ create mode 100644 assets/css/color/cobalt.css
+ create mode 100644 assets/css/color/green.css
+ create mode 100644 assets/css/color/hibiscus.css
+ create mode 100644 assets/css/color/leaf.css
+ create mode 100644 assets/css/color/meander.css
+ create mode 100644 assets/css/color/orange.css
+ create mode 100644 assets/css/color/pink.css
+ create mode 100644 assets/css/color/purple.css
+ create mode 100644 assets/css/color/red.css
+ create mode 100644 assets/css/color/rose.css
+ create mode 100644 assets/css/color/sky.css
+ create mode 100644 assets/css/color/teal.css
+ create mode 100644 assets/css/color/violet.css
+ create mode 100644 assets/css/color/yellow.css
+ create mode 100644 assets/css/dashboard.css
+ create mode 100644 assets/css/font/font1.css
+ create mode 100644 assets/css/font/font2.css
+ create mode 100644 assets/css/font/font3.css
+ create mode 100644 assets/css/font/font4.css
+ create mode 100644 assets/css/font/font5.css
+ create mode 100644 assets/css/landing.css
+ create mode 100644 assets/css/plugins.css
+ create mode 100644 assets/css/style.css
+ create mode 100644 assets/data/protocols.json
+ create mode 100644 assets/defiscoring-logo-100x100.png
+ create mode 100644 assets/defiscoring-logo-2_1776667771148.png
+ create mode 100644 assets/defiscoring-logo-white-100x100.png
+ create mode 100644 assets/defiscoring-logo-white-2_1776667771148.png
+ create mode 100644 assets/favicon/apple-touch-icon.png
+ create mode 100644 assets/favicon/favicon-96x96.png
+ create mode 100644 assets/favicon/favicon.ico
+ create mode 100644 assets/images/art/a1.webp
+ create mode 100644 assets/images/art/a10.webp
+ create mode 100644 assets/images/art/a11.webp
+ create mode 100644 assets/images/art/a12.webp
+ create mode 100644 assets/images/art/a13.webp
+ create mode 100644 assets/images/art/a14.webp
+ create mode 100644 assets/images/art/a15.webp
+ create mode 100644 assets/images/art/a2.webp
+ create mode 100644 assets/images/art/a3.webp
+ create mode 100644 assets/images/art/a4.webp
+ create mode 100644 assets/images/art/a5.webp
+ create mode 100644 assets/images/art/a6.webp
+ create mode 100644 assets/images/art/a7.webp
+ create mode 100644 assets/images/art/a8.webp
+ create mode 100644 assets/images/art/a9.webp
+ create mode 100644 assets/images/art/about.webp
+ create mode 100644 assets/images/art/about10.webp
+ create mode 100644 assets/images/art/about11.webp
+ create mode 100644 assets/images/art/about12.webp
+ create mode 100644 assets/images/art/about13.webp
+ create mode 100644 assets/images/art/about14.webp
+ create mode 100644 assets/images/art/about15.webp
+ create mode 100644 assets/images/art/about2.webp
+ create mode 100644 assets/images/art/about3.webp
+ create mode 100644 assets/images/art/about4.webp
+ create mode 100644 assets/images/art/about5.webp
+ create mode 100644 assets/images/art/about6.webp
+ create mode 100644 assets/images/art/about7.webp
+ create mode 100644 assets/images/art/about8.webp
+ create mode 100644 assets/images/art/about9.webp
+ create mode 100644 assets/images/art/app.webp
+ create mode 100644 assets/images/art/b1.webp
+ create mode 100644 assets/images/art/b10.webp
+ create mode 100644 assets/images/art/b11.webp
+ create mode 100644 assets/images/art/b12.webp
+ create mode 100644 assets/images/art/b13.webp
+ create mode 100644 assets/images/art/b14.webp
+ create mode 100644 assets/images/art/b15.webp
+ create mode 100644 assets/images/art/b16.webp
+ create mode 100644 assets/images/art/b17.webp
+ create mode 100644 assets/images/art/b18.webp
+ create mode 100644 assets/images/art/b19.webp
+ create mode 100644 assets/images/art/b2.webp
+ create mode 100644 assets/images/art/b3.webp
+ create mode 100644 assets/images/art/b4.webp
+ create mode 100644 assets/images/art/b5.webp
+ create mode 100644 assets/images/art/b6.webp
+ create mode 100644 assets/images/art/b7.webp
+ create mode 100644 assets/images/art/b8.webp
+ create mode 100644 assets/images/art/b9.webp
+ create mode 100644 assets/images/art/bg1.webp
+ create mode 100644 assets/images/art/bg10.webp
+ create mode 100644 assets/images/art/bg11.webp
+ create mode 100644 assets/images/art/bg12.webp
+ create mode 100644 assets/images/art/bg13.webp
+ create mode 100644 assets/images/art/bg14.webp
+ create mode 100644 assets/images/art/bg15.webp
+ create mode 100644 assets/images/art/bg16.webp
+ create mode 100644 assets/images/art/bg17.webp
+ create mode 100644 assets/images/art/bg18.webp
+ create mode 100644 assets/images/art/bg19.webp
+ create mode 100644 assets/images/art/bg2.webp
+ create mode 100644 assets/images/art/bg20.webp
+ create mode 100644 assets/images/art/bg21.webp
+ create mode 100644 assets/images/art/bg22.webp
+ create mode 100644 assets/images/art/bg23.webp
+ create mode 100644 assets/images/art/bg24.webp
+ create mode 100644 assets/images/art/bg25.webp
+ create mode 100644 assets/images/art/bg26.webp
+ create mode 100644 assets/images/art/bg27.webp
+ create mode 100644 assets/images/art/bg28.webp
+ create mode 100644 assets/images/art/bg29.webp
+ create mode 100644 assets/images/art/bg3.webp
+ create mode 100644 assets/images/art/bg30.webp
+ create mode 100644 assets/images/art/bg31.webp
+ create mode 100644 assets/images/art/bg4.webp
+ create mode 100644 assets/images/art/bg5.webp
+ create mode 100644 assets/images/art/bg6.webp
+ create mode 100644 assets/images/art/bg7.webp
+ create mode 100644 assets/images/art/bg8.webp
+ create mode 100644 assets/images/art/bg9.webp
+ create mode 100644 assets/images/art/bgi1-full.webp
+ create mode 100644 assets/images/art/bgi1.webp
+ create mode 100644 assets/images/art/bgi2-full.webp
+ create mode 100644 assets/images/art/bgi2.webp
+ create mode 100644 assets/images/art/bgi3-full.webp
+ create mode 100644 assets/images/art/bgi3.webp
+ create mode 100644 assets/images/art/bgi4-full.webp
+ create mode 100644 assets/images/art/bgi4.webp
+ create mode 100644 assets/images/art/bgi5-full.webp
+ create mode 100644 assets/images/art/bgi5.webp
+ create mode 100644 assets/images/art/blob-image.webp
+ create mode 100644 assets/images/art/bs1.webp
+ create mode 100644 assets/images/art/bs2.webp
+ create mode 100644 assets/images/art/bs3.webp
+ create mode 100644 assets/images/art/c8@2x.webp
+ create mode 100644 assets/images/art/cf1-full.webp
+ create mode 100644 assets/images/art/cf1.webp
+ create mode 100644 assets/images/art/cf2-full.webp
+ create mode 100644 assets/images/art/cf2.webp
+ create mode 100644 assets/images/art/cf3-full.webp
+ create mode 100644 assets/images/art/cf3.webp
+ create mode 100644 assets/images/art/cf4-full.webp
+ create mode 100644 assets/images/art/cf4.webp
+ create mode 100644 assets/images/art/cf5-full.webp
+ create mode 100644 assets/images/art/cf5.webp
+ create mode 100644 assets/images/art/cf6-full.webp
+ create mode 100644 assets/images/art/cf6.webp
+ create mode 100644 assets/images/art/cf7-full.webp
+ create mode 100644 assets/images/art/cf7.webp
+ create mode 100644 assets/images/art/cf8-full.webp
+ create mode 100644 assets/images/art/cf8.webp
+ create mode 100644 assets/images/art/cf9-full.webp
+ create mode 100644 assets/images/art/cf9.webp
+ create mode 100644 assets/images/art/cw1.webp
+ create mode 100644 assets/images/art/cw2.webp
+ create mode 100644 assets/images/art/cw3.webp
+ create mode 100644 assets/images/art/cw4.webp
+ create mode 100644 assets/images/art/cw5.webp
+ create mode 100644 assets/images/art/cw6.webp
+ create mode 100644 assets/images/art/cw7.webp
+ create mode 100644 assets/images/art/cw8.webp
+ create mode 100644 assets/images/art/cw9.webp
+ create mode 100644 assets/images/art/f1.webp
+ create mode 100644 assets/images/art/f2.webp
+ create mode 100644 assets/images/art/f3.webp
+ create mode 100644 assets/images/art/fc1.webp
+ create mode 100644 assets/images/art/fc2.webp
+ create mode 100644 assets/images/art/fc3.webp
+ create mode 100644 assets/images/art/fc4.webp
+ create mode 100644 assets/images/art/fc5.webp
+ create mode 100644 assets/images/art/fc6.webp
+ create mode 100644 assets/images/art/fc7.webp
+ create mode 100644 assets/images/art/fp1.webp
+ create mode 100644 assets/images/art/fp10.webp
+ create mode 100644 assets/images/art/fp11.webp
+ create mode 100644 assets/images/art/fp12.webp
+ create mode 100644 assets/images/art/fp13.webp
+ create mode 100644 assets/images/art/fp14.webp
+ create mode 100644 assets/images/art/fp15.webp
+ create mode 100644 assets/images/art/fp2.webp
+ create mode 100644 assets/images/art/fp3.webp
+ create mode 100644 assets/images/art/fp4.webp
+ create mode 100644 assets/images/art/fp5.webp
+ create mode 100644 assets/images/art/fp6.webp
+ create mode 100644 assets/images/art/fp7.webp
+ create mode 100644 assets/images/art/fp8.webp
+ create mode 100644 assets/images/art/fp9.webp
+ create mode 100644 assets/images/art/fs1.webp
+ create mode 100644 assets/images/art/fs2.webp
+ create mode 100644 assets/images/art/fs3.webp
+ create mode 100644 assets/images/art/fs4.webp
+ create mode 100644 assets/images/art/fs5.webp
+ create mode 100644 assets/images/art/fs6.webp
+ create mode 100644 assets/images/art/fs7.webp
+ create mode 100644 assets/images/art/g1.webp
+ create mode 100644 assets/images/art/g2.webp
+ create mode 100644 assets/images/art/g3.webp
+ create mode 100644 assets/images/art/h1.webp
+ create mode 100644 assets/images/art/h2.webp
+ create mode 100644 assets/images/art/h3.webp
+ create mode 100644 assets/images/art/h4.webp
+ create mode 100644 assets/images/art/h5.webp
+ create mode 100644 assets/images/art/h6.webp
+ create mode 100644 assets/images/art/imac.webp
+ create mode 100644 assets/images/art/iphone.webp
+ create mode 100644 assets/images/art/iphone2.webp
+ create mode 100644 assets/images/art/iphone3.webp
+ create mode 100644 assets/images/art/iphone4.webp
+ create mode 100644 assets/images/art/l1-full.webp
+ create mode 100644 assets/images/art/l1.webp
+ create mode 100644 assets/images/art/l2-full.webp
+ create mode 100644 assets/images/art/l2.webp
+ create mode 100644 assets/images/art/l3.webp
+ create mode 100644 assets/images/art/l4.webp
+ create mode 100644 assets/images/art/m1.webp
+ create mode 100644 assets/images/art/m10.webp
+ create mode 100644 assets/images/art/m11.webp
+ create mode 100644 assets/images/art/m12.webp
+ create mode 100644 assets/images/art/m2.webp
+ create mode 100644 assets/images/art/m3.webp
+ create mode 100644 assets/images/art/m4.webp
+ create mode 100644 assets/images/art/m5.webp
+ create mode 100644 assets/images/art/m6.webp
+ create mode 100644 assets/images/art/m7.webp
+ create mode 100644 assets/images/art/m8.webp
+ create mode 100644 assets/images/art/m9.webp
+ create mode 100644 assets/images/art/macbook.webp
+ create mode 100644 assets/images/art/macbook2.webp
+ create mode 100644 assets/images/art/macbook@2x.webp
+ create mode 100644 assets/images/art/map.webp
+ create mode 100644 assets/images/art/mockup1.webp
+ create mode 100644 assets/images/art/mockup2.webp
+ create mode 100644 assets/images/art/ms1.webp
+ create mode 100644 assets/images/art/ms10.webp
+ create mode 100644 assets/images/art/ms11.webp
+ create mode 100644 assets/images/art/ms12.webp
+ create mode 100644 assets/images/art/ms13.webp
+ create mode 100644 assets/images/art/ms14.webp
+ create mode 100644 assets/images/art/ms15.webp
+ create mode 100644 assets/images/art/ms2.webp
+ create mode 100644 assets/images/art/ms3.webp
+ create mode 100644 assets/images/art/ms4.webp
+ create mode 100644 assets/images/art/ms5.webp
+ create mode 100644 assets/images/art/ms6.webp
+ create mode 100644 assets/images/art/ms7.webp
+ create mode 100644 assets/images/art/ms8.webp
+ create mode 100644 assets/images/art/ms9.webp
+ create mode 100644 assets/images/art/p1-full.webp
+ create mode 100644 assets/images/art/p1.webp
+ create mode 100644 assets/images/art/p10-full.webp
+ create mode 100644 assets/images/art/p10.webp
+ create mode 100644 assets/images/art/p11-full.webp
+ create mode 100644 assets/images/art/p11.webp
+ create mode 100644 assets/images/art/p12-full.webp
+ create mode 100644 assets/images/art/p12.webp
+ create mode 100644 assets/images/art/p2-full.webp
+ create mode 100644 assets/images/art/p2.webp
+ create mode 100644 assets/images/art/p3-full.webp
+ create mode 100644 assets/images/art/p3.webp
+ create mode 100644 assets/images/art/p4-full.webp
+ create mode 100644 assets/images/art/p4.webp
+ create mode 100644 assets/images/art/p5-full.webp
+ create mode 100644 assets/images/art/p5.webp
+ create mode 100644 assets/images/art/p6-full.webp
+ create mode 100644 assets/images/art/p6.webp
+ create mode 100644 assets/images/art/p7-full.webp
+ create mode 100644 assets/images/art/p7.webp
+ create mode 100644 assets/images/art/p8-full.webp
+ create mode 100644 assets/images/art/p8.webp
+ create mode 100644 assets/images/art/p9-full.webp
+ create mode 100644 assets/images/art/p9.webp
+ create mode 100644 assets/images/art/pattern.webp
+ create mode 100644 assets/images/art/pf1-full.webp
+ create mode 100644 assets/images/art/pf1.webp
+ create mode 100644 assets/images/art/pf10-full.webp
+ create mode 100644 assets/images/art/pf10.webp
+ create mode 100644 assets/images/art/pf11-full.webp
+ create mode 100644 assets/images/art/pf11.webp
+ create mode 100644 assets/images/art/pf12-full.webp
+ create mode 100644 assets/images/art/pf12.webp
+ create mode 100644 assets/images/art/pf13-full.webp
+ create mode 100644 assets/images/art/pf13.webp
+ create mode 100644 assets/images/art/pf2-full.webp
+ create mode 100644 assets/images/art/pf2.webp
+ create mode 100644 assets/images/art/pf3-full.webp
+ create mode 100644 assets/images/art/pf3.webp
+ create mode 100644 assets/images/art/pf4-full.webp
+ create mode 100644 assets/images/art/pf4.webp
+ create mode 100644 assets/images/art/pf5-full.webp
+ create mode 100644 assets/images/art/pf5.webp
+ create mode 100644 assets/images/art/pf6-full.webp
+ create mode 100644 assets/images/art/pf6.webp
+ create mode 100644 assets/images/art/pf7-full.webp
+ create mode 100644 assets/images/art/pf7.webp
+ create mode 100644 assets/images/art/pf8-full.webp
+ create mode 100644 assets/images/art/pf8.webp
+ create mode 100644 assets/images/art/pf9-full.webp
+ create mode 100644 assets/images/art/pf9.webp
+ create mode 100644 assets/images/art/pp1.webp
+ create mode 100644 assets/images/art/pp2-1.webp
+ create mode 100644 assets/images/art/pp2-2.webp
+ create mode 100644 assets/images/art/pp2-3.webp
+ create mode 100644 assets/images/art/pp2.webp
+ create mode 100644 assets/images/art/pp3-1-full.webp
+ create mode 100644 assets/images/art/pp3-1.webp
+ create mode 100644 assets/images/art/pp3-2-full.webp
+ create mode 100644 assets/images/art/pp3-2.webp
+ create mode 100644 assets/images/art/pp3-3-full.webp
+ create mode 100644 assets/images/art/pp3-3.webp
+ create mode 100644 assets/images/art/pp3-4-full.webp
+ create mode 100644 assets/images/art/pp3-4.webp
+ create mode 100644 assets/images/art/pp3-5-full.webp
+ create mode 100644 assets/images/art/pp3-5.webp
+ create mode 100644 assets/images/art/pp3-6-full.webp
+ create mode 100644 assets/images/art/pp3-6.webp
+ create mode 100644 assets/images/art/pp3.webp
+ create mode 100644 assets/images/art/pp4-1.webp
+ create mode 100644 assets/images/art/pp4-2.webp
+ create mode 100644 assets/images/art/pp4-3.webp
+ create mode 100644 assets/images/art/pp4-4.webp
+ create mode 100644 assets/images/art/pp4-5.webp
+ create mode 100644 assets/images/art/pp4-6.webp
+ create mode 100644 assets/images/art/pp4.webp
+ create mode 100644 assets/images/art/pp5-1.webp
+ create mode 100644 assets/images/art/pp5-2.webp
+ create mode 100644 assets/images/art/pp5-3.webp
+ create mode 100644 assets/images/art/pp5.webp
+ create mode 100644 assets/images/art/pp6.webp
+ create mode 100644 assets/images/art/pp7.webp
+ create mode 100644 assets/images/art/rocket1.webp
+ create mode 100644 assets/images/art/rocket2.webp
+ create mode 100644 assets/images/art/rocket3.webp
+ create mode 100644 assets/images/art/rocket4.webp
+ create mode 100644 assets/images/art/s1-2.webp
+ create mode 100644 assets/images/art/s1.webp
+ create mode 100644 assets/images/art/s10.webp
+ create mode 100644 assets/images/art/s11.webp
+ create mode 100644 assets/images/art/s12.webp
+ create mode 100644 assets/images/art/s2-2.webp
+ create mode 100644 assets/images/art/s2.webp
+ create mode 100644 assets/images/art/s3-2.webp
+ create mode 100644 assets/images/art/s3.webp
+ create mode 100644 assets/images/art/s4-2.webp
+ create mode 100644 assets/images/art/s4.webp
+ create mode 100644 assets/images/art/s5-2.webp
+ create mode 100644 assets/images/art/s5.webp
+ create mode 100644 assets/images/art/s6-2.webp
+ create mode 100644 assets/images/art/s6.webp
+ create mode 100644 assets/images/art/s7-2.webp
+ create mode 100644 assets/images/art/s7.webp
+ create mode 100644 assets/images/art/s8-2.webp
+ create mode 100644 assets/images/art/s8.webp
+ create mode 100644 assets/images/art/s9-2.webp
+ create mode 100644 assets/images/art/s9.webp
+ create mode 100644 assets/images/art/slider-bg1.webp
+ create mode 100644 assets/images/art/slider-bg10.webp
+ create mode 100644 assets/images/art/slider-bg11.webp
+ create mode 100644 assets/images/art/slider-bg12.webp
+ create mode 100644 assets/images/art/slider-bg13.webp
+ create mode 100644 assets/images/art/slider-bg14.webp
+ create mode 100644 assets/images/art/slider-bg15.webp
+ create mode 100644 assets/images/art/slider-bg16.webp
+ create mode 100644 assets/images/art/slider-bg17.webp
+ create mode 100644 assets/images/art/slider-bg18.webp
+ create mode 100644 assets/images/art/slider-bg19.webp
+ create mode 100644 assets/images/art/slider-bg2.webp
+ create mode 100644 assets/images/art/slider-bg20.webp
+ create mode 100644 assets/images/art/slider-bg3.webp
+ create mode 100644 assets/images/art/slider-bg4.webp
+ create mode 100644 assets/images/art/slider-bg5.webp
+ create mode 100644 assets/images/art/slider-bg6.webp
+ create mode 100644 assets/images/art/slider-bg7.webp
+ create mode 100644 assets/images/art/slider-bg8.webp
+ create mode 100644 assets/images/art/slider-bg9.webp
+ create mode 100644 assets/images/art/ss1.webp
+ create mode 100644 assets/images/art/ss2.webp
+ create mode 100644 assets/images/art/ss3.webp
+ create mode 100644 assets/images/art/t1.webp
+ create mode 100644 assets/images/art/t2.webp
+ create mode 100644 assets/images/art/t3.webp
+ create mode 100644 assets/images/art/t4.webp
+ create mode 100644 assets/images/art/t5.webp
+ create mode 100644 assets/images/art/t6.webp
+ create mode 100644 assets/images/art/tb1.webp
+ create mode 100644 assets/images/art/tb10.webp
+ create mode 100644 assets/images/art/tb11.webp
+ create mode 100644 assets/images/art/tb12.webp
+ create mode 100644 assets/images/art/tb13.webp
+ create mode 100644 assets/images/art/tb2.webp
+ create mode 100644 assets/images/art/tb3.webp
+ create mode 100644 assets/images/art/tb4.webp
+ create mode 100644 assets/images/art/tb5.webp
+ create mode 100644 assets/images/art/tb6.webp
+ create mode 100644 assets/images/art/tb7.webp
+ create mode 100644 assets/images/art/tb8.webp
+ create mode 100644 assets/images/art/tb9.webp
+ create mode 100644 assets/images/art/te1.webp
+ create mode 100644 assets/images/art/te2.webp
+ create mode 100644 assets/images/art/te3.webp
+ create mode 100644 assets/images/art/te4.webp
+ create mode 100644 assets/images/art/te5.webp
+ create mode 100644 assets/images/art/te6.webp
+ create mode 100644 assets/images/art/u1.webp
+ create mode 100644 assets/images/art/u2.webp
+ create mode 100644 assets/images/art/u3.webp
+ create mode 100644 assets/images/art/u4.webp
+ create mode 100644 assets/images/art/ui1.webp
+ create mode 100644 assets/images/art/ui2.webp
+ create mode 100644 assets/images/art/ui3.webp
+ create mode 100644 assets/images/art/ui4.webp
+ create mode 100644 assets/images/art/ui5.webp
+ create mode 100644 assets/images/art/ui6.webp
+ create mode 100644 assets/images/art/ui7.webp
+ create mode 100644 assets/images/art/ui8.webp
+ create mode 100644 assets/images/art/woman.webp
+ create mode 100644 assets/images/art/z1.svg
+ create mode 100644 assets/images/art/z2.svg
+ create mode 100644 assets/images/art/z3.svg
+ create mode 100644 assets/images/art/z4.svg
+ create mode 100644 assets/images/art/z5.svg
+ create mode 100644 assets/images/art/z6.svg
+ create mode 100644 assets/images/art/z7.svg
+ create mode 100644 assets/images/art/z8.svg
+ create mode 100644 assets/images/authors/about.webp
+ create mode 100644 assets/images/blob/blob1.svg
+ create mode 100644 assets/images/blob/blob10.svg
+ create mode 100644 assets/images/blob/blob11.svg
+ create mode 100644 assets/images/blob/blob12.svg
+ create mode 100644 assets/images/blob/blob13.svg
+ create mode 100644 assets/images/blob/blob14.svg
+ create mode 100644 assets/images/blob/blob15.svg
+ create mode 100644 assets/images/blob/blob2.svg
+ create mode 100644 assets/images/blob/blob3.svg
+ create mode 100644 assets/images/blob/blob4.svg
+ create mode 100644 assets/images/blob/blob5.svg
+ create mode 100644 assets/images/blob/blob6.svg
+ create mode 100644 assets/images/blob/blob7.svg
+ create mode 100644 assets/images/blob/blob8.svg
+ create mode 100644 assets/images/blob/blob9.svg
+ create mode 100644 assets/images/concept/bg1.svg
+ create mode 100644 assets/images/concept/bg2.svg
+ create mode 100644 assets/images/concept/concept1.webp
+ create mode 100644 assets/images/concept/concept10.webp
+ create mode 100644 assets/images/concept/concept10@2x.webp
+ create mode 100644 assets/images/concept/concept11.webp
+ create mode 100644 assets/images/concept/concept11@2x.webp
+ create mode 100644 assets/images/concept/concept12.webp
+ create mode 100644 assets/images/concept/concept12@2x.webp
+ create mode 100644 assets/images/concept/concept13.webp
+ create mode 100644 assets/images/concept/concept13@2x.webp
+ create mode 100644 assets/images/concept/concept14.webp
+ create mode 100644 assets/images/concept/concept14@2x.webp
+ create mode 100644 assets/images/concept/concept15.webp
+ create mode 100644 assets/images/concept/concept15@2x.webp
+ create mode 100644 assets/images/concept/concept16.webp
+ create mode 100644 assets/images/concept/concept16@2x.webp
+ create mode 100644 assets/images/concept/concept17.webp
+ create mode 100644 assets/images/concept/concept17@2x.webp
+ create mode 100644 assets/images/concept/concept18.webp
+ create mode 100644 assets/images/concept/concept18@2x.webp
+ create mode 100644 assets/images/concept/concept19.webp
+ create mode 100644 assets/images/concept/concept19@2x.webp
+ create mode 100644 assets/images/concept/concept1@2x.webp
+ create mode 100644 assets/images/concept/concept2.webp
+ create mode 100644 assets/images/concept/concept20.webp
+ create mode 100644 assets/images/concept/concept21.webp
+ create mode 100644 assets/images/concept/concept22.webp
+ create mode 100644 assets/images/concept/concept23.webp
+ create mode 100644 assets/images/concept/concept23@2x.webp
+ create mode 100644 assets/images/concept/concept24.webp
+ create mode 100644 assets/images/concept/concept24@2x.webp
+ create mode 100644 assets/images/concept/concept25.webp
+ create mode 100644 assets/images/concept/concept25@2x.webp
+ create mode 100644 assets/images/concept/concept26.webp
+ create mode 100644 assets/images/concept/concept26@2x.webp
+ create mode 100644 assets/images/concept/concept2@2x.webp
+ create mode 100644 assets/images/concept/concept3.webp
+ create mode 100644 assets/images/concept/concept3@2x.webp
+ create mode 100644 assets/images/concept/concept4.webp
+ create mode 100644 assets/images/concept/concept4@2x.webp
+ create mode 100644 assets/images/concept/concept5.webp
+ create mode 100644 assets/images/concept/concept5@2x.webp
+ create mode 100644 assets/images/concept/concept6.webp
+ create mode 100644 assets/images/concept/concept6@2x.webp
+ create mode 100644 assets/images/concept/concept7.webp
+ create mode 100644 assets/images/concept/concept7@2x.webp
+ create mode 100644 assets/images/concept/concept8.webp
+ create mode 100644 assets/images/concept/concept8@2x.webp
+ create mode 100644 assets/images/concept/concept9.webp
+ create mode 100644 assets/images/concept/concept9@2x.webp
+ create mode 100644 assets/images/dummy.webp
+ create mode 100644 assets/images/favicon.webp
+ create mode 100644 assets/images/icon/co-book.webp
+ create mode 100644 assets/images/icon/co-calendar.webp
+ create mode 100644 assets/images/icon/co-call-3.webp
+ create mode 100644 assets/images/icon/co-call-4.webp
+ create mode 100644 assets/images/icon/co-chat-1.webp
+ create mode 100644 assets/images/icon/co-email-5.webp
+ create mode 100644 assets/images/icon/co-email.webp
+ create mode 100644 assets/images/icon/co-location.webp
+ create mode 100644 assets/images/icon/co-phone-book.webp
+ create mode 100644 assets/images/icon/co-support.webp
+ create mode 100644 assets/images/icon/co-telephone-1.webp
+ create mode 100644 assets/images/icon/co-telephone.webp
+ create mode 100644 assets/images/icon/de-cogwheels-1.webp
+ create mode 100644 assets/images/icon/de-earth-globe-3.webp
+ create mode 100644 assets/images/icon/de-file-formats-4.webp
+ create mode 100644 assets/images/icon/de-gears-3.webp
+ create mode 100644 assets/images/icon/de-invention.webp
+ create mode 100644 assets/images/icon/de-laptop-computer.webp
+ create mode 100644 assets/images/icon/de-magnifying-lens.webp
+ create mode 100644 assets/images/icon/de-races-1.webp
+ create mode 100644 assets/images/icon/de-searcher.webp
+ create mode 100644 assets/images/icon/de-tv.webp
+ create mode 100644 assets/images/icon/de-web-site.webp
+ create mode 100644 assets/images/icon/de-wrenches.webp
+ create mode 100644 assets/images/icon/ec-24-hours.webp
+ create mode 100644 assets/images/icon/ec-bargain.webp
+ create mode 100644 assets/images/icon/ec-delivery.webp
+ create mode 100644 assets/images/icon/ec-ecommerce-1.webp
+ create mode 100644 assets/images/icon/ec-mobile-banking.webp
+ create mode 100644 assets/images/icon/ec-mobile.webp
+ create mode 100644 assets/images/icon/ec-online-shop.webp
+ create mode 100644 assets/images/icon/ec-shopping-basket.webp
+ create mode 100644 assets/images/icon/ec-shopping-list.webp
+ create mode 100644 assets/images/icon/ec-store.webp
+ create mode 100644 assets/images/icon/ec-tag.webp
+ create mode 100644 assets/images/icon/ec-worldwide.webp
+ create mode 100644 assets/images/icon/hs-24-hours-1.webp
+ create mode 100644 assets/images/icon/hs-browser.webp
+ create mode 100644 assets/images/icon/hs-check.webp
+ create mode 100644 assets/images/icon/hs-faq.webp
+ create mode 100644 assets/images/icon/hs-headphones.webp
+ create mode 100644 assets/images/icon/hs-help.webp
+ create mode 100644 assets/images/icon/hs-lifebuoy.webp
+ create mode 100644 assets/images/icon/hs-phone-call-2.webp
+ create mode 100644 assets/images/icon/hs-question.webp
+ create mode 100644 assets/images/icon/hs-support-4.webp
+ create mode 100644 assets/images/icon/hs-support-5.webp
+ create mode 100644 assets/images/icon/hs-tablet.webp
+ create mode 100644 assets/images/icon/ms-briefcase.webp
+ create mode 100644 assets/images/icon/ms-cloud-computing.webp
+ create mode 100644 assets/images/icon/ms-coding.webp
+ create mode 100644 assets/images/icon/ms-diamond.webp
+ create mode 100644 assets/images/icon/ms-email.webp
+ create mode 100644 assets/images/icon/ms-idea.webp
+ create mode 100644 assets/images/icon/ms-like.webp
+ create mode 100644 assets/images/icon/ms-medal.webp
+ create mode 100644 assets/images/icon/ms-shield.webp
+ create mode 100644 assets/images/icon/ms-shopping-cart.webp
+ create mode 100644 assets/images/icon/ms-video-player.webp
+ create mode 100644 assets/images/icon/ms-wallet.webp
+ create mode 100644 assets/images/icon/of-app.webp
+ create mode 100644 assets/images/icon/of-chart.webp
+ create mode 100644 assets/images/icon/of-clipboard.webp
+ create mode 100644 assets/images/icon/of-devices.webp
+ create mode 100644 assets/images/icon/of-diagram-1.webp
+ create mode 100644 assets/images/icon/of-diagram.webp
+ create mode 100644 assets/images/icon/of-document.webp
+ create mode 100644 assets/images/icon/of-pie-chart.webp
+ create mode 100644 assets/images/icon/of-push-pin.webp
+ create mode 100644 assets/images/icon/of-suitcase.webp
+ create mode 100644 assets/images/icon/of-target.webp
+ create mode 100644 assets/images/icon/of-task-list-1.webp
+ create mode 100644 assets/images/icon/sm-analysis-1.webp
+ create mode 100644 assets/images/icon/sm-creative.webp
+ create mode 100644 assets/images/icon/sm-develop.webp
+ create mode 100644 assets/images/icon/sm-development.webp
+ create mode 100644 assets/images/icon/sm-management.webp
+ create mode 100644 assets/images/icon/sm-people.webp
+ create mode 100644 assets/images/icon/sm-pie-graphic.webp
+ create mode 100644 assets/images/icon/sm-setting.webp
+ create mode 100644 assets/images/icon/sm-strategy-4.webp
+ create mode 100644 assets/images/icon/sm-training-1.webp
+ create mode 100644 assets/images/icon/sm-training.webp
+ create mode 100644 assets/images/icon/sm-workers.webp
+ create mode 100644 assets/images/icon/st-handshake.webp
+ create mode 100644 assets/images/icon/st-hourglass.webp
+ create mode 100644 assets/images/icon/st-line-chart.webp
+ create mode 100644 assets/images/icon/st-megaphone.webp
+ create mode 100644 assets/images/icon/st-payment-method.webp
+ create mode 100644 assets/images/icon/st-puzzle.webp
+ create mode 100644 assets/images/icon/st-settings.webp
+ create mode 100644 assets/images/icon/st-shield.webp
+ create mode 100644 assets/images/icon/st-startup.webp
+ create mode 100644 assets/images/icon/st-support.webp
+ create mode 100644 assets/images/icon/st-target.webp
+ create mode 100644 assets/images/icon/st-web-development.webp
+ create mode 100644 assets/images/icon/ui-bill.webp
+ create mode 100644 assets/images/icon/ui-camera.webp
+ create mode 100644 assets/images/icon/ui-chat.webp
+ create mode 100644 assets/images/icon/ui-coding.webp
+ create mode 100644 assets/images/icon/ui-credit-card.webp
+ create mode 100644 assets/images/icon/ui-gps.webp
+ create mode 100644 assets/images/icon/ui-house.webp
+ create mode 100644 assets/images/icon/ui-idea.webp
+ create mode 100644 assets/images/icon/ui-landing-page.webp
+ create mode 100644 assets/images/icon/ui-phone.webp
+ create mode 100644 assets/images/icon/ui-structure.webp
+ create mode 100644 assets/images/icon/ui-user.webp
+ create mode 100644 assets/images/loading.webp
+ create mode 100644 assets/images/logo-light.webp
+ create mode 100644 assets/images/logo-light@2x.webp
+ create mode 100644 assets/images/logo.webp
+ create mode 100644 assets/images/logo@2x.webp
+ create mode 100644 assets/images/video-play.webp
+ create mode 100644 assets/images/vimeo-play.webp
+ create mode 100644 assets/images/youtube-play.webp
+ create mode 100644 assets/js/ai-auditor.js
+ create mode 100644 assets/js/approvals-checker.js
+ create mode 100644 assets/js/bootstrap.min.js
+ create mode 100644 assets/js/bootstrap.min.js.map
+ create mode 100644 assets/js/charts.js
+ create mode 100644 assets/js/community-votes.js
+ create mode 100644 assets/js/dashboard-alerts.js
+ create mode 100644 assets/js/dashboard-home.js
+ create mode 100644 assets/js/dashboard-portfolio.js
+ create mode 100644 assets/js/dashboard-risk.js
+ create mode 100644 assets/js/dashboard-score.js
+ create mode 100644 assets/js/dashboard.js
+ create mode 100644 assets/js/data-aggregation.js
+ create mode 100644 assets/js/defi-onchain.js
+ create mode 100644 assets/js/gas-tracker.js
+ create mode 100644 assets/js/health-score.js
+ create mode 100644 assets/js/jquery.min.js
+ create mode 100644 assets/js/market-data-logger.js
+ create mode 100644 assets/js/plugins.js
+ create mode 100644 assets/js/popper.min.js
+ create mode 100644 assets/js/profiler.js
+ create mode 100644 assets/js/report-issue.js
+ create mode 100644 assets/js/risk-badge.js
+ create mode 100644 assets/js/risk-chatbot.js
+ create mode 100644 assets/js/risk-scanner.js
+ create mode 100644 assets/js/scripts.js
+ create mode 100644 assets/js/simple-jekyll-search.min.js
+ create mode 100644 assets/js/wallet-connect.js
+ create mode 100644 assets/js/wallet-modal.js
+ create mode 100644 assets/js/watchlist.js
+ create mode 100644 assets/media/movie.jpg
+ create mode 100644 assets/media/movie.mp4
+ create mode 100644 assets/media/movie.webm
+ create mode 100644 assets/revolution/assets/coloredbg.png
+ create mode 100644 assets/revolution/assets/gridtile.png
+ create mode 100644 assets/revolution/assets/gridtile_3x3.png
+ create mode 100644 assets/revolution/assets/gridtile_3x3_white.png
+ create mode 100644 assets/revolution/assets/gridtile_white.png
+ create mode 100644 assets/revolution/assets/loader.gif
+ create mode 100644 assets/revolution/assets/sources/fb.png
+ create mode 100644 assets/revolution/assets/sources/fr.png
+ create mode 100644 assets/revolution/assets/sources/ig.png
+ create mode 100644 assets/revolution/assets/sources/post.png
+ create mode 100644 assets/revolution/assets/sources/revolution_slide1.png
+ create mode 100644 assets/revolution/assets/sources/revolution_slide2.png
+ create mode 100644 assets/revolution/assets/sources/tw.png
+ create mode 100644 assets/revolution/assets/sources/vm.png
+ create mode 100644 assets/revolution/assets/sources/wc.png
+ create mode 100644 assets/revolution/assets/sources/yt.png
+ create mode 100644 assets/revolution/assets/svg/action/ic_3d_rotation_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_accessibility_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_accessible_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_account_balance_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_account_balance_wallet_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_account_box_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_account_circle_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_add_shopping_cart_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_alarm_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_alarm_add_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_alarm_off_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_alarm_on_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_all_out_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_android_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_announcement_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_aspect_ratio_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_assessment_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_assignment_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_assignment_ind_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_assignment_late_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_assignment_return_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_assignment_returned_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_assignment_turned_in_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_autorenew_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_backup_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_book_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_bookmark_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_bookmark_border_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_bug_report_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_build_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_cached_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_camera_enhance_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_card_giftcard_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_card_membership_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_card_travel_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_change_history_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_check_circle_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_chrome_reader_mode_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_class_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_code_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_compare_arrows_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_copyright_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_credit_card_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_dashboard_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_date_range_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_delete_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_description_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_dns_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_done_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_done_all_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_donut_large_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_donut_small_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_eject_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_event_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_event_seat_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_exit_to_app_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_explore_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_extension_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_face_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_favorite_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_favorite_border_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_feedback_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_find_in_page_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_find_replace_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_fingerprint_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_flight_land_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_flight_takeoff_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_flip_to_back_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_flip_to_front_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_gavel_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_get_app_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_gif_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_grade_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_group_work_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_help_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_help_outline_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_highlight_off_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_history_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_home_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_hourglass_empty_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_hourglass_full_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_http_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_https_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_important_devices_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_info_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_info_outline_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_input_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_invert_colors_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_label_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_label_outline_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_language_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_launch_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_lightbulb_outline_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_line_style_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_line_weight_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_list_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_lock_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_lock_open_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_lock_outline_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_loyalty_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_markunread_mailbox_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_motorcycle_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_note_add_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_offline_pin_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_opacity_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_open_in_browser_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_open_in_new_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_open_with_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_pageview_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_pan_tool_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_payment_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_perm_camera_mic_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_perm_contact_calendar_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_perm_data_setting_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_perm_device_information_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_perm_identity_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_perm_media_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_perm_phone_msg_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_perm_scan_wifi_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_pets_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_picture_in_picture_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_picture_in_picture_alt_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_play_for_work_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_polymer_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_power_settings_new_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_pregnant_woman_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_print_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_query_builder_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_question_answer_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_receipt_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_record_voice_over_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_redeem_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_reorder_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_report_problem_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_restore_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_room_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_rounded_corner_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_rowing_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_schedule_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_search_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_settings_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_settings_applications_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_settings_backup_restore_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_settings_bluetooth_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_settings_brightness_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_settings_cell_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_settings_ethernet_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_settings_input_antenna_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_settings_input_component_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_settings_input_composite_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_settings_input_hdmi_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_settings_input_svideo_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_settings_overscan_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_settings_phone_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_settings_power_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_settings_remote_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_settings_voice_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_shop_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_shop_two_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_shopping_basket_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_shopping_cart_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_speaker_notes_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_spellcheck_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_stars_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_store_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_subject_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_supervisor_account_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_swap_horiz_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_swap_vert_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_swap_vertical_circle_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_system_update_alt_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_tab_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_tab_unselected_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_theaters_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_thumb_down_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_thumb_up_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_thumbs_up_down_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_timeline_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_toc_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_today_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_toll_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_touch_app_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_track_changes_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_translate_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_trending_down_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_trending_flat_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_trending_up_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_turned_in_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_turned_in_not_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_update_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_verified_user_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_view_agenda_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_view_array_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_view_carousel_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_view_column_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_view_day_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_view_headline_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_view_list_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_view_module_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_view_quilt_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_view_stream_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_view_week_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_visibility_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_visibility_off_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_watch_later_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_work_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_youtube_searched_for_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_zoom_in_24px.svg
+ create mode 100644 assets/revolution/assets/svg/action/ic_zoom_out_24px.svg
+ create mode 100644 assets/revolution/assets/svg/alert/ic_add_alert_24px.svg
+ create mode 100644 assets/revolution/assets/svg/alert/ic_error_24px.svg
+ create mode 100644 assets/revolution/assets/svg/alert/ic_error_outline_24px.svg
+ create mode 100644 assets/revolution/assets/svg/alert/ic_warning_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_add_to_queue_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_airplay_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_album_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_art_track_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_av_timer_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_closed_caption_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_equalizer_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_explicit_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_fast_forward_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_fast_rewind_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_fiber_dvr_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_fiber_manual_record_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_fiber_new_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_fiber_pin_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_fiber_smart_record_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_forward_10_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_forward_30_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_forward_5_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_games_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_hd_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_hearing_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_high_quality_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_library_add_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_library_books_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_library_music_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_loop_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_mic_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_mic_none_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_mic_off_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_movie_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_music_video_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_new_releases_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_not_interested_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_pause_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_pause_circle_filled_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_pause_circle_outline_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_play_arrow_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_play_circle_filled_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_play_circle_outline_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_playlist_add_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_playlist_add_check_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_playlist_play_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_queue_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_queue_music_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_queue_play_next_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_radio_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_recent_actors_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_remove_from_queue_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_repeat_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_repeat_one_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_replay_10_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_replay_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_replay_30_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_replay_5_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_shuffle_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_skip_next_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_skip_previous_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_slow_motion_video_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_snooze_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_sort_by_alpha_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_stop_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_subscriptions_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_subtitles_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_surround_sound_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_video_library_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_videocam_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_videocam_off_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_volume_down_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_volume_mute_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_volume_off_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_volume_up_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_web_24px.svg
+ create mode 100644 assets/revolution/assets/svg/av/ic_web_asset_24px.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/NewTux.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/abacus.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/address-book.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/address-book2.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/aim.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/alarm.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/apple.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/arrow-left.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/arrow-right.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/arrows-updown.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/atm-cash.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/award1.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/award2.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/award3.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/award4.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/award5.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/badge01.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/badge02.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/bank.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/bank2.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/bell.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/binoculars.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/bomb.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/bonsai.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/book-apple.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/book.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/bookmark.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/box.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/brain.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/briefcase.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/browser01.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/browser02.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/buildings.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/buy-sign.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/calculator1.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/calculator2.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/calculator3.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/calendar1.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/calendar2.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/calendar3.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/calendar4.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/calendar5.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/certificate.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/champagne.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/character01.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/character02.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/character03.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/character04.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/character05.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/character06.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/character07.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/character08.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/chart-analysis.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/chart-board.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/chart-pyramid.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/chart01.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/chart02.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/chart03.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/chart04.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/chart05.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/chart06.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/chart07.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/chart08.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/chart09.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/chart10.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/chart11.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/chart12.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/chart13.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/chart14.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/chart15.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/chart16.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/chart17.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/chart18.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/chart19.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/chart20.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/chart21.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/chat.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/checklist.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/checklist2.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/checklist3.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/chemistry.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/chess-knight.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/chess-rook.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/chess.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/clock.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/closed-sign.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/cloud-coins.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/cloud-down.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/cloud-up.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/coffee.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/conference.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/contact-book.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/coupon.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/credit-card.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/crown.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/currencies.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/database.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/delivery.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/diagram-hierarchy.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/diamond.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/dollar.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/drawer.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/egg.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/emblem.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/envelope-money.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/envelopes.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/euro.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/exchange.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/exit.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/factory.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/fax.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/file01.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/file02.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/file03.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/file04.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/file05.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/file06.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/file07.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/file08.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/file09.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/file10.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/files.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/fire.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/fish.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/flag.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/folder-add.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/folder-delete.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/folder-online.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/folder-private.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/folder-remove.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/folder.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/folders.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/funnel-money.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/funnel.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/gauge.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/gauge2.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/gears1.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/gears2.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/glasses-moustache.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/globe-money.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/globe.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/globe2.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/graduation-hat.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/hand-globe.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/hand-key.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/hand-money.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/hand-money2.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/handshake.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/hat-moustache.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/hat.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/head-arrows.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/head-battery.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/head-check.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/head-compass.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/head-dollar.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/head-exclamation.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/head-flash.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/head-gauge.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/head-gears.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/head-hourglass.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/head-idea.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/head-question.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/head-structure.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/head.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/headquarters.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/hourglass.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/hours.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/incoming.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/ingots.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/key.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/key2.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/keyboard.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/label.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/lamp.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/laptop-article.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/laptop-cart.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/laptop-chart.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/laptop-chart2.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/laptop-diagram.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/laptop-envelope.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/laptop-finance.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/laptop-privacy.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/laptop-settings.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/laptop-user.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/laptop.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/lightbulb-green.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/lightbulb.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/lightning.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/like.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/lock.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/magnet-money.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/magnifying-glass.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/manager-globe.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/manager-idea.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/manager01.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/manager02.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/meditation.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/megaphone.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/money-growth.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/money-scales.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/money.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/money2.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/money3.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/money4.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/money5.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/money6.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/monitor.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/mouse.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/nest-money.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/newspaper-jobs.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/newspaper-pen.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/newspaper.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/note-paper.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/office-chair.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/open-sign.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/outgoing.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/paper-clip.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/paper-plane.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/pen.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/pen2.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/pencil.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/pens-pencils.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/people-arrows06.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/people-gears.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/people-handshake.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/people-idea.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/people-meeting.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/people-meeting02.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/people-search01.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/people-search02.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/people-structure.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/people-structure01.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/people-structure02.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/people-structure03.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/people-structure04.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/people-structure05.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/people-structure06.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/people-structure07.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/percent.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/periscopemoney.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/person-arrows01.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/person-arrows012.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/person-arrows02.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/person-arrows022.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/person-arrows03.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/person-checkmark.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/person-cross.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/person-data.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/person-dollar.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/person-finance.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/person-flag.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/person-globe.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/person-idea02.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/person-info.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/person-puzzle.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/person-scales.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/person-time.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/person-umbrella.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/phone.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/pie-chart01.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/pie-chart02.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/piggy-bank.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/pin.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/plant-money.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/plant.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/pound.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/presentation.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/presentation02.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/preson-chart02.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/preson-chart03.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/preson-chart04.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/preson-laurels.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/preson-megaphone.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/preson-stairs.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/printer.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/profile.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/pulse.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/puzzle.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/quill.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/recycle.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/rocket.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/rocket2.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/ruble.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/ruler-compasses.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/safe.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/sale-sign.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/satellite-dish.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/scales.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/scissors.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/security.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/send.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/shield.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/shopping-cart.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/sign.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/smartphone-chart.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/smartphone-exclamation.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/smartphone-gears.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/smartphone-growth.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/smartphone-money.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/smartphone-user.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/smartphone.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/speaker.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/speaker02.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/speech-bubble.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/stamp.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/star.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/steering-wheel.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/strategy03.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/strategy1.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/strategy2.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/support-person.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/tablet-article.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/tablet-chart.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/tablet-chart2.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/tablet-chart3.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/tablet-pie-chart.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/tablet-pie-chart2.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/tablet.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/target.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/team.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/telescope.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/tie.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/tools.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/tools2.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/trash-bin.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/umbrella.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/user01.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/user02.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/user03.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/user04.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/user05.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/user06.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/user07.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/user08.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/user09.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/users.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/venn-diagram.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/wallet.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/wrench.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/yen.svg
+ create mode 100644 assets/revolution/assets/svg/busy-icons-svg/yinyang.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_business_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_call_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_call_end_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_call_made_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_call_merge_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_call_missed_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_call_missed_outgoing_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_call_received_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_call_split_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_chat_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_chat_bubble_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_chat_bubble_outline_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_clear_all_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_comment_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_contact_mail_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_contact_phone_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_contacts_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_dialer_sip_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_dialpad_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_email_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_forum_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_import_contacts_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_import_export_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_invert_colors_off_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_live_help_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_location_off_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_location_on_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_mail_outline_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_message_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_no_sim_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_phone_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_phonelink_erase_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_phonelink_lock_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_phonelink_ring_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_phonelink_setup_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_portable_wifi_off_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_present_to_all_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_ring_volume_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_screen_share_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_speaker_phone_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_stay_current_landscape_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_stay_current_portrait_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_stay_primary_landscape_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_stay_primary_portrait_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_stop_screen_share_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_swap_calls_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_textsms_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_voicemail_24px.svg
+ create mode 100644 assets/revolution/assets/svg/communication/ic_vpn_key_24px.svg
+ create mode 100644 assets/revolution/assets/svg/content/ic_add_24px.svg
+ create mode 100644 assets/revolution/assets/svg/content/ic_add_box_24px.svg
+ create mode 100644 assets/revolution/assets/svg/content/ic_add_circle_24px.svg
+ create mode 100644 assets/revolution/assets/svg/content/ic_add_circle_outline_24px.svg
+ create mode 100644 assets/revolution/assets/svg/content/ic_archive_24px.svg
+ create mode 100644 assets/revolution/assets/svg/content/ic_backspace_24px.svg
+ create mode 100644 assets/revolution/assets/svg/content/ic_block_24px.svg
+ create mode 100644 assets/revolution/assets/svg/content/ic_clear_24px.svg
+ create mode 100644 assets/revolution/assets/svg/content/ic_content_copy_24px.svg
+ create mode 100644 assets/revolution/assets/svg/content/ic_content_cut_24px.svg
+ create mode 100644 assets/revolution/assets/svg/content/ic_content_paste_24px.svg
+ create mode 100644 assets/revolution/assets/svg/content/ic_create_24px.svg
+ create mode 100644 assets/revolution/assets/svg/content/ic_drafts_24px.svg
+ create mode 100644 assets/revolution/assets/svg/content/ic_filter_list_24px.svg
+ create mode 100644 assets/revolution/assets/svg/content/ic_flag_24px.svg
+ create mode 100644 assets/revolution/assets/svg/content/ic_font_download_24px.svg
+ create mode 100644 assets/revolution/assets/svg/content/ic_forward_24px.svg
+ create mode 100644 assets/revolution/assets/svg/content/ic_gesture_24px.svg
+ create mode 100644 assets/revolution/assets/svg/content/ic_inbox_24px.svg
+ create mode 100644 assets/revolution/assets/svg/content/ic_link_24px.svg
+ create mode 100644 assets/revolution/assets/svg/content/ic_mail_24px.svg
+ create mode 100644 assets/revolution/assets/svg/content/ic_markunread_24px.svg
+ create mode 100644 assets/revolution/assets/svg/content/ic_move_to_inbox_24px.svg
+ create mode 100644 assets/revolution/assets/svg/content/ic_next_week_24px.svg
+ create mode 100644 assets/revolution/assets/svg/content/ic_redo_24px.svg
+ create mode 100644 assets/revolution/assets/svg/content/ic_remove_24px.svg
+ create mode 100644 assets/revolution/assets/svg/content/ic_remove_circle_24px.svg
+ create mode 100644 assets/revolution/assets/svg/content/ic_remove_circle_outline_24px.svg
+ create mode 100644 assets/revolution/assets/svg/content/ic_reply_24px.svg
+ create mode 100644 assets/revolution/assets/svg/content/ic_reply_all_24px.svg
+ create mode 100644 assets/revolution/assets/svg/content/ic_report_24px.svg
+ create mode 100644 assets/revolution/assets/svg/content/ic_save_24px.svg
+ create mode 100644 assets/revolution/assets/svg/content/ic_select_all_24px.svg
+ create mode 100644 assets/revolution/assets/svg/content/ic_send_24px.svg
+ create mode 100644 assets/revolution/assets/svg/content/ic_sort_24px.svg
+ create mode 100644 assets/revolution/assets/svg/content/ic_text_format_24px.svg
+ create mode 100644 assets/revolution/assets/svg/content/ic_unarchive_24px.svg
+ create mode 100644 assets/revolution/assets/svg/content/ic_undo_24px.svg
+ create mode 100644 assets/revolution/assets/svg/content/ic_weekend_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_access_alarm_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_access_alarms_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_access_time_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_add_alarm_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_airplanemode_active_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_airplanemode_inactive_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_battery_20_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_battery_30_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_battery_50_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_battery_60_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_battery_80_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_battery_90_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_battery_alert_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_battery_charging_20_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_battery_charging_30_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_battery_charging_50_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_battery_charging_60_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_battery_charging_80_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_battery_charging_90_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_battery_charging_full_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_battery_full_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_battery_std_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_battery_unknown_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_bluetooth_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_bluetooth_connected_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_bluetooth_disabled_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_bluetooth_searching_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_brightness_auto_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_brightness_high_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_brightness_low_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_brightness_medium_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_data_usage_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_developer_mode_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_devices_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_dvr_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_gps_fixed_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_gps_not_fixed_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_gps_off_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_graphic_eq_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_location_disabled_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_location_searching_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_network_cell_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_network_wifi_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_nfc_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_screen_lock_landscape_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_screen_lock_portrait_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_screen_lock_rotation_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_screen_rotation_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_sd_storage_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_settings_system_daydream_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_signal_cellular_0_bar_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_signal_cellular_1_bar_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_signal_cellular_2_bar_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_signal_cellular_3_bar_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_signal_cellular_4_bar_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_signal_cellular_connected_no_internet_0_bar_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_signal_cellular_connected_no_internet_1_bar_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_signal_cellular_connected_no_internet_2_bar_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_signal_cellular_connected_no_internet_3_bar_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_signal_cellular_connected_no_internet_4_bar_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_signal_cellular_no_sim_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_signal_cellular_null_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_signal_cellular_off_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_signal_wifi_0_bar_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_signal_wifi_1_bar_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_signal_wifi_1_bar_lock_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_signal_wifi_2_bar_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_signal_wifi_2_bar_lock_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_signal_wifi_3_bar_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_signal_wifi_3_bar_lock_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_signal_wifi_4_bar_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_signal_wifi_4_bar_lock_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_signal_wifi_off_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_signal_wifi_statusbar_1_bar_26x24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_signal_wifi_statusbar_2_bar_26x24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_signal_wifi_statusbar_3_bar_26x24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_signal_wifi_statusbar_4_bar_26x24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_signal_wifi_statusbar_connected_no_internet_1_26x24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_signal_wifi_statusbar_connected_no_internet_26x24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_signal_wifi_statusbar_connected_no_internet_2_26x24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_signal_wifi_statusbar_connected_no_internet_3_26x24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_signal_wifi_statusbar_connected_no_internet_4_26x24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_signal_wifi_statusbar_not_connected_26x24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_signal_wifi_statusbar_null_26x24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_storage_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_usb_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_wallpaper_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_widgets_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_wifi_lock_24px.svg
+ create mode 100644 assets/revolution/assets/svg/device/ic_wifi_tethering_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_attach_file_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_attach_money_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_border_all_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_border_bottom_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_border_clear_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_border_color_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_border_horizontal_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_border_inner_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_border_left_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_border_outer_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_border_right_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_border_style_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_border_top_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_border_vertical_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_drag_handle_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_format_align_center_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_format_align_justify_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_format_align_left_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_format_align_right_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_format_bold_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_format_clear_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_format_color_fill_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_format_color_reset_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_format_color_text_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_format_indent_decrease_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_format_indent_increase_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_format_italic_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_format_line_spacing_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_format_list_bulleted_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_format_list_numbered_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_format_paint_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_format_quote_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_format_shapes_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_format_size_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_format_strikethrough_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_format_textdirection_l_to_r_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_format_textdirection_r_to_l_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_format_underlined_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_functions_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_highlight_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_insert_chart_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_insert_comment_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_insert_drive_file_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_insert_emoticon_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_insert_invitation_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_insert_link_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_insert_photo_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_linear_scale_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_merge_type_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_mode_comment_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_mode_edit_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_money_off_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_publish_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_short_text_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_space_bar_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_strikethrough_s_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_text_fields_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_vertical_align_bottom_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_vertical_align_center_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_vertical_align_top_24px.svg
+ create mode 100644 assets/revolution/assets/svg/editor/ic_wrap_text_24px.svg
+ create mode 100644 assets/revolution/assets/svg/file/ic_attachment_24px.svg
+ create mode 100644 assets/revolution/assets/svg/file/ic_cloud_24px.svg
+ create mode 100644 assets/revolution/assets/svg/file/ic_cloud_circle_24px.svg
+ create mode 100644 assets/revolution/assets/svg/file/ic_cloud_done_24px.svg
+ create mode 100644 assets/revolution/assets/svg/file/ic_cloud_download_24px.svg
+ create mode 100644 assets/revolution/assets/svg/file/ic_cloud_off_24px.svg
+ create mode 100644 assets/revolution/assets/svg/file/ic_cloud_queue_24px.svg
+ create mode 100644 assets/revolution/assets/svg/file/ic_cloud_upload_24px.svg
+ create mode 100644 assets/revolution/assets/svg/file/ic_create_new_folder_24px.svg
+ create mode 100644 assets/revolution/assets/svg/file/ic_file_download_24px.svg
+ create mode 100644 assets/revolution/assets/svg/file/ic_file_upload_24px.svg
+ create mode 100644 assets/revolution/assets/svg/file/ic_folder_24px.svg
+ create mode 100644 assets/revolution/assets/svg/file/ic_folder_open_24px.svg
+ create mode 100644 assets/revolution/assets/svg/file/ic_folder_shared_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_cast_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_cast_connected_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_computer_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_desktop_mac_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_desktop_windows_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_developer_board_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_device_hub_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_devices_other_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_dock_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_gamepad_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_headset_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_headset_mic_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_keyboard_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_keyboard_arrow_down_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_keyboard_arrow_left_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_keyboard_arrow_right_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_keyboard_arrow_up_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_keyboard_backspace_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_keyboard_capslock_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_keyboard_hide_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_keyboard_return_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_keyboard_tab_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_keyboard_voice_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_laptop_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_laptop_chromebook_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_laptop_mac_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_laptop_windows_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_memory_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_mouse_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_phone_android_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_phone_iphone_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_phonelink_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_phonelink_off_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_power_input_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_router_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_scanner_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_security_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_sim_card_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_smartphone_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_speaker_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_speaker_group_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_tablet_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_tablet_android_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_tablet_mac_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_toys_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_tv_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_videogame_asset_24px.svg
+ create mode 100644 assets/revolution/assets/svg/hardware/ic_watch_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_add_a_photo_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_add_to_photos_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_adjust_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_assistant_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_assistant_photo_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_audiotrack_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_blur_circular_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_blur_linear_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_blur_off_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_blur_on_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_brightness_1_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_brightness_2_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_brightness_3_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_brightness_4_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_brightness_5_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_brightness_6_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_brightness_7_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_broken_image_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_brush_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_camera_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_camera_alt_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_camera_front_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_camera_rear_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_camera_roll_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_center_focus_strong_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_center_focus_weak_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_collections_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_collections_bookmark_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_color_lens_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_colorize_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_compare_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_control_point_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_control_point_duplicate_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_crop_16_9_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_crop_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_crop_3_2_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_crop_5_4_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_crop_7_5_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_crop_din_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_crop_free_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_crop_landscape_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_crop_original_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_crop_portrait_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_crop_rotate_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_crop_square_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_dehaze_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_details_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_edit_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_exposure_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_exposure_neg_1_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_exposure_neg_2_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_exposure_plus_1_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_exposure_plus_2_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_exposure_zero_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_filter_1_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_filter_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_filter_2_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_filter_3_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_filter_4_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_filter_5_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_filter_6_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_filter_7_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_filter_8_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_filter_9_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_filter_9_plus_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_filter_b_and_w_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_filter_center_focus_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_filter_drama_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_filter_frames_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_filter_hdr_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_filter_none_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_filter_tilt_shift_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_filter_vintage_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_flare_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_flash_auto_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_flash_off_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_flash_on_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_flip_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_gradient_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_grain_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_grid_off_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_grid_on_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_hdr_off_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_hdr_on_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_hdr_strong_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_hdr_weak_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_healing_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_image_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_image_aspect_ratio_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_iso_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_landscape_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_leak_add_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_leak_remove_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_lens_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_linked_camera_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_looks_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_looks_3_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_looks_4_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_looks_5_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_looks_6_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_looks_one_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_looks_two_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_loupe_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_monochrome_photos_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_movie_creation_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_movie_filter_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_music_note_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_nature_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_nature_people_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_navigate_before_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_navigate_next_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_palette_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_panorama_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_panorama_fish_eye_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_panorama_horizontal_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_panorama_vertical_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_panorama_wide_angle_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_photo_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_photo_album_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_photo_camera_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_photo_filter_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_photo_library_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_photo_size_select_actual_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_photo_size_select_large_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_photo_size_select_small_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_picture_as_pdf_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_portrait_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_remove_red_eye_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_rotate_90_degrees_ccw_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_rotate_left_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_rotate_right_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_slideshow_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_straighten_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_style_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_switch_camera_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_switch_video_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_tag_faces_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_texture_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_timelapse_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_timer_10_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_timer_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_timer_3_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_timer_off_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_tonality_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_transform_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_tune_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_view_comfy_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_view_compact_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_vignette_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_wb_auto_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_wb_cloudy_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_wb_incandescent_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_wb_iridescent_24px.svg
+ create mode 100644 assets/revolution/assets/svg/image/ic_wb_sunny_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_add_location_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_beenhere_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_directions_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_directions_bike_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_directions_boat_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_directions_bus_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_directions_car_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_directions_railway_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_directions_run_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_directions_subway_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_directions_transit_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_directions_walk_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_edit_location_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_flight_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_hotel_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_layers_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_layers_clear_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_local_activity_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_local_airport_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_local_atm_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_local_bar_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_local_cafe_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_local_car_wash_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_local_convenience_store_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_local_dining_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_local_drink_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_local_florist_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_local_gas_station_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_local_grocery_store_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_local_hospital_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_local_hotel_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_local_laundry_service_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_local_library_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_local_mall_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_local_movies_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_local_offer_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_local_parking_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_local_pharmacy_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_local_phone_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_local_pizza_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_local_play_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_local_post_office_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_local_printshop_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_local_see_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_local_shipping_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_local_taxi_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_map_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_my_location_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_navigation_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_near_me_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_person_pin_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_person_pin_circle_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_pin_drop_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_place_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_rate_review_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_restaurant_menu_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_satellite_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_store_mall_directory_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_terrain_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_traffic_24px.svg
+ create mode 100644 assets/revolution/assets/svg/maps/ic_zoom_out_map_24px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_apps_24px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_apps_36px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_arrow_back_24px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_arrow_back_36px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_arrow_downward_24px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_arrow_drop_down_24px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_arrow_drop_down_36px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_arrow_drop_down_circle_24px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_arrow_drop_up_24px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_arrow_drop_up_36px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_arrow_forward_24px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_arrow_forward_36px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_arrow_upward_24px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_cancel_24px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_cancel_36px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_check_24px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_check_36px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_chevron_left_24px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_chevron_left_36px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_chevron_right_24px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_chevron_right_36px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_close_24px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_close_36px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_expand_less_24px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_expand_less_36px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_expand_more_24px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_expand_more_36px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_fullscreen_24px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_fullscreen_36px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_fullscreen_exit_24px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_fullscreen_exit_36px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_menu_24px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_menu_36px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_more_horiz_24px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_more_horiz_36px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_more_vert_24px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_more_vert_36px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_refresh_24px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_refresh_36px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_subdirectory_arrow_left_24px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_subdirectory_arrow_right_24px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_unfold_less_24px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_unfold_less_36px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_unfold_more_24px.svg
+ create mode 100644 assets/revolution/assets/svg/navigation/ic_unfold_more_36px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_adb_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_airline_seat_flat_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_airline_seat_flat_angled_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_airline_seat_individual_suite_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_airline_seat_legroom_extra_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_airline_seat_legroom_normal_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_airline_seat_legroom_reduced_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_airline_seat_recline_extra_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_airline_seat_recline_normal_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_bluetooth_audio_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_confirmation_number_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_disc_full_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_do_not_disturb_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_do_not_disturb_alt_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_drive_eta_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_enhanced_encryption_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_event_available_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_event_busy_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_event_note_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_folder_special_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_live_tv_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_mms_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_more_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_network_check_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_network_locked_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_no_encryption_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_ondemand_video_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_personal_video_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_phone_bluetooth_speaker_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_phone_forwarded_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_phone_in_talk_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_phone_locked_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_phone_missed_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_phone_paused_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_power_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_rv_hookup_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_sd_card_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_sim_card_alert_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_sms_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_sms_failed_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_sync_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_sync_disabled_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_sync_problem_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_system_update_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_tap_and_play_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_time_to_leave_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_vibration_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_voice_chat_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_vpn_lock_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_wc_24px.svg
+ create mode 100644 assets/revolution/assets/svg/notification/ic_wifi_24px.svg
+ create mode 100644 assets/revolution/assets/svg/places/ic_ac_unit_24px.svg
+ create mode 100644 assets/revolution/assets/svg/places/ic_airport_shuttle_24px.svg
+ create mode 100644 assets/revolution/assets/svg/places/ic_all_inclusive_24px.svg
+ create mode 100644 assets/revolution/assets/svg/places/ic_beach_access_24px.svg
+ create mode 100644 assets/revolution/assets/svg/places/ic_business_center_24px.svg
+ create mode 100644 assets/revolution/assets/svg/places/ic_casino_24px.svg
+ create mode 100644 assets/revolution/assets/svg/places/ic_child_care_24px.svg
+ create mode 100644 assets/revolution/assets/svg/places/ic_child_friendly_24px.svg
+ create mode 100644 assets/revolution/assets/svg/places/ic_fitness_center_24px.svg
+ create mode 100644 assets/revolution/assets/svg/places/ic_free_breakfast_24px.svg
+ create mode 100644 assets/revolution/assets/svg/places/ic_golf_course_24px.svg
+ create mode 100644 assets/revolution/assets/svg/places/ic_hot_tub_24px.svg
+ create mode 100644 assets/revolution/assets/svg/places/ic_kitchen_24px.svg
+ create mode 100644 assets/revolution/assets/svg/places/ic_pool_24px.svg
+ create mode 100644 assets/revolution/assets/svg/places/ic_room_service_24px.svg
+ create mode 100644 assets/revolution/assets/svg/places/ic_smoke_free_24px.svg
+ create mode 100644 assets/revolution/assets/svg/places/ic_smoking_rooms_24px.svg
+ create mode 100644 assets/revolution/assets/svg/places/ic_spa_24px.svg
+ create mode 100644 assets/revolution/assets/svg/social/ic_cake_24px.svg
+ create mode 100644 assets/revolution/assets/svg/social/ic_domain_24px.svg
+ create mode 100644 assets/revolution/assets/svg/social/ic_group_24px.svg
+ create mode 100644 assets/revolution/assets/svg/social/ic_group_add_24px.svg
+ create mode 100644 assets/revolution/assets/svg/social/ic_location_city_24px.svg
+ create mode 100644 assets/revolution/assets/svg/social/ic_mood_24px.svg
+ create mode 100644 assets/revolution/assets/svg/social/ic_mood_bad_24px.svg
+ create mode 100644 assets/revolution/assets/svg/social/ic_notifications_24px.svg
+ create mode 100644 assets/revolution/assets/svg/social/ic_notifications_active_24px.svg
+ create mode 100644 assets/revolution/assets/svg/social/ic_notifications_none_24px.svg
+ create mode 100644 assets/revolution/assets/svg/social/ic_notifications_off_24px.svg
+ create mode 100644 assets/revolution/assets/svg/social/ic_notifications_paused_24px.svg
+ create mode 100644 assets/revolution/assets/svg/social/ic_pages_24px.svg
+ create mode 100644 assets/revolution/assets/svg/social/ic_party_mode_24px.svg
+ create mode 100644 assets/revolution/assets/svg/social/ic_people_24px.svg
+ create mode 100644 assets/revolution/assets/svg/social/ic_people_outline_24px.svg
+ create mode 100644 assets/revolution/assets/svg/social/ic_person_24px.svg
+ create mode 100644 assets/revolution/assets/svg/social/ic_person_add_24px.svg
+ create mode 100644 assets/revolution/assets/svg/social/ic_person_outline_24px.svg
+ create mode 100644 assets/revolution/assets/svg/social/ic_plus_one_24px.svg
+ create mode 100644 assets/revolution/assets/svg/social/ic_poll_24px.svg
+ create mode 100644 assets/revolution/assets/svg/social/ic_public_24px.svg
+ create mode 100644 assets/revolution/assets/svg/social/ic_school_24px.svg
+ create mode 100644 assets/revolution/assets/svg/social/ic_share_24px.svg
+ create mode 100644 assets/revolution/assets/svg/social/ic_whatshot_24px.svg
+ create mode 100644 assets/revolution/assets/svg/toggle/ic_check_box_24px.svg
+ create mode 100644 assets/revolution/assets/svg/toggle/ic_check_box_outline_blank_24px.svg
+ create mode 100644 assets/revolution/assets/svg/toggle/ic_indeterminate_check_box_24px.svg
+ create mode 100644 assets/revolution/assets/svg/toggle/ic_radio_button_checked_24px.svg
+ create mode 100644 assets/revolution/assets/svg/toggle/ic_radio_button_unchecked_24px.svg
+ create mode 100644 assets/revolution/assets/svg/toggle/ic_star_24px.svg
+ create mode 100644 assets/revolution/assets/svg/toggle/ic_star_border_24px.svg
+ create mode 100644 assets/revolution/assets/svg/toggle/ic_star_half_24px.svg
+ create mode 100644 assets/revolution/css/layers.css
+ create mode 100644 assets/revolution/css/navigation-skins/ares.css
+ create mode 100644 assets/revolution/css/navigation-skins/custom.css
+ create mode 100644 assets/revolution/css/navigation-skins/dione.css
+ create mode 100644 assets/revolution/css/navigation-skins/erinyen.css
+ create mode 100644 assets/revolution/css/navigation-skins/gyges.css
+ create mode 100644 assets/revolution/css/navigation-skins/hades.css
+ create mode 100644 assets/revolution/css/navigation-skins/hebe.css
+ create mode 100644 assets/revolution/css/navigation-skins/hephaistos.css
+ create mode 100644 assets/revolution/css/navigation-skins/hermes.css
+ create mode 100644 assets/revolution/css/navigation-skins/hesperiden.css
+ create mode 100644 assets/revolution/css/navigation-skins/metis.css
+ create mode 100644 assets/revolution/css/navigation-skins/persephone.css
+ create mode 100644 assets/revolution/css/navigation-skins/uranus.css
+ create mode 100644 assets/revolution/css/navigation-skins/zeus.css
+ create mode 100644 assets/revolution/css/navigation.css
+ create mode 100644 assets/revolution/css/settings-source.css
+ create mode 100644 assets/revolution/css/settings.css
+ create mode 100644 assets/revolution/css/tp-color-picker.css
+ create mode 100644 assets/revolution/fonts/font-awesome/css/font-awesome.css
+ create mode 100644 assets/revolution/fonts/font-awesome/css/font-awesome.min.css
+ create mode 100644 assets/revolution/fonts/font-awesome/fonts/FontAwesome.otf
+ create mode 100644 assets/revolution/fonts/font-awesome/fonts/fontawesome-webfont.eot
+ create mode 100644 assets/revolution/fonts/font-awesome/fonts/fontawesome-webfont.svg
+ create mode 100644 assets/revolution/fonts/font-awesome/fonts/fontawesome-webfont.ttf
+ create mode 100644 assets/revolution/fonts/font-awesome/fonts/fontawesome-webfont.woff
+ create mode 100644 assets/revolution/fonts/font-awesome/fonts/fontawesome-webfont.woff2
+ create mode 100644 assets/revolution/fonts/font-awesome/index.php
+ create mode 100644 assets/revolution/fonts/index.php
+ create mode 100644 assets/revolution/fonts/pe-icon-7-stroke/css/helper.css
+ create mode 100644 assets/revolution/fonts/pe-icon-7-stroke/css/index.php
+ create mode 100644 assets/revolution/fonts/pe-icon-7-stroke/css/pe-icon-7-stroke.css
+ create mode 100644 assets/revolution/fonts/pe-icon-7-stroke/fonts/Pe-icon-7-stroke.eot
+ create mode 100644 assets/revolution/fonts/pe-icon-7-stroke/fonts/Pe-icon-7-stroke.svg
+ create mode 100644 assets/revolution/fonts/pe-icon-7-stroke/fonts/Pe-icon-7-stroke.ttf
+ create mode 100644 assets/revolution/fonts/pe-icon-7-stroke/fonts/Pe-icon-7-stroke.woff
+ create mode 100644 assets/revolution/fonts/pe-icon-7-stroke/fonts/index.php
+ create mode 100644 assets/revolution/fonts/pe-icon-7-stroke/index.php
+ create mode 100644 assets/revolution/fonts/revicons/index.php
+ create mode 100644 assets/revolution/fonts/revicons/revicons.eot
+ create mode 100644 assets/revolution/fonts/revicons/revicons.svg
+ create mode 100644 assets/revolution/fonts/revicons/revicons.ttf
+ create mode 100644 assets/revolution/fonts/revicons/revicons.woff
+ create mode 100644 assets/revolution/images/tpcolorpicker/arrow_down.png
+ create mode 100644 assets/revolution/images/tpcolorpicker/arrow_up.png
+ create mode 100644 assets/revolution/images/tpcolorpicker/check.png
+ create mode 100644 assets/revolution/images/tpcolorpicker/check_reverse.png
+ create mode 100644 assets/revolution/images/tpcolorpicker/check_small.png
+ create mode 100644 assets/revolution/images/tpcolorpicker/delete.png
+ create mode 100644 assets/revolution/images/tpcolorpicker/exit.png
+ create mode 100644 assets/revolution/images/tpcolorpicker/point_bottom.png
+ create mode 100644 assets/revolution/images/tpcolorpicker/point_top.png
+ create mode 100644 assets/revolution/images/tpcolorpicker/save.png
+ create mode 100644 assets/revolution/images/tpcolorpicker/trans_tile.png
+ create mode 100644 assets/revolution/js/extensions/index.php
+ create mode 100644 assets/revolution/js/extensions/revolution.extension.actions.min.js
+ create mode 100644 assets/revolution/js/extensions/revolution.extension.carousel.min.js
+ create mode 100644 assets/revolution/js/extensions/revolution.extension.kenburn.min.js
+ create mode 100644 assets/revolution/js/extensions/revolution.extension.layeranimation.min.js
+ create mode 100644 assets/revolution/js/extensions/revolution.extension.migration.min.js
+ create mode 100644 assets/revolution/js/extensions/revolution.extension.navigation.min.js
+ create mode 100644 assets/revolution/js/extensions/revolution.extension.parallax.min.js
+ create mode 100644 assets/revolution/js/extensions/revolution.extension.slideanims.min.js
+ create mode 100644 assets/revolution/js/extensions/revolution.extension.video.min.js
+ create mode 100644 assets/revolution/js/extensions/source/index.php
+ create mode 100644 assets/revolution/js/extensions/source/revolution.extension.actions.js
+ create mode 100644 assets/revolution/js/extensions/source/revolution.extension.carousel.js
+ create mode 100644 assets/revolution/js/extensions/source/revolution.extension.kenburn.js
+ create mode 100644 assets/revolution/js/extensions/source/revolution.extension.layeranimation.js
+ create mode 100644 assets/revolution/js/extensions/source/revolution.extension.migration.js
+ create mode 100644 assets/revolution/js/extensions/source/revolution.extension.navigation.js
+ create mode 100644 assets/revolution/js/extensions/source/revolution.extension.parallax.js
+ create mode 100644 assets/revolution/js/extensions/source/revolution.extension.slideanims.js
+ create mode 100644 assets/revolution/js/extensions/source/revolution.extension.video.js
+ create mode 100644 assets/revolution/js/index.php
+ create mode 100644 assets/revolution/js/jquery.themepunch.enablelog.js
+ create mode 100644 assets/revolution/js/jquery.themepunch.revolution.min.js
+ create mode 100644 assets/revolution/js/jquery.themepunch.tools.min.js
+ create mode 100644 assets/revolution/js/source/index.php
+ create mode 100644 assets/revolution/js/source/jquery.themepunch.enablelog.js
+ create mode 100644 assets/revolution/js/source/jquery.themepunch.revolution.js
+ create mode 100644 assets/revolution/js/source/jquery.themepunch.tools.min.js
+ create mode 100644 assets/revolution/js/source/tp-color-picker.js
+ create mode 100644 assets/revolution/js/tp-color-picker.min.js
+ create mode 100644 assets/type/Nunito/Nunito-Black.eot
+ create mode 100644 assets/type/Nunito/Nunito-Black.svg
+ create mode 100644 assets/type/Nunito/Nunito-Black.ttf
+ create mode 100644 assets/type/Nunito/Nunito-Black.woff
+ create mode 100644 assets/type/Nunito/Nunito-Black.woff2
+ create mode 100644 assets/type/Nunito/Nunito-BlackItalic.eot
+ create mode 100644 assets/type/Nunito/Nunito-BlackItalic.svg
+ create mode 100644 assets/type/Nunito/Nunito-BlackItalic.ttf
+ create mode 100644 assets/type/Nunito/Nunito-BlackItalic.woff
+ create mode 100644 assets/type/Nunito/Nunito-BlackItalic.woff2
+ create mode 100644 assets/type/Nunito/Nunito-Bold.eot
+ create mode 100644 assets/type/Nunito/Nunito-Bold.svg
+ create mode 100644 assets/type/Nunito/Nunito-Bold.ttf
+ create mode 100644 assets/type/Nunito/Nunito-Bold.woff
+ create mode 100644 assets/type/Nunito/Nunito-Bold.woff2
+ create mode 100644 assets/type/Nunito/Nunito-BoldItalic.eot
+ create mode 100644 assets/type/Nunito/Nunito-BoldItalic.svg
+ create mode 100644 assets/type/Nunito/Nunito-BoldItalic.ttf
+ create mode 100644 assets/type/Nunito/Nunito-BoldItalic.woff
+ create mode 100644 assets/type/Nunito/Nunito-BoldItalic.woff2
+ create mode 100644 assets/type/Nunito/Nunito-ExtraBold.eot
+ create mode 100644 assets/type/Nunito/Nunito-ExtraBold.svg
+ create mode 100644 assets/type/Nunito/Nunito-ExtraBold.ttf
+ create mode 100644 assets/type/Nunito/Nunito-ExtraBold.woff
+ create mode 100644 assets/type/Nunito/Nunito-ExtraBold.woff2
+ create mode 100644 assets/type/Nunito/Nunito-ExtraBoldItalic.eot
+ create mode 100644 assets/type/Nunito/Nunito-ExtraBoldItalic.svg
+ create mode 100644 assets/type/Nunito/Nunito-ExtraBoldItalic.ttf
+ create mode 100644 assets/type/Nunito/Nunito-ExtraBoldItalic.woff
+ create mode 100644 assets/type/Nunito/Nunito-ExtraBoldItalic.woff2
+ create mode 100644 assets/type/Nunito/Nunito-ExtraLight.eot
+ create mode 100644 assets/type/Nunito/Nunito-ExtraLight.svg
+ create mode 100644 assets/type/Nunito/Nunito-ExtraLight.ttf
+ create mode 100644 assets/type/Nunito/Nunito-ExtraLight.woff
+ create mode 100644 assets/type/Nunito/Nunito-ExtraLight.woff2
+ create mode 100644 assets/type/Nunito/Nunito-ExtraLightItalic.eot
+ create mode 100644 assets/type/Nunito/Nunito-ExtraLightItalic.svg
+ create mode 100644 assets/type/Nunito/Nunito-ExtraLightItalic.ttf
+ create mode 100644 assets/type/Nunito/Nunito-ExtraLightItalic.woff
+ create mode 100644 assets/type/Nunito/Nunito-ExtraLightItalic.woff2
+ create mode 100644 assets/type/Nunito/Nunito-Italic.eot
+ create mode 100644 assets/type/Nunito/Nunito-Italic.svg
+ create mode 100644 assets/type/Nunito/Nunito-Italic.ttf
+ create mode 100644 assets/type/Nunito/Nunito-Italic.woff
+ create mode 100644 assets/type/Nunito/Nunito-Italic.woff2
+ create mode 100644 assets/type/Nunito/Nunito-Light.eot
+ create mode 100644 assets/type/Nunito/Nunito-Light.svg
+ create mode 100644 assets/type/Nunito/Nunito-Light.ttf
+ create mode 100644 assets/type/Nunito/Nunito-Light.woff
+ create mode 100644 assets/type/Nunito/Nunito-Light.woff2
+ create mode 100644 assets/type/Nunito/Nunito-LightItalic.eot
+ create mode 100644 assets/type/Nunito/Nunito-LightItalic.svg
+ create mode 100644 assets/type/Nunito/Nunito-LightItalic.ttf
+ create mode 100644 assets/type/Nunito/Nunito-LightItalic.woff
+ create mode 100644 assets/type/Nunito/Nunito-LightItalic.woff2
+ create mode 100644 assets/type/Nunito/Nunito-Regular.eot
+ create mode 100644 assets/type/Nunito/Nunito-Regular.svg
+ create mode 100644 assets/type/Nunito/Nunito-Regular.ttf
+ create mode 100644 assets/type/Nunito/Nunito-Regular.woff
+ create mode 100644 assets/type/Nunito/Nunito-Regular.woff2
+ create mode 100644 assets/type/Nunito/Nunito-SemiBold.eot
+ create mode 100644 assets/type/Nunito/Nunito-SemiBold.svg
+ create mode 100644 assets/type/Nunito/Nunito-SemiBold.ttf
+ create mode 100644 assets/type/Nunito/Nunito-SemiBold.woff
+ create mode 100644 assets/type/Nunito/Nunito-SemiBold.woff2
+ create mode 100644 assets/type/Nunito/Nunito-SemiBoldItalic.eot
+ create mode 100644 assets/type/Nunito/Nunito-SemiBoldItalic.svg
+ create mode 100644 assets/type/Nunito/Nunito-SemiBoldItalic.ttf
+ create mode 100644 assets/type/Nunito/Nunito-SemiBoldItalic.woff
+ create mode 100644 assets/type/Nunito/Nunito-SemiBoldItalic.woff2
+ create mode 100644 assets/type/custom/custom.eot
+ create mode 100644 assets/type/custom/custom.svg
+ create mode 100644 assets/type/custom/custom.ttf
+ create mode 100644 assets/type/custom/custom.woff
+ create mode 100644 assets/type/hkgrotesk/HKGrotesk-Bold.woff
+ create mode 100644 assets/type/hkgrotesk/HKGrotesk-Bold.woff2
+ create mode 100644 assets/type/hkgrotesk/HKGrotesk-BoldItalic.woff
+ create mode 100644 assets/type/hkgrotesk/HKGrotesk-BoldItalic.woff2
+ create mode 100644 assets/type/hkgrotesk/HKGrotesk-Italic.woff
+ create mode 100644 assets/type/hkgrotesk/HKGrotesk-Italic.woff2
+ create mode 100644 assets/type/hkgrotesk/HKGrotesk-Light.woff
+ create mode 100644 assets/type/hkgrotesk/HKGrotesk-Light.woff2
+ create mode 100644 assets/type/hkgrotesk/HKGrotesk-LightItalic.woff
+ create mode 100644 assets/type/hkgrotesk/HKGrotesk-LightItalic.woff2
+ create mode 100644 assets/type/hkgrotesk/HKGrotesk-Medium.woff
+ create mode 100644 assets/type/hkgrotesk/HKGrotesk-Medium.woff2
+ create mode 100644 assets/type/hkgrotesk/HKGrotesk-MediumItalic.woff
+ create mode 100644 assets/type/hkgrotesk/HKGrotesk-MediumItalic.woff2
+ create mode 100644 assets/type/hkgrotesk/HKGrotesk-Regular.woff
+ create mode 100644 assets/type/hkgrotesk/HKGrotesk-Regular.woff2
+ create mode 100644 assets/type/hkgrotesk/HKGrotesk-SemiBold.woff
+ create mode 100644 assets/type/hkgrotesk/HKGrotesk-SemiBold.woff2
+ create mode 100644 assets/type/hkgrotesk/HKGrotesk-SemiBoldItalic.woff
+ create mode 100644 assets/type/hkgrotesk/HKGrotesk-SemiBoldItalic.woff2
+ create mode 100644 assets/type/iconfont/icofont.eot
+ create mode 100644 assets/type/iconfont/icofont.svg
+ create mode 100644 assets/type/iconfont/icofont.ttf
+ create mode 100644 assets/type/iconfont/icofont.woff
+ create mode 100644 assets/type/iconfont/icofont.woff2
+ create mode 100644 assets/type/jam/Jam.eot
+ create mode 100644 assets/type/jam/Jam.svg
+ create mode 100644 assets/type/jam/Jam.ttf
+ create mode 100644 assets/type/jam/Jam.woff
+ create mode 100644 assets/type/jam/selection.json
+ create mode 100644 assets/type/jost/Jost-Bold.woff
+ create mode 100644 assets/type/jost/Jost-Bold.woff2
+ create mode 100644 assets/type/jost/Jost-BoldItalic.woff
+ create mode 100644 assets/type/jost/Jost-BoldItalic.woff2
+ create mode 100644 assets/type/jost/Jost-Book.woff
+ create mode 100644 assets/type/jost/Jost-Book.woff2
+ create mode 100644 assets/type/jost/Jost-BookItalic.woff
+ create mode 100644 assets/type/jost/Jost-BookItalic.woff2
+ create mode 100644 assets/type/jost/Jost-Light.woff
+ create mode 100644 assets/type/jost/Jost-Light.woff2
+ create mode 100644 assets/type/jost/Jost-LightItalic.woff
+ create mode 100644 assets/type/jost/Jost-LightItalic.woff2
+ create mode 100644 assets/type/jost/Jost-Medium.woff
+ create mode 100644 assets/type/jost/Jost-Medium.woff2
+ create mode 100644 assets/type/jost/Jost-MediumItalic.woff
+ create mode 100644 assets/type/jost/Jost-MediumItalic.woff2
+ create mode 100644 assets/type/jost/Jost-Semi.woff
+ create mode 100644 assets/type/jost/Jost-Semi.woff2
+ create mode 100644 assets/type/jost/Jost-SemiItalic.woff
+ create mode 100644 assets/type/jost/Jost-SemiItalic.woff2
+ create mode 100644 assets/type/lg/lg.eot
+ create mode 100644 assets/type/lg/lg.svg
+ create mode 100644 assets/type/lg/lg.ttf
+ create mode 100644 assets/type/lg/lg.woff
+ create mode 100644 assets/type/museo/Museo300-Regular-webfont.woff
+ create mode 100644 assets/type/museo/Museo300-Regular-webfont.woff2
+ create mode 100644 assets/type/museo/Museo500-Regular-webfont.woff
+ create mode 100644 assets/type/museo/Museo500-Regular-webfont.woff2
+ create mode 100644 assets/type/museo/Museo700-Regular-webfont.woff
+ create mode 100644 assets/type/museo/Museo700-Regular-webfont.woff2
+ create mode 100644 assets/type/snowlake/Snowlake.eot
+ create mode 100644 assets/type/snowlake/Snowlake.svg
+ create mode 100644 assets/type/snowlake/Snowlake.ttf
+ create mode 100644 assets/type/snowlake/Snowlake.woff
+ create mode 100644 assets/type/type.css
+ create mode 100644 attached_assets/Pasted--Here-s-your-exact-Replit-AI-Prompt-Pack-for-AI-Risk-Pr_1776688105254.txt
+ create mode 100644 attached_assets/Pasted--Here-s-your-exact-Replit-AI-Prompt-Pack-for-Build-basi_1776672077950.txt
+ create mode 100644 attached_assets/Pasted--Here-s-your-exact-Replit-AI-Prompt-Pack-for-Create-AI-_1776672096035.txt
+ create mode 100644 attached_assets/Pasted--Here-s-your-exact-Replit-AI-Prompt-Pack-for-Data-Aggre_1776676043667.txt
+ create mode 100644 attached_assets/Pasted--Here-s-your-exact-Replit-AI-Prompt-Pack-for-Platform-D_1776687295314.txt
+ create mode 100644 attached_assets/Pasted--Here-s-your-exact-Replit-AI-Prompt-Pack-for-Report-Iss_1776687139346.txt
+ create mode 100644 attached_assets/Pasted--Here-s-your-exact-Replit-AI-Prompt-Pack-for-Token-Appr_1776686956857.txt
+ create mode 100644 attached_assets/Pasted--Perfect-we-re-building-your-entire-DeFi-Scoring-platfo_1776619796009.txt
+ create mode 100644 attached_assets/Pasted-2026-04-20T07-42-15-638Z-Initializing-build-environment_1776671130239.txt
+ create mode 100644 attached_assets/Pasted-2026-04-20T07-50-39-764Z-Initializing-build-environment_1776672230726.txt
+ create mode 100644 attached_assets/Pasted-Create-a-new-file-at-assets-js-profiler-js-with-this-ex_1776670596223.txt
+ create mode 100644 attached_assets/Pasted-Here-s-a-clean-ready-to-paste-Replit-AI-prompt-pack-tha_1776671857919.txt
+ create mode 100644 attached_assets/Pasted-Integrating-an-AI-powered-risk-assessment-is-the-Holy-G_1776675018912.txt
+ create mode 100644 attached_assets/Pasted-This-is-the-Sticky-Feature-of-your-platform-A-Personali_1776675044414.txt
+ create mode 100644 attached_assets/Pasted-To-bridge-the-gap-between-your-static-Jekyll-site-and-r_1776674869660.txt
+ create mode 100644 attached_assets/Pasted-To-build-a-Connect-Wallet-Lite-feature-that-stays-withi_1776674911983.txt
+ create mode 100644 attached_assets/Screenshot_2026-04-20_at_10.40.49_AM_1776670879572.png
+ create mode 100644 attached_assets/Screenshot_2026-04-20_at_10.44.23_AM_1776671083524.png
+ create mode 100644 attached_assets/Screenshot_2026-04-20_at_10.54.17_AM_1776671694307.png
+ create mode 100644 attached_assets/Screenshot_2026-04-20_at_10.55.19_AM_1776671734993.png
+ create mode 100644 attached_assets/Screenshot_2026-04-20_at_11.05.49_AM_1776672373097.png
+ create mode 100644 attached_assets/Screenshot_2026-04-20_at_12.00.44_PM_1776682723060.png
+ create mode 100644 attached_assets/Screenshot_2026-04-20_at_12.10.01_PM_1776676225296.png
+ create mode 100644 attached_assets/Screenshot_2026-04-20_at_12.10.04_PM_1776676225296.png
+ create mode 100644 attached_assets/Screenshot_2026-04-20_at_12.10.04_PM_1776684070386.png
+ create mode 100644 attached_assets/Screenshot_2026-04-20_at_2.02.03_PM_1776682955668.png
+ create mode 100644 attached_assets/Screenshot_2026-04-20_at_2.21.41_PM_1776684137537.png
+ create mode 100644 attached_assets/Screenshot_2026-04-20_at_2.23.17_PM_1776684232308.png
+ create mode 100644 attached_assets/Screenshot_2026-04-20_at_2.52.54_PM_1776686014182.png
+ create mode 100644 attached_assets/Screenshot_2026-04-20_at_3.00.41_PM_1776686459568.png
+ create mode 100644 attached_assets/Screenshot_2026-04-20_at_3.04.02_PM_1776686689042.png
+ create mode 100644 attached_assets/Screenshot_2026-04-20_at_9.53.56_AM_1776668049649.png
+ create mode 100644 attached_assets/apple-touch-icon_1776687450074.png
+ create mode 100644 attached_assets/defiscoring-logo-100x100_1776671088314.png
+ create mode 100644 attached_assets/defiscoring-logo-2_1776667771148.png
+ create mode 100644 attached_assets/defiscoring-logo-white-100x100_1776671090929.png
+ create mode 100644 attached_assets/defiscoring-logo-white-2_1776667771148.png
+ create mode 100644 attached_assets/favicon-96x96_1776687450074.png
+ create mode 100644 attached_assets/favicon_1776687450074.ico
+ create mode 100644 audits/index.html
+ create mode 100644 cloudflare.toml
+ create mode 100644 dashboard/alerts.html
+ create mode 100644 dashboard/approvals.html
+ create mode 100644 dashboard/index.html
+ create mode 100644 dashboard/market-intel.html
+ create mode 100644 dashboard/portfolio.html
+ create mode 100644 dashboard/report.html
+ create mode 100644 dashboard/risk-chatbot.html
+ create mode 100644 dashboard/risk-profiler.html
+ create mode 100644 dashboard/risk-profiler.md
+ create mode 100644 dashboard/scanner.html
+ create mode 100644 dashboard/score.html
+ create mode 100644 github.toml
+ create mode 100644 index.html
+ create mode 100644 migrations/0001_init.sql
+ create mode 100644 migrations/0002_watchlists.sql
+ create mode 100644 migrations/0003_community_votes.sql
+ create mode 100644 migrations/0004_market_intel.sql
+ create mode 100644 migrations/0005_risk_chatbot.sql
+ create mode 100644 replit.md
+ create mode 100644 scripts/refresh_scores.py
+ create mode 100644 worker/index.js
+ create mode 100644 wrangler.jsonc
+Enumerating objects: 2224, done.
+Counting objects: 100% (2224/2224), done.
+Delta compression using up to 8 threads
+Compressing objects: 100% (2212/2212), done.
+Writing objects: 100% (2224/2224), 58.42 MiB | 5.57 MiB/s, done.
+Total 2224 (delta 144), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (144/144), done.
+To https://github.com/DeFiScoring/website.git
+ ! [remote rejected] main -> main (refusing to allow an OAuth App to create or update workflow `.github/workflows/refresh-scores.yml` without `workflow` scope)
+error: failed to push some refs to 'https://github.com/DeFiScoring/website.git'
+~/workspace$ git push origin main
+To https://github.com/DeFiScoring/website.git
+ ! [rejected]        main -> main (fetch first)
+error: failed to push some refs to 'https://github.com/DeFiScoring/website.git'
+hint: Updates were rejected because the remote contains work that you do not
+hint: have locally. This is usually caused by another repository pushing to
+hint: the same ref. If you want to integrate the remote changes, use
+hint: 'git pull' before pushing again.
+hint: See the 'Note about fast-forwards' in 'git push --help' for details.
+~/workspace$ git rm -r --cached .github/workflows
+rm '.github/workflows/refresh-scores.yml'
+~/workspace$ git commit -m "Remove workflows (GitHub permission block)"
+[main 314ae18] Remove workflows (GitHub permission block)
+ 1 file changed, 52 deletions(-)
+ delete mode 100644 .github/workflows/refresh-scores.yml
+~/workspace$ git ls-files | grep .github/workflows
+~/workspace$ git fetch origin
+git rebase origin/main
+remote: Enumerating objects: 5551, done.
+remote: Counting objects: 100% (5551/5551), done.
+remote: Compressing objects: 100% (2566/2566), done.
+remote: Total 5551 (delta 2514), reused 5534 (delta 2497), pack-reused 0 (from 0)
+Receiving objects: 100% (5551/5551), 59.66 MiB | 14.17 MiB/s, done.
+Resolving deltas: 100% (2514/2514), done.
+From https://github.com/DeFiScoring/website
+ * [new branch]      main       -> origin/main
+warning: skipped previously applied commit 314ae18
+hint: use --reapply-cherry-picks to include skipped commits
+hint: Disable this message with "git config set advice.skippedCherryPicks false"
+error: The following untracked working tree files would be overwritten by merge:
+    .github/workflows/refresh-scores.yml
+Please move or remove them before you merge.
+Aborting
+hint: Could not execute the todo command
+hint:
+hint:     pick 611b907bffe7a6bfcb1c1209d3e9a7482a7dadef # Clean init (no workflows)
+hint:
+hint: It has been rescheduled; To edit the command before continuing, please
+hint: edit the todo list first:
+hint:
+hint:     git rebase --edit-todo
+hint:     git rebase --continue
+~/workspace$ git status
+interactive rebase in progress; onto 3257187
+Last command done (1 command done):
+   pick 611b907 # Clean init (no workflows)
+Next command to do (1 remaining command):
+   pick 611b907 # Clean init (no workflows)
+  (use "git rebase --edit-todo" to view and edit)
+You are currently editing a commit while rebasing branch 'main' on '3257187'.
+  (use "git commit --amend" to amend the current commit)
+  (use "git rebase --continue" once you are satisfied with your changes)
+
+Changes not staged for commit:
+  (use "git add/rm <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+    deleted:    _site/about/about-2.html
+    deleted:    _site/about/about-3.html
+    deleted:    _site/about/about-4.html
+    deleted:    _site/about/about.html
+    deleted:    _site/about/index.html
+    deleted:    _site/attached_assets/Pasted--Here-s-your-exact-Replit-AI-Prompt-Pack-for-Build-basi_1776672077950.txt
+    deleted:    _site/attached_assets/Pasted--Here-s-your-exact-Replit-AI-Prompt-Pack-for-Create-AI-_1776672096035.txt
+    deleted:    _site/attached_assets/Pasted--Perfect-we-re-building-your-entire-DeFi-Scoring-platfo_1776619796009.txt
+    deleted:    _site/attached_assets/Pasted-2026-04-20T07-42-15-638Z-Initializing-build-environment_1776671130239.txt
+    deleted:    _site/attached_assets/Pasted-2026-04-20T07-50-39-764Z-Initializing-build-environment_1776672230726.txt
+    deleted:    _site/attached_assets/Pasted-Create-a-new-file-at-assets-js-profiler-js-with-this-ex_1776670596223.txt
+    deleted:    _site/attached_assets/Pasted-Here-s-a-clean-ready-to-paste-Replit-AI-prompt-pack-tha_1776671857919.txt
+    deleted:    _site/attached_assets/Screenshot_2026-04-20_at_10.40.49_AM_1776670879572.png
+    deleted:    _site/attached_assets/Screenshot_2026-04-20_at_10.44.23_AM_1776671083524.png
+    deleted:    _site/attached_assets/Screenshot_2026-04-20_at_10.54.17_AM_1776671694307.png
+    deleted:    _site/attached_assets/Screenshot_2026-04-20_at_10.55.19_AM_1776671734993.png
+    deleted:    _site/attached_assets/Screenshot_2026-04-20_at_9.53.56_AM_1776668049649.png
+    deleted:    _site/attached_assets/defiscoring-logo-100x100_1776671088314.png
+    deleted:    _site/attached_assets/defiscoring-logo-2_1776667771148.png
+    deleted:    _site/attached_assets/defiscoring-logo-white-100x100_1776671090929.png
+    deleted:    _site/attached_assets/defiscoring-logo-white-2_1776667771148.png
+    deleted:    _site/authors/sarah-wanderlust.html
+    deleted:    _site/authors/tortoiz-themes.html
+    deleted:    _site/blogs/boxed-classic-sidebar/index.html
+    deleted:    _site/blogs/boxed-classic-sidebar/page/2/index.html
+    deleted:    _site/blogs/boxed-classic-sidebar/page/3/index.html
+    deleted:    _site/blogs/boxed-classic/index.html
+    deleted:    _site/blogs/boxed-classic/page/2/index.html
+    deleted:    _site/blogs/boxed-classic/page/3/index.html
+    deleted:    _site/blogs/boxed-grid-sidebar/index.html
+    deleted:    _site/blogs/boxed-grid-sidebar/page/2/index.html
+    deleted:    _site/blogs/boxed-grid-sidebar/page/3/index.html
+    deleted:    _site/blogs/boxed-grid/index.html
+    deleted:    _site/blogs/boxed-grid/page/2/index.html
+    deleted:    _site/blogs/boxed-grid/page/3/index.html
+    deleted:    _site/blogs/classic-grid-sidebar/index.html
+    deleted:    _site/blogs/classic-grid-sidebar/page/2/index.html
+    deleted:    _site/blogs/classic-grid-sidebar/page/3/index.html
+    deleted:    _site/blogs/classic-grid/index.html
+    deleted:    _site/blogs/classic-grid/page/2/index.html
+    deleted:    _site/blogs/classic-grid/page/3/index.html
+    deleted:    _site/blogs/classic-sidebar/index.html
+    deleted:    _site/blogs/classic-sidebar/page/2/index.html
+    deleted:    _site/blogs/classic-sidebar/page/3/index.html
+    deleted:    _site/blogs/classic/index.html
+    deleted:    _site/blogs/classic/page/2/index.html
+    deleted:    _site/blogs/classic/page/3/index.html
+    deleted:    _site/blogs/index.html
+    deleted:    _site/blogs/page/2/index.html
+    deleted:    _site/blogs/page/3/index.html
+    deleted:    _site/category/architecture/index.html
+    deleted:    _site/category/couples/index.html
+    deleted:    _site/category/engagement/index.html
+    deleted:    _site/category/historic/index.html
+    deleted:    _site/category/jekyll/index.html
+    deleted:    _site/category/photography/index.html
+    deleted:    _site/category/places/index.html
+    deleted:    _site/category/roadtrip/index.html
+    deleted:    _site/category/travel/index.html
+    deleted:    _site/category/vlog/index.html
+    deleted:    _site/category/web-development/index.html
+    deleted:    _site/category/wedding/index.html
+    deleted:    _site/category/writing/index.html
+    deleted:    _site/cloudflare.toml
+    deleted:    _site/contact/contact-1.html
+    deleted:    _site/contact/contact-2.html
+    deleted:    _site/contact/contact-3.html
+    deleted:    _site/contact/contact-4.html
+    deleted:    _site/contact/index.html
+    modified:   _site/dashboard/risk-profiler.html
+    deleted:    _site/elements/accordion.html
+    deleted:    _site/elements/alerts.html
+    deleted:    _site/elements/animated_text.html
+    deleted:    _site/elements/blockquote.html
+    deleted:    _site/elements/buttons_badges.html
+    deleted:    _site/elements/call_to_action.html
+    deleted:    _site/elements/carousel.html
+    deleted:    _site/elements/clients.html
+    deleted:    _site/elements/countdown.html
+    deleted:    _site/elements/counter.html
+    deleted:    _site/elements/dividers.html
+    deleted:    _site/elements/dropcap.html
+    deleted:    _site/elements/forms.html
+    deleted:    _site/elements/icon_box.html
+    deleted:    _site/elements/icons_concept.html
+    deleted:    _site/elements/icons_icofont.html
+    deleted:    _site/elements/icons_image_mask.html
+    deleted:    _site/elements/icons_jam.html
+    deleted:    _site/elements/icons_lineal.html
+    deleted:    _site/elements/image_hover.html
+    deleted:    _site/elements/lightbox.html
+    deleted:    _site/elements/lists.html
+    deleted:    _site/elements/media_player.html
+    deleted:    _site/elements/modal.html
+    deleted:    _site/elements/pricing.html
+    deleted:    _site/elements/process_steps.html
+    deleted:    _site/elements/progress_bar.html
+    deleted:    _site/elements/scroll_animations.html
+    deleted:    _site/elements/social_icons.html
+    deleted:    _site/elements/tables.html
+    deleted:    _site/elements/tabs.html
+    deleted:    _site/elements/team.html
+    deleted:    _site/elements/testimonials.html
+    deleted:    _site/elements/titles.html
+    deleted:    _site/elements/toggle.html
+    deleted:    _site/elements/tooltip_popover.html
+    deleted:    _site/elements/typography.html
+    deleted:    _site/elements/video_popup.html
+    deleted:    _site/elements/waves.html
+    deleted:    _site/elements/wrappers.html
+    deleted:    _site/features/faq.html
+    deleted:    _site/features/footer1.html
+    deleted:    _site/features/footer2.html
+    deleted:    _site/features/footer3.html
+    deleted:    _site/features/footer4.html
+    deleted:    _site/features/footer5.html
+    deleted:    _site/features/footer6.html
+    deleted:    _site/features/footer7.html
+    deleted:    _site/features/footer8.html
+    deleted:    _site/features/header1.html
+    deleted:    _site/features/header10.html
+    deleted:    _site/features/header2.html
+    deleted:    _site/features/header3.html
+    deleted:    _site/features/header4.html
+    deleted:    _site/features/header5.html
+    deleted:    _site/features/header6.html
+    deleted:    _site/features/header7.html
+    deleted:    _site/features/header8.html
+    deleted:    _site/features/header9.html
+    deleted:    _site/features/index.html
+    deleted:    _site/features/loading.html
+    deleted:    _site/features/modal.html
+    deleted:    _site/features/navigation1.html
+    deleted:    _site/features/navigation10.html
+    deleted:    _site/features/navigation11.html
+    deleted:    _site/features/navigation2.html
+    deleted:    _site/features/navigation3.html
+    deleted:    _site/features/navigation4.html
+    deleted:    _site/features/navigation5.html
+    deleted:    _site/features/navigation6.html
+    deleted:    _site/features/navigation7.html
+    deleted:    _site/features/navigation8.html
+    deleted:    _site/features/navigation9.html
+    deleted:    _site/features/scroll.html
+    deleted:    _site/github.toml
+    deleted:    _site/home-pages/index-10.html
+    deleted:    _site/home-pages/index-11.html
+    deleted:    _site/home-pages/index-12.html
+    deleted:    _site/home-pages/index-13.html
+    deleted:    _site/home-pages/index-14.html
+    deleted:    _site/home-pages/index-15.html
+    deleted:    _site/home-pages/index-16.html
+    deleted:    _site/home-pages/index-17.html
+    deleted:    _site/home-pages/index-18.html
+    deleted:    _site/home-pages/index-19.html
+    deleted:    _site/home-pages/index-2.html
+    deleted:    _site/home-pages/index-20.html
+    deleted:    _site/home-pages/index-21.html
+    deleted:    _site/home-pages/index-22.html
+    deleted:    _site/home-pages/index-23.html
+    deleted:    _site/home-pages/index-24.html
+    deleted:    _site/home-pages/index-25.html
+    deleted:    _site/home-pages/index-26.html
+    deleted:    _site/home-pages/index-27.html
+    deleted:    _site/home-pages/index-3.html
+    deleted:    _site/home-pages/index-31.html
+    deleted:    _site/home-pages/index-4.html
+    deleted:    _site/home-pages/index-5.html
+    deleted:    _site/home-pages/index-6.html
+    deleted:    _site/home-pages/index-7.html
+    deleted:    _site/home-pages/index-8.html
+    deleted:    _site/home-pages/index-9.html
+    deleted:    _site/home-pages/index.html
+    deleted:    _site/index.xml
+    deleted:    _site/netlify.toml
+    deleted:    _site/portfolio/abstract-art.html
+    deleted:    _site/portfolio/architectural-photography.html
+    deleted:    _site/portfolio/brand-box.html
+    deleted:    _site/portfolio/brand-identity.html
+    deleted:    _site/portfolio/branding-stationary.html
+    deleted:    _site/portfolio/brown-paper-card.html
+    deleted:    _site/portfolio/clipboard-office.html
+    deleted:    _site/portfolio/commercial-photography.html
+    deleted:    _site/portfolio/creative-portfolio.html
+    deleted:    _site/portfolio/cultural-heritage.html
+    deleted:    _site/portfolio/data-visualization.html
+    deleted:    _site/portfolio/digital-agency.html
+    deleted:    _site/portfolio/digital-art.html
+    deleted:    _site/portfolio/digital-illustration.html
+    deleted:    _site/portfolio/digital-marketing.html
+    deleted:    _site/portfolio/digital-photo.html
+    deleted:    _site/portfolio/ecommerce-platform.html
+    deleted:    _site/portfolio/environmental-design.html
+    deleted:    _site/portfolio/environmental-landscapes.html
+    deleted:    _site/portfolio/experimental-typography.html
+    deleted:    _site/portfolio/fashion-design.html
+    deleted:    _site/portfolio/food-photography.html
+    deleted:    _site/portfolio/global-photography.html
+    deleted:    _site/portfolio/graphic-design.html
+    deleted:    _site/portfolio/half-fold-book.html
+    deleted:    _site/portfolio/illustration-project.html
+    deleted:    _site/portfolio/industrial-design.html
+    deleted:    _site/portfolio/interactive-design.html
+    deleted:    _site/portfolio/interior-design.html
+    deleted:    _site/portfolio/landscape-photography.html
+    deleted:    _site/portfolio/mobile-app-design.html
+    deleted:    _site/portfolio/motion-graphics.html
+    deleted:    _site/portfolio/packaging-design.html
+    deleted:    _site/portfolio/paperback-book.html
+    deleted:    _site/portfolio/photography-portfolio.html
+    deleted:    _site/portfolio/portfolio-post-carousel.html
+    deleted:    _site/portfolio/portfolio-post-columns.html
+    deleted:    _site/portfolio/portfolio-post-masonry.html
+    deleted:    _site/portfolio/portfolio-post-multi-images.html
+    deleted:    _site/portfolio/portfolio-post-slider.html
+    deleted:    _site/portfolio/portfolio-post-video.html
+    deleted:    _site/portfolio/product-design.html
+    deleted:    _site/portfolio/product-photography.html
+    deleted:    _site/portfolio/social-media-campaign.html
+    deleted:    _site/portfolio/space-exploration.html
+    deleted:    _site/portfolio/startup-branding.html
+    deleted:    _site/portfolio/street-art.html
+    deleted:    _site/portfolio/street-design.html
+    deleted:    _site/portfolio/tattoo-design.html
+    deleted:    _site/portfolio/technological-innovation.html
+    deleted:    _site/portfolio/ui-ux-design.html
+    deleted:    _site/portfolio/underwater-diver.html
+    deleted:    _site/portfolio/underwater-exploration.html
+    deleted:    _site/portfolio/urban-street.html
+    deleted:    _site/portfolio/video-production.html
+    deleted:    _site/portfolio/web-design.html
+    deleted:    _site/portfolios/box-item-details.html
+    deleted:    _site/portfolios/fullscreen-grid.html
+    deleted:    _site/portfolios/grid-portfolio-details.html
+    deleted:    _site/portfolios/grid-portfolio.html
+    deleted:    _site/portfolios/masonry-portfolio-details.html
+    deleted:    _site/portfolios/masonry-portfolio.html
+    deleted:    _site/portfolios/mosaic-portfolio.html
+    deleted:    _site/portfolios/portfolio-item-details.html
+    modified:   _site/posts/24-hours-in-the-village-of-belgium.html
+    modified:   _site/posts/24-hours-in-the-village-of-valencia.html
+    modified:   _site/posts/a-dreamy-roadtrip-in-australia.html
+    modified:   _site/posts/markdown-advanced-guide.html
+    modified:   _site/posts/markdown-post.html
+    modified:   _site/posts/multi-carousel-post.html
+    modified:   _site/posts/my-love-affair-with-cappadocia.html
+    modified:   _site/posts/our-statement.html
+    modified:   _site/posts/post-boxed-sidebar.html
+    modified:   _site/posts/post-boxed.html
+    modified:   _site/posts/post-with-carousel.html
+    modified:   _site/posts/post-with-code-highlight.html
+    modified:   _site/posts/post-with-gallery.html
+    modified:   _site/posts/post-with-image.html
+    modified:   _site/posts/post-with-video.html
+    modified:   _site/posts/simple-post-with-no-sidebar.html
+    modified:   _site/posts/simple-post-with-sidebar.html
+    modified:   _site/posts/the-biggest-train-station-in-europe.html
+    modified:   _site/posts/the-natural-places-in-brazil.html
+    modified:   _site/posts/travel-photography-guide.html
+    deleted:    _site/replit.md
+    deleted:    _site/search.json
+    deleted:    _site/services/index-2.html
+    deleted:    _site/services/index-3.html
+    deleted:    _site/services/index-4.html
+    deleted:    _site/services/index-5.html
+    deleted:    _site/services/index.html
+    deleted:    _site/shop/brand-box/index.html
+    deleted:    _site/shop/branding-stationary/index.html
+    deleted:    _site/shop/brown-paper-card/index.html
+    deleted:    _site/shop/cart.html
+    deleted:    _site/shop/checkout.html
+    deleted:    _site/shop/clipboard-office/index.html
+    deleted:    _site/shop/featured/featured_product1/index.html
+    deleted:    _site/shop/featured/featured_product2/index.html
+    deleted:    _site/shop/featured/featured_product3/index.html
+    deleted:    _site/shop/half-fold-book/index.html
+    deleted:    _site/shop/index-2/index.html
+    deleted:    _site/shop/index-2/page/2/index.html
+    deleted:    _site/shop/index.html
+    deleted:    _site/shop/page/2/index.html
+    deleted:    _site/shop/paperback-book/index.html
+    deleted:    _site/shop/shopping-bag/index.html
+    deleted:    _site/shop/shopping-paperbag/index.html
+    deleted:    _site/shop/wine-bag/index.html
+    deleted:    _site/snowlake/index.html
+    deleted:    _site/tag/adventure/index.html
+    deleted:    _site/tag/architecture/index.html
+    deleted:    _site/tag/ecommerce/index.html
+    deleted:    _site/tag/education/index.html
+    deleted:    _site/tag/formatting/index.html
+    deleted:    _site/tag/history/index.html
+    deleted:    _site/tag/jekyll/index.html
+    deleted:    _site/tag/kramdown/index.html
+    deleted:    _site/tag/markdown/index.html
+    deleted:    _site/tag/photography/index.html
+    deleted:    _site/tag/shopping/index.html
+    deleted:    _site/tag/technology/index.html
+    deleted:    _site/tag/travel-tips/index.html
+    deleted:    _site/tag/travel/index.html
+    deleted:    _site/tag/tutorial/index.html
+    deleted:    _site/tag/vlog/index.html
+    deleted:    _site/tag/wedding/index.html
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+    .github/
+
+no changes added to commit (use "git add" and/or "git commit -a")
+~/workspace$ <<<<<<< HEAD
+your code
+=======
+incoming code
+>>>>>>> origin/main
+bash: syntax error near unexpected token `<<<'
+bash: your: command not found
+bash: =======: command not found
+bash: incoming: command not found
+bash: syntax error near unexpected token `>>'
+~/workspace$ git add .
+git rebase --continue
+error: you have staged changes in your working tree
+If these changes are meant to be squashed into the previous commit, run:
+
+  git commit --amend 
+
+If they are meant to go into a new commit, run:
+
+  git commit 
+
+In both cases, once you're done, continue with:
+
+  git rebase --continue
+
+~/workspace$ 

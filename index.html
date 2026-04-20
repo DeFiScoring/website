@@ -1,0 +1,169 @@
+---
+layout: null
+permalink: /
+title: DeFi Scoring — On-chain credit scoring for DeFi
+description: A 300–850 credit score for any wallet, plus portfolio risk heatmaps and real-time alerts across Ethereum, Arbitrum, and Polygon.
+sitemap: true
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title>{{ page.title }}</title>
+  <meta name="description" content="{{ page.description }}">
+  <meta property="og:title" content="{{ page.title }}">
+  <meta property="og:description" content="{{ page.description }}">
+  <meta property="og:type" content="website">
+  <link rel="icon" type="image/png" sizes="96x96" href="{{ '/assets/favicon/favicon-96x96.png' | relative_url }}">
+  <link rel="icon" type="image/x-icon" href="{{ '/assets/favicon/favicon.ico' | relative_url }}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ '/assets/favicon/apple-touch-icon.png' | relative_url }}">
+  <link rel="stylesheet" href="{{ '/assets/css/landing.css' | relative_url }}">
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="/">
+      <span class="brand-mark"><img src="{{ '/assets/defiscoring-logo-white-100x100.png' | relative_url }}" alt="DeFi Scoring" width="32" height="32"></span>
+      <span class="brand-text"><span class="brand-text__defi">DeFi</span><span class="brand-text__spacing">&nbsp;&nbsp;</span><span class="brand-text__scoring">Scoring</span></span>
+    </a>
+    <nav class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#how">How it works</a>
+      <a href="#chains">Chains</a>
+      <a class="btn btn-primary" href="/dashboard/">Open Dashboard</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="container hero-inner">
+    <span class="hero-badge"><span class="dot"></span> MVP — free during private beta</span>
+    <h1>Your <span class="grad">on-chain credit score</span>, in one click.</h1>
+    <p class="sub">
+      Connect any wallet to get a 300–850 DeFi credit score, a per-protocol risk heatmap
+      across your portfolio, and real-time alerts before liquidations hit.
+    </p>
+    <div class="hero-cta">
+      <a class="btn btn-primary btn-lg" href="/dashboard/">Scan my wallet →</a>
+      <a class="btn btn-ghost btn-lg" href="#how">See how it works</a>
+    </div>
+    <div class="hero-trust">
+      <span><b>0</b> signups required · wallet-based auth</span>
+      <span><b>3</b> chains in Phase 1</span>
+      <span><b>Free</b> public API tier</span>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="container">
+    <div class="section-head">
+      <div class="eyebrow">What you get</div>
+      <h2>Everything you need to underwrite a DeFi wallet</h2>
+      <p>Built for borrowers, lenders, and protocols who need a quick, defensible read on on-chain risk.</p>
+    </div>
+    <div class="features">
+      <div class="feature">
+        <div class="feature-icon">★</div>
+        <h3>Credit Score (300–850)</h3>
+        <p>A familiar FICO-style score combining payment history, utilization, account age, activity diversity, and sybil signals.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">▦</div>
+        <h3>Portfolio Heatmap</h3>
+        <p>See every position colored by protocol risk — green to red — with sortable detail across Aave, Compound, GMX, Uniswap, and more.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">⚡</div>
+        <h3>Real-time Alerts</h3>
+        <p>Get an email the moment your score drops, your health factor crosses a threshold, or a new liquidation event posts.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">⌬</div>
+        <h3>Public API</h3>
+        <p>One endpoint: <code>GET /api/score?wallet=0x…</code> returns a score, factor breakdown, and LTV recommendation. KV-cached, free tier.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">⤴</div>
+        <h3>What-if Simulator</h3>
+        <p>Model a new borrow, supply, or repayment and see your projected score and health factor before you sign the transaction.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">⎙</div>
+        <h3>Exportable Reports</h3>
+        <p>Download a PDF credit report or a CSV of every scored position — useful for treasuries, audits, and protocol underwriting.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="how" style="background:var(--bg-2)">
+  <div class="container">
+    <div class="section-head">
+      <div class="eyebrow">How it works</div>
+      <h2>From wallet connect to score in under 10 seconds</h2>
+      <p>No accounts. No KYC. Just on-chain signals you and your counterparties can verify.</p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>Connect</h3>
+        <p>Click connect — MetaMask, Rabby, or any EIP-1193 wallet. We never read your seed or private keys.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>Scan</h3>
+        <p>We pull your transaction history across Ethereum, Arbitrum, and Polygon via cached RPCs.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>Score</h3>
+        <p>Five rule-based factors combine into a 300–850 score, with a clear breakdown of what's pulling you up or down.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <h3>Monitor</h3>
+        <p>Set alert rules and we'll email you the moment something material changes.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="chains" class="chains">
+  <div class="container">
+    <div class="chains-row">
+      <span>Live now:</span>
+      <span class="chain-pill">Ethereum</span>
+      <span class="chain-pill">Arbitrum</span>
+      <span class="chain-pill">Polygon</span>
+      <span style="margin-left:14px">Coming soon:</span>
+      <span class="chain-pill next">Optimism</span>
+      <span class="chain-pill next">Base</span>
+      <span class="chain-pill next">Solana</span>
+    </div>
+  </div>
+</section>
+
+<section class="cta">
+  <div class="container cta-inner">
+    <h2>See your score in one click.</h2>
+    <p>It's free during the private beta. No signup, no email — just connect and scan.</p>
+    <a class="btn btn-primary btn-lg" href="/dashboard/">Open Dashboard →</a>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <div>&copy; {{ 'now' | date: '%Y' }} DeFi Scoring</div>
+    <div>
+      <a href="/dashboard/">Dashboard</a> ·
+      <a href="#features">Features</a> ·
+      <a href="/snowlake/">Theme demo</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

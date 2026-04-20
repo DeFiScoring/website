@@ -1,0 +1,95 @@
+# Sample risk profile reference data used by the Risk Profiler page.
+# Each profile is a personality/strategy preset plus the protocol-class
+# weights and limit thresholds that define it. Used to render presets,
+# seed mock data, and as the system prompt context for the AI Worker.
+
+profiles:
+  - id: conservative
+    name: Conservative
+    color: "#2bd4a4"
+    summary: >
+      Capital preservation first. Prefers blue-chip lending markets, avoids
+      perps and long-tail LPs. Health factor floor is high.
+    target:
+      max_ltv: 0.40
+      min_health_factor: 2.5
+      max_single_protocol_pct: 25
+      max_long_tail_pct: 5
+    weights:
+      lending_bluechip: 0.60
+      stables_lp: 0.25
+      eth_btc_lp: 0.10
+      perps: 0.0
+      long_tail: 0.05
+    chains: [Ethereum, Arbitrum, Polygon]
+
+  - id: balanced
+    name: Balanced
+    color: "#5b8cff"
+    summary: >
+      A diversified mix of lending and LP exposure with modest perp use for
+      hedging. Reasonable cushion above liquidation thresholds.
+    target:
+      max_ltv: 0.55
+      min_health_factor: 1.8
+      max_single_protocol_pct: 35
+      max_long_tail_pct: 15
+    weights:
+      lending_bluechip: 0.40
+      stables_lp: 0.20
+      eth_btc_lp: 0.20
+      perps: 0.10
+      long_tail: 0.10
+    chains: [Ethereum, Arbitrum, Polygon]
+
+  - id: aggressive
+    name: Aggressive
+    color: "#ffb547"
+    summary: >
+      Yield maximizing. Higher leverage on lending markets, larger LP and perp
+      allocations. Liquidation cushion is intentionally thin.
+    target:
+      max_ltv: 0.75
+      min_health_factor: 1.3
+      max_single_protocol_pct: 50
+      max_long_tail_pct: 30
+    weights:
+      lending_bluechip: 0.25
+      stables_lp: 0.10
+      eth_btc_lp: 0.20
+      perps: 0.20
+      long_tail: 0.25
+    chains: [Ethereum, Arbitrum, Polygon]
+
+  - id: degen
+    name: Degen
+    color: "#ff5d6c"
+    summary: >
+      Maximum risk, maximum yield. Long-tail farms, high leverage perps,
+      experimental protocols. Expect drawdowns; size positions accordingly.
+    target:
+      max_ltv: 0.85
+      min_health_factor: 1.1
+      max_single_protocol_pct: 70
+      max_long_tail_pct: 60
+    weights:
+      lending_bluechip: 0.10
+      stables_lp: 0.05
+      eth_btc_lp: 0.10
+      perps: 0.30
+      long_tail: 0.45
+    chains: [Ethereum, Arbitrum, Polygon]
+
+# Protocol -> risk class mapping used by the heatmap and profiler.
+protocol_classes:
+  Aave: lending_bluechip
+  Compound: lending_bluechip
+  Spark: lending_bluechip
+  Curve: stables_lp
+  Balancer: stables_lp
+  Uniswap: eth_btc_lp
+  QuickSwap: eth_btc_lp
+  Camelot: eth_btc_lp
+  GMX: perps
+  Gains: perps
+  Radiant: long_tail

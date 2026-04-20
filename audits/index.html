@@ -1,0 +1,52 @@
+---
+layout: dashboard
+permalink: /audits/
+title: Audit Directory
+dashboard_section: audits
+dashboard_title: Audit Directory
+dashboard_subtitle: Every protocol score linked to its real-world security audits.
+sitemap: false
+---
+
+{% assign audits = site.audits | sort: "date" | reverse %}
+{% assign protocols_grouped = audits | group_by: "protocol" %}
+
+<div class="defi-card" style="margin-bottom:18px">
+  <div class="defi-card__title">Why this matters</div>
+  <p style="margin:6px 0 0;color:var(--defi-text-dim);line-height:1.6">
+    DeFi credit scores tell you <em>what</em> a protocol's risk looks like. Audits
+    tell you <em>why</em>. We track the latest published audits from firms like
+    Trail of Bits, OpenZeppelin, ChainSecurity and ABDK and link each one back
+    to the protocol's live composite score so you can underwrite with both the
+    quantitative and qualitative picture in front of you.
+  </p>
+</div>
+
+<div class="defi-grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px">
+  {% for group in protocols_grouped %}
+    {% assign first = group.items | first %}
+    <div class="defi-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px">
+        <h3 style="margin:0;font-size:16px">{{ group.name }}</h3>
+        <span data-protocol="{{ first.protocol_slug }}" class="defi-badge defi-badge--loading">Loading…</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        {% for audit in group.items %}
+          <a href="{{ audit.url | relative_url }}" style="display:flex;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid var(--defi-border,rgba(148,163,184,.2));border-radius:8px;text-decoration:none;color:inherit;transition:background .15s" onmouseover="this.style.background='rgba(148,163,184,.06)'" onmouseout="this.style.background=''">
+            <div>
+              <div style="font-weight:600;font-size:13px">{{ audit.auditor }}</div>
+              <div style="font-size:11px;color:var(--defi-text-dim);margin-top:2px">
+                {{ audit.date | date: "%b %Y" }} ·
+                {% assign sev = audit.severity_breakdown %}
+                {% if sev.high and sev.high > 0 %}<span style="color:#fca5a5">{{ sev.high }} high</span> · {% endif %}
+                {% if sev.medium and sev.medium > 0 %}<span style="color:#fbbf24">{{ sev.medium }} med</span> · {% endif %}
+                {{ audit.status }}
+              </div>
+            </div>
+            <span style="color:var(--defi-text-dim);font-size:18px">→</span>
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+  {% endfor %}
+</div>

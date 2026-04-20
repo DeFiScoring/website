@@ -1,0 +1,44 @@
+{%- comment -%}
+  Opt-in banner for the Market Intelligence Hub. Hidden by default, shown
+  by JS only when the user has not yet made a consent choice and a wallet
+  is connected. CSS lives in dashboard.css under `.defi-consent`.
+{%- endcomment -%}
+<div id="defi-consent-banner" class="defi-consent" hidden>
+  <div class="defi-consent__text">
+    <strong>Help advance DeFi research.</strong>
+    Share <em>anonymized</em> usage data (hashed wallet, score, risk profile) so we
+    can publish aggregated market reports. Your address never leaves your
+    browser in the clear, and you can opt out anytime.
+  </div>
+  <div class="defi-consent__actions">
+    <button type="button" class="defi-btn defi-btn--ghost" data-intel-consent="off">No thanks</button>
+    <button type="button" class="defi-btn defi-btn--primary" data-intel-consent="on">Opt in</button>
+  </div>
+</div>
+<script>
+  (function () {
+    function init() {
+      var banner = document.getElementById("defi-consent-banner");
+      if (!banner || !window.DefiIntel) return;
+      function refresh() {
+        var hasWallet = !!(window.DefiWallet && window.DefiWallet.address);
+        var decided = window.DefiIntel.getConsent();
+        banner.hidden = !(hasWallet && decided !== "on" && decided !== "off");
+      }
+      banner.addEventListener("click", function (e) {
+        var btn = e.target.closest("[data-intel-consent]");
+        if (!btn) return;
+        window.DefiIntel.setConsent(btn.getAttribute("data-intel-consent"));
+        banner.hidden = true;
+      });
+      refresh();
+      // Re-evaluate when the wallet connects/disconnects.
+      window.addEventListener("defi:wallet-changed", refresh);
+      // Poll for a short window in case wallet-connect.js doesn't emit the event.
+      var tries = 0;
+      var iv = setInterval(function () { refresh(); if (++tries > 20) clearInterval(iv); }, 500);
+    }
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+    else init();
+  })();
+</script>

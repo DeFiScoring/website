@@ -1,0 +1,67 @@
+This is the "Sticky Feature" of your platform. A **Personalized Health Score** (effectively a DeFi Credit Score) encourages users to return to your site to see how their on-chain behavior improves their "trustworthiness" in the ecosystem.
+
+Since you are using **GitHub Pages (Jekyll)** and **Cloudflare**, the strategy is to use a Cloudflare Worker as an **Aggregator** that pulls data from various DeFi protocols and calculates the score on the fly.
+
+### 1. The Scoring Algorithm ($H_s$)
+To make this high-value, the score shouldn't just be about balance; it should be about **reputation**. We can define the Health Score ($H_s$) as:
+
+$$H_s = (0.4 \times L_r) + (0.3 \times LP_v) + (0.2 \times G_p) + (0.1 \times A_g)$$
+
+* **$L_r$ (Loan Reliability):** Successful repayments vs. liquidations on Aave/Compound.
+* **$LP_v$ (Liquidity Provision):** Total value and duration of liquidity provided.
+* **$G_p$ (Governance Participation):** Votes cast on Snapshot or Tally.
+* **$A_g$ (Account Age):** How long the wallet has been active on-chain.
+
+---
+
+### 2. The Replit Agent Master Prompt
+Copy and paste this into Replit to build the "Health Score" engine:
+
+> **"Build a DeFi Health Score Dashboard for a Jekyll site using Cloudflare Workers and D1.**
+>
+> **Objective:** Create a dashboard that analyzes a user's wallet history to generate a 'DeFi Credit Score.'
+>
+> **Task 1: Multi-Protocol Data Aggregator (Worker)**
+> * Create a Worker that accepts a wallet address.
+> * Integrate **The Graph API** (Subgraphs) to fetch:
+>     1. **Aave/Compound:** Total borrowed vs. total repaid.
+>     2. **Uniswap/Curve:** Current and historical LP positions.
+>     3. **Snapshot API:** Number of governance proposals voted on.
+> * Use **Cloudflare Web3 Gateway** to verify the current wallet balance.
+>
+> **Task 2: The Scoring Engine**
+> * Calculate a score from 300 to 850 (similar to a FICO score).
+> * **Logic:** +50 points for every 10 governance votes, +100 points for no liquidations in 12 months, -150 points for any active liquidation event.
+>
+> **Task 3: Persistence with Cloudflare D1**
+> * Set up a **Cloudflare D1 (SQL)** database to store the user's score history. 
+> * Every time a user checks their score, save the timestamp and value so the frontend can display a 'Score Trend' line chart.
+>
+> **Task 4: The Jekyll Dashboard UI**
+> * Create a React or Vanilla JS component for my Jekyll site.
+> * Include:
+>     1. A 'Connect Wallet' button.
+>     2. A circular progress gauge showing the Health Score.
+>     3. A 'Breakdown' section explaining *why* the score is what it is (e.g., 'High mark for Governance participation').
+>     4. A line chart (using Chart.js) showing score changes over time.
+>
+> **Security:** Ensure the Worker uses CORS to only allow requests from my GitHub Pages domain. Store all API keys in Cloudflare Secrets."
+
+---
+
+### 3. Architecture Overview
+Because Jekyll is static, the "Dashboard" page will be a skeleton that fills with data once the user connects their wallet.
+
+
+
+---
+
+### 4. Why this is "High Demand" for 2026
+1.  **Under-collateralized Loans:** The next wave of DeFi requires "Trust." Protocols are looking for ways to offer better rates to "Good Actors." Your score could be the gatekeeper for these rates.
+2.  **Airdrop Eligibility:** Many protocols now use "Sybil resistance" and "Wallet Health" to determine who gets airdrops. Your tool helps users "prime" their wallets for future rewards.
+3.  **Gamification:** By using **Cloudflare D1** to track historical scores, you can add a "Share on X (Twitter)" button so users can brag about their 800+ DeFi Health Score.
+
+### 5. Final Technical Fix: The "Cloudflare D1" Edge
+Since you are using Cloudflare, **do not** use a standard database like MongoDB. Use **D1**. It’s Cloudflare’s native SQL database that lives at the edge. It’s incredibly fast and fits perfectly into your current stack, allowing your Jekyll site to feel like a high-performance dynamic web app.
+
+**Would you like me to help you draft the SQL schema for the D1 database so you can track different categories of DeFi activity separately?**

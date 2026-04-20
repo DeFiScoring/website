@@ -1,0 +1,117 @@
+# DeFiScoring – protocol catalog (source of truth)
+#
+# Real, verifiable smart-contract addresses for major DeFi protocols across
+# Ethereum (1), Arbitrum (42161), and Polygon (137). Used by:
+#   - the Worker exposure endpoint to map a user's contract interactions
+#     to a known protocol slug,
+#   - the protocol scoring endpoint to look up DeFiLlama slugs.
+#
+# This file is published as JSON at /assets/data/protocols.json by Jekyll
+# (see assets/data/protocols.json file). The Worker fetches that URL on
+# cold start and caches it in KV for 1h.
+#
+# Schema:
+#   - slug:       DeFiLlama slug (https://defillama.com/protocol/<slug>)
+#     name:       Display name
+#     category:   lending | dex | liquid_staking | yield | derivatives | stablecoin
+#     contracts:  list of { chain_id, address, label }
+#
+# Adding a protocol: append below, push, redeploy. Address case is normalized.
+
+protocols:
+  # ── Lending ──────────────────────────────────────────────────────────────
+  - slug: aave-v3
+    name: Aave V3
+    category: lending
+    contracts:
+      - { chain_id: 1,     address: "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2", label: "Pool (Eth)" }
+      - { chain_id: 42161, address: "0x794a61358D6845594F94dc1DB02A252b5b4814aD", label: "Pool (Arb)" }
+      - { chain_id: 137,   address: "0x794a61358D6845594F94dc1DB02A252b5b4814aD", label: "Pool (Pol)" }
+  - slug: aave-v2
+    name: Aave V2
+    category: lending
+    contracts:
+      - { chain_id: 1, address: "0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9", label: "LendingPool" }
+  - slug: compound-v3
+    name: Compound V3
+    category: lending
+    contracts:
+      - { chain_id: 1,     address: "0xc3d688B66703497DAA19211EEdff47f25384cdc3", label: "cUSDCv3 (Eth)" }
+      - { chain_id: 42161, address: "0xA5EDBDD9646f8dFF606d7448e414884C7d905dCA", label: "cUSDCv3 (Arb)" }
+      - { chain_id: 137,   address: "0xF25212E676D1F7F89Cd72fFEe66158f541246445", label: "cUSDCv3 (Pol)" }
+  - slug: morpho-blue
+    name: Morpho Blue
+    category: lending
+    contracts:
+      - { chain_id: 1, address: "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb", label: "Morpho" }
+
+  # ── DEX ─────────────────────────────────────────────────────────────────
+  - slug: uniswap
+    name: Uniswap
+    category: dex
+    contracts:
+      - { chain_id: 1,     address: "0xE592427A0AEce92De3Edee1F18E0157C05861564", label: "V3 SwapRouter" }
+      - { chain_id: 1,     address: "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45", label: "V3 SwapRouter02" }
+      - { chain_id: 1,     address: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D", label: "V2 Router" }
+      - { chain_id: 42161, address: "0xE592427A0AEce92De3Edee1F18E0157C05861564", label: "V3 Router (Arb)" }
+      - { chain_id: 137,   address: "0xE592427A0AEce92De3Edee1F18E0157C05861564", label: "V3 Router (Pol)" }
+  - slug: curve-finance
+    name: Curve
+    category: dex
+    contracts:
+      - { chain_id: 1, address: "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7", label: "3pool" }
+      - { chain_id: 1, address: "0xDC24316b9AE028F1497c275EB9192a3Ea0f67022", label: "stETH/ETH" }
+  - slug: quickswap
+    name: QuickSwap
+    category: dex
+    contracts:
+      - { chain_id: 137, address: "0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff", label: "Router" }
+  - slug: camelot
+    name: Camelot
+    category: dex
+    contracts:
+      - { chain_id: 42161, address: "0xc873fEcbd354f5A56E00E710B90EF4201db2448d", label: "Router" }
+
+  # ── Liquid staking ──────────────────────────────────────────────────────
+  - slug: lido
+    name: Lido
+    category: liquid_staking
+    contracts:
+      - { chain_id: 1, address: "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84", label: "stETH" }
+  - slug: rocket-pool
+    name: Rocket Pool
+    category: liquid_staking
+    contracts:
+      - { chain_id: 1, address: "0xae78736Cd615f374D3085123A210448E74Fc6393", label: "rETH" }
+
+  # ── Yield aggregators ───────────────────────────────────────────────────
+  - slug: convex-finance
+    name: Convex
+    category: yield
+    contracts:
+      - { chain_id: 1, address: "0xF403C135812408BFbE8713b5A23a04b3D48AAE31", label: "Booster" }
+  - slug: yearn-finance
+    name: Yearn
+    category: yield
+    contracts:
+      - { chain_id: 1, address: "0x444045c5C13C246e117eD36437303cac8E250aB0", label: "V3 Factory" }
+  - slug: pendle
+    name: Pendle
+    category: yield
+    contracts:
+      - { chain_id: 1,     address: "0x888888888889758F76e7103c6CbF23ABbF58F946", label: "V2 Router" }
+      - { chain_id: 42161, address: "0x888888888889758F76e7103c6CbF23ABbF58F946", label: "V2 Router (Arb)" }
+
+  # ── Derivatives / perps ─────────────────────────────────────────────────
+  - slug: gmx-v2
+    name: GMX V2
+    category: derivatives
+    contracts:
+      - { chain_id: 42161, address: "0x489ee077994B6658eAfA855C308275EAd8097C4A", label: "Vault" }
+
+  # ── Stablecoins / CDPs ──────────────────────────────────────────────────
+  - slug: makerdao
+    name: MakerDAO
+    category: stablecoin
+    contracts:
+      - { chain_id: 1, address: "0x83F20F44975D03b1b09e64809B757c47f942BEeA", label: "sDAI" }

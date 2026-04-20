@@ -1,0 +1,118 @@
+---
+layout: dashboard
+permalink: /dashboard/risk-profiler/
+title: Risk Profiler
+dashboard_section: risk
+dashboard_title: Risk Profiler
+dashboard_subtitle: Match your portfolio to a target risk profile and get AI-generated recommendations.
+sitemap: false
+---
+
+<div id="defi-risk-empty" class="defi-empty">
+  Connect a wallet to load your portfolio and run the profiler.
+</div>
+
+<div id="defi-risk-grid" style="display:none">
+
+  <div class="defi-card" style="margin-bottom:18px">
+    <div class="defi-card__title">Choose a target profile</div>
+    <div id="risk-profile-picker" class="defi-grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px"></div>
+    <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <button id="risk-run-btn" class="defi-btn defi-btn--primary">Run risk profile</button>
+      <span id="risk-source" style="font-size:12px;color:var(--defi-text-dim)"></span>
+    </div>
+  </div>
+
+  <div class="defi-grid defi-grid--stats" style="margin-bottom:18px">
+    <div class="defi-card">
+      <div class="defi-card__title">Alignment Score</div>
+      <div class="defi-card__value" id="risk-score">—</div>
+      <div class="defi-card__delta" id="risk-band">—</div>
+    </div>
+    <div class="defi-card">
+      <div class="defi-card__title">Limit Breaches</div>
+      <div class="defi-card__value" id="risk-breaches">—</div>
+      <div class="defi-card__delta">vs target profile</div>
+    </div>
+    <div class="defi-card">
+      <div class="defi-card__title">Top Concentration</div>
+      <div class="defi-card__value" id="risk-top-proto">—</div>
+      <div class="defi-card__delta" id="risk-top-pct">—</div>
+    </div>
+    <div class="defi-card">
+      <div class="defi-card__title">Long-tail Exposure</div>
+      <div class="defi-card__value" id="risk-longtail">—</div>
+      <div class="defi-card__delta">of portfolio value</div>
+    </div>
+  </div>
+
+  <div class="defi-grid defi-grid--two" style="margin-bottom:18px">
+    <div class="defi-card">
+      <div class="defi-card__title">Target allocation</div>
+      <div style="height:260px"><canvas id="risk-target-chart"></canvas></div>
+    </div>
+    <div class="defi-card">
+      <div class="defi-card__title">Target vs actual (by class)</div>
+      <div style="height:260px"><canvas id="risk-bars-chart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="defi-card" style="margin-bottom:18px">
+    <div class="defi-card__title">AI summary &amp; recommendations</div>
+    <p id="risk-summary" style="margin:8px 0 14px;color:var(--defi-text)"></p>
+    <ol id="risk-recs" style="margin:0;padding-left:20px;color:var(--defi-text-dim);line-height:1.7"></ol>
+  </div>
+
+  <div class="defi-card">
+    <div class="defi-card__title">Portfolio risk heatmap</div>
+    <div id="risk-heatmap" class="defi-heatmap"></div>
+  </div>
+
+  <div class="defi-card" style="margin-top:18px">
+    <div class="defi-card__title">Community-verified protocols</div>
+    <p style="font-size:13px;color:var(--defi-text-dim);margin:4px 0 14px">
+      Connected wallets can vote on whether a protocol feels safe. A
+      "Verified by community" badge appears once a protocol passes the quorum
+      ({{ '25 votes with ≥70% safe rating' }}).
+    </p>
+    <div class="defi-grid" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px">
+      <div data-defi-votes="aave-v3"></div>
+      <div data-defi-votes="uniswap-v3"></div>
+      <div data-defi-votes="compound-v3"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // Inject the protocol -> class map from _data/risk_profiles.yml so that
+  // profiler.js can classify positions client-side.
+  window.DEFI_PROTOCOL_CLASSES = {
+    {% for entry in site.data.risk_profiles.protocol_classes %}
+    "{{ entry[0] }}": "{{ entry[1] }}",
+    {% endfor %}
+  };
+  window.DEFI_RISK_PROFILES = [
+    {% for p in site.data.risk_profiles.profiles %}
+    {
+      id: "{{ p.id }}",
+      name: "{{ p.name }}",
+      color: "{{ p.color }}",
+      summary: {{ p.summary | strip_newlines | jsonify }},
+      target: {
+        max_ltv: {{ p.target.max_ltv }},
+        min_health_factor: {{ p.target.min_health_factor }},
+        max_single_protocol_pct: {{ p.target.max_single_protocol_pct }},
+        max_long_tail_pct: {{ p.target.max_long_tail_pct }}
+      },
+      weights: {
+        {% for w in p.weights %}"{{ w[0] }}": {{ w[1] }}{% unless forloop.last %},{% endunless %}{% endfor %}
+      },
+      chains: {{ p.chains | jsonify }}
+    }{% unless forloop.last %},{% endunless %}
+    {% endfor %}
+  ];
+</script>
+<script src="{{ '/assets/js/charts.js' | relative_url }}"></script>
+<script src="{{ '/assets/js/profiler.js' | relative_url }}"></script>
+<script src="{{ '/assets/js/dashboard-risk.js' | relative_url }}"></script>

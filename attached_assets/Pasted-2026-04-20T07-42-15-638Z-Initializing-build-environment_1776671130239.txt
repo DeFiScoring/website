@@ -1,0 +1,87 @@
+2026-04-20T07:42:15.638Z	Initializing build environment...
+2026-04-20T07:42:15.638Z	Initializing build environment...
+2026-04-20T07:42:25.958Z	Success: Finished initializing build environment
+2026-04-20T07:42:26.764Z	Cloning repository...
+2026-04-20T07:42:30.517Z	No build output detected to cache. Skipping.
+2026-04-20T07:42:30.517Z	No dependencies detected to cache. Skipping.
+2026-04-20T07:42:30.519Z	Detected the following tools from environment: ruby@3.4.7
+2026-04-20T07:42:30.523Z	Installing ruby 3.4.7
+2026-04-20T07:42:30.902Z	Installing project dependencies: BUNDLE_WITHOUT="development test" bundle install
+2026-04-20T07:42:31.404Z	Bundler 2.6.9 is running, but your lockfile was generated with 2.4.10. Installing Bundler 2.4.10 and restarting using that version.
+2026-04-20T07:42:32.858Z	Fetching gem metadata from https://rubygems.org/.
+2026-04-20T07:42:32.868Z	Fetching bundler 2.4.10
+2026-04-20T07:42:33.004Z	Installing bundler 2.4.10
+2026-04-20T07:42:36.451Z	Fetching gem metadata from https://rubygems.org/..........
+2026-04-20T07:42:36.453Z	Fetching https://github.com/eventmachine/eventmachine.git
+2026-04-20T07:42:39.092Z	Fetching rake 13.4.2
+2026-04-20T07:42:39.196Z	Installing rake 13.4.2
+2026-04-20T07:42:39.217Z	Fetching bigdecimal 4.1.2
+2026-04-20T07:42:39.218Z	Using public_suffix 7.0.5
+2026-04-20T07:42:39.219Z	Using bundler 2.4.10
+2026-04-20T07:42:39.219Z	Using colorator 1.1.0
+2026-04-20T07:42:39.220Z	Using concurrent-ruby 1.3.6
+2026-04-20T07:42:39.243Z	Using eventmachine 1.2.7 from https://github.com/eventmachine/eventmachine.git (at v1.2.7@9cb13a8)
+2026-04-20T07:42:39.273Z	Installing bigdecimal 4.1.2 with native extensions
+2026-04-20T07:42:50.861Z	Using http_parser.rb 0.8.1
+2026-04-20T07:42:50.862Z	Using ffi 1.17.4 (x86_64-linux-gnu)
+2026-04-20T07:42:50.866Z	Using forwardable-extended 2.6.0
+2026-04-20T07:42:50.867Z	Fetching logger 1.7.0
+2026-04-20T07:42:50.907Z	Installing logger 1.7.0
+2026-04-20T07:42:50.916Z	Using rb-fsevent 0.11.2
+2026-04-20T07:42:50.918Z	Using rexml 3.4.4
+2026-04-20T07:42:50.920Z	Using liquid 4.0.4
+2026-04-20T07:42:50.921Z	Using mercenary 0.4.0
+2026-04-20T07:42:50.922Z	Using rouge 4.7.0
+2026-04-20T07:42:50.922Z	Using safe_yaml 1.0.5
+2026-04-20T07:42:50.923Z	Using unicode-display_width 2.6.0
+2026-04-20T07:42:50.923Z	Using webrick 1.9.2
+2026-04-20T07:42:50.924Z	Using addressable 2.9.0
+2026-04-20T07:42:50.925Z	Using i18n 1.14.8
+2026-04-20T07:42:50.925Z	Using google-protobuf 4.34.1 (x86_64-linux-gnu)
+2026-04-20T07:42:50.926Z	Using rb-inotify 0.11.1
+2026-04-20T07:42:50.926Z	Using pathutil 0.16.2
+2026-04-20T07:42:50.928Z	Using kramdown 2.5.2
+2026-04-20T07:42:50.928Z	Using terminal-table 3.0.2
+2026-04-20T07:42:50.929Z	Using sass-embedded 1.99.0 (x86_64-linux-gnu)
+2026-04-20T07:42:50.929Z	Using listen 3.10.0
+2026-04-20T07:42:50.930Z	Using kramdown-parser-gfm 1.1.0
+2026-04-20T07:42:50.930Z	Using jekyll-sass-converter 3.1.0
+2026-04-20T07:42:50.931Z	Using jekyll-watch 2.2.1
+2026-04-20T07:42:58.028Z	Using em-websocket 0.5.3
+2026-04-20T07:42:58.029Z	Fetching jekyll 4.3.4
+2026-04-20T07:42:58.080Z	Installing jekyll 4.3.4
+2026-04-20T07:42:58.132Z	Fetching jekyll-archives 2.3.0
+2026-04-20T07:42:58.132Z	Fetching jekyll-feed 0.17.0
+2026-04-20T07:42:58.216Z	Installing jekyll-archives 2.3.0
+2026-04-20T07:42:58.220Z	Fetching jekyll-paginate-v2 3.0.0
+2026-04-20T07:42:58.258Z	Installing jekyll-feed 0.17.0
+2026-04-20T07:42:58.277Z	Installing jekyll-paginate-v2 3.0.0
+2026-04-20T07:42:59.524Z	Bundle complete! 11 Gemfile dependencies, 36 gems now installed.
+2026-04-20T07:42:59.524Z	Gems in the groups 'development' and 'test' were not installed.
+2026-04-20T07:42:59.524Z	Use `bundle info [gemname]` to see where a bundled gem is installed.
+2026-04-20T07:42:59.742Z	Executing user build command: bundle exec jekyll build
+2026-04-20T07:43:00.166Z	bundler: failed to load command: jekyll (/opt/buildhome/.asdf/installs/ruby/3.4.7/bin/jekyll)
+2026-04-20T07:43:00.215Z	<internal:/opt/buildhome/.asdf/installs/ruby/3.4.7/lib/ruby/3.4.0/rubygems/core_ext/kernel_require.rb>:37:in 'Kernel#require': cannot load such file -- csv (LoadError)
+2026-04-20T07:43:00.215Z		from <internal:/opt/buildhome/.asdf/installs/ruby/3.4.7/lib/ruby/3.4.0/rubygems/core_ext/kernel_require.rb>:37:in 'Kernel#require'
+2026-04-20T07:43:00.215Z		from /opt/buildhome/.asdf/installs/ruby/3.4.7/lib/ruby/gems/3.4.0/gems/jekyll-4.3.4/lib/jekyll.rb:28:in '<top (required)>'
+2026-04-20T07:43:00.215Z		from <internal:/opt/buildhome/.asdf/installs/ruby/3.4.7/lib/ruby/3.4.0/rubygems/core_ext/kernel_require.rb>:37:in 'Kernel#require'
+2026-04-20T07:43:00.215Z		from <internal:/opt/buildhome/.asdf/installs/ruby/3.4.7/lib/ruby/3.4.0/rubygems/core_ext/kernel_require.rb>:37:in 'Kernel#require'
+2026-04-20T07:43:00.215Z		from /opt/buildhome/.asdf/installs/ruby/3.4.7/lib/ruby/gems/3.4.0/gems/jekyll-4.3.4/exe/jekyll:8:in '<top (required)>'
+2026-04-20T07:43:00.215Z		from /opt/buildhome/.asdf/installs/ruby/3.4.7/bin/jekyll:25:in 'Kernel#load'
+2026-04-20T07:43:00.215Z		from /opt/buildhome/.asdf/installs/ruby/3.4.7/bin/jekyll:25:in '<top (required)>'
+2026-04-20T07:43:00.215Z		from /opt/buildhome/.asdf/installs/ruby/3.4.7/lib/ruby/gems/3.4.0/gems/bundler-2.4.10/lib/bundler/cli/exec.rb:58:in 'Kernel.load'
+2026-04-20T07:43:00.215Z		from /opt/buildhome/.asdf/installs/ruby/3.4.7/lib/ruby/gems/3.4.0/gems/bundler-2.4.10/lib/bundler/cli/exec.rb:58:in 'Bundler::CLI::Exec#kernel_load'
+2026-04-20T07:43:00.215Z		from /opt/buildhome/.asdf/installs/ruby/3.4.7/lib/ruby/gems/3.4.0/gems/bundler-2.4.10/lib/bundler/cli/exec.rb:23:in 'Bundler::CLI::Exec#run'
+2026-04-20T07:43:00.216Z		from /opt/buildhome/.asdf/installs/ruby/3.4.7/lib/ruby/gems/3.4.0/gems/bundler-2.4.10/lib/bundler/cli.rb:492:in 'Bundler::CLI#exec'
+2026-04-20T07:43:00.216Z		from /opt/buildhome/.asdf/installs/ruby/3.4.7/lib/ruby/gems/3.4.0/gems/bundler-2.4.10/lib/bundler/vendor/thor/lib/thor/command.rb:27:in 'Bundler::Thor::Command#run'
+2026-04-20T07:43:00.216Z		from /opt/buildhome/.asdf/installs/ruby/3.4.7/lib/ruby/gems/3.4.0/gems/bundler-2.4.10/lib/bundler/vendor/thor/lib/thor/invocation.rb:127:in 'Bundler::Thor::Invocation#invoke_command'
+2026-04-20T07:43:00.216Z		from /opt/buildhome/.asdf/installs/ruby/3.4.7/lib/ruby/gems/3.4.0/gems/bundler-2.4.10/lib/bundler/vendor/thor/lib/thor.rb:392:in 'Bundler::Thor.dispatch'
+2026-04-20T07:43:00.216Z		from /opt/buildhome/.asdf/installs/ruby/3.4.7/lib/ruby/gems/3.4.0/gems/bundler-2.4.10/lib/bundler/cli.rb:34:in 'Bundler::CLI.dispatch'
+2026-04-20T07:43:00.216Z		from /opt/buildhome/.asdf/installs/ruby/3.4.7/lib/ruby/gems/3.4.0/gems/bundler-2.4.10/lib/bundler/vendor/thor/lib/thor/base.rb:485:in 'Bundler::Thor::Base::ClassMethods#start'
+2026-04-20T07:43:00.216Z		from /opt/buildhome/.asdf/installs/ruby/3.4.7/lib/ruby/gems/3.4.0/gems/bundler-2.4.10/lib/bundler/cli.rb:28:in 'Bundler::CLI.start'
+2026-04-20T07:43:00.216Z		from /opt/buildhome/.asdf/installs/ruby/3.4.7/lib/ruby/gems/3.4.0/gems/bundler-2.4.10/exe/bundle:45:in 'block in <top (required)>'
+2026-04-20T07:43:00.217Z		from /opt/buildhome/.asdf/installs/ruby/3.4.7/lib/ruby/gems/3.4.0/gems/bundler-2.4.10/lib/bundler/friendly_errors.rb:117:in 'Bundler.with_friendly_errors'
+2026-04-20T07:43:00.217Z		from /opt/buildhome/.asdf/installs/ruby/3.4.7/lib/ruby/gems/3.4.0/gems/bundler-2.4.10/exe/bundle:33:in '<top (required)>'
+2026-04-20T07:43:00.217Z		from /opt/buildhome/.asdf/installs/ruby/3.4.7/bin/bundle:25:in 'Kernel#load'
+2026-04-20T07:43:00.217Z		from /opt/buildhome/.asdf/installs/ruby/3.4.7/bin/bundle:25:in '<main>'
+2026-04-20T07:43:00.227Z	Failed: error occurred while running build command

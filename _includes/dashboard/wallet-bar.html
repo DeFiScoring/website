@@ -1,0 +1,12 @@
+<header class="defi-topbar">
+  <div class="defi-topbar__title">
+    <h1>{{ page.dashboard_title | default: page.title }}</h1>
+    {% if page.dashboard_subtitle %}<p>{{ page.dashboard_subtitle }}</p>{% endif %}
+  </div>
+  <div class="defi-topbar__actions">
+    <div data-defi-gas></div>
+    <span id="defi-wallet-status" class="defi-wallet-status defi-wallet-status--disconnected">Not connected</span>
+    <button id="defi-connect-btn" class="defi-btn defi-btn--primary" type="button">Connect Wallet</button>
+    <button id="defi-scan-btn" class="defi-btn defi-btn--ghost" type="button" disabled>Scan</button>
+  </div>
+</header>

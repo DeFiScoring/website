@@ -1,0 +1,43 @@
+---
+layout: dashboard
+permalink: /dashboard/portfolio/
+title: Portfolio Heatmap
+dashboard_section: portfolio
+dashboard_title: Portfolio Heatmap
+dashboard_subtitle: Per-protocol exposure colored by risk (green = low, red = high).
+sitemap: false
+---
+
+<div id="port-empty" class="defi-empty">
+  Connect a wallet to map your portfolio.
+</div>
+
+<div id="port-main" style="display:none">
+  <div class="defi-grid defi-grid--stats" style="margin-bottom:18px">
+    <div class="defi-card">
+      <div class="defi-card__title">Total Value</div>
+      <div class="defi-card__value" id="port-total">—</div>
+    </div>
+    <div class="defi-card">
+      <div class="defi-card__title">Positions</div>
+      <div class="defi-card__value" id="port-count">—</div>
+    </div>
+  </div>
+
+  <div class="defi-card" style="margin-bottom:18px">
+    <div class="defi-card__title">Risk Heatmap</div>
+    <div class="defi-heatmap" id="port-heatmap"></div>
+  </div>
+
+  <div class="defi-card">
+    <div class="defi-card__title">Positions Detail</div>
+    <table class="defi-table">
+      <thead>
+        <tr><th>Protocol</th><th>Chain</th><th>Value</th><th>Risk</th></tr>
+      </thead>
+      <tbody id="port-tbody"></tbody>
+    </table>
+  </div>
+
+  <div id="port-notice" class="defi-card__delta" style="margin-top:14px;font-size:12px;color:var(--defi-text-dim);display:none"></div>
+</div>

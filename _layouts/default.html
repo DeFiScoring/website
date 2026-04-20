@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title>{{ page.title | default: 'DeFi Scoring' }} — DeFi Scoring</title>
+  <meta name="description" content="{{ page.description | default: 'On-chain credit scoring and portfolio risk for DeFi.' }}">
+  <link rel="icon" type="image/png" sizes="96x96" href="{{ '/assets/favicon/favicon-96x96.png' | relative_url }}">
+  <link rel="icon" type="image/x-icon" href="{{ '/assets/favicon/favicon.ico' | relative_url }}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ '/assets/favicon/apple-touch-icon.png' | relative_url }}">
+  <link rel="stylesheet" href="{{ '/assets/css/landing.css' | relative_url }}">
+</head>
+<body>
+  <header class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="/">
+        <span class="brand-mark"><img src="{{ '/assets/defiscoring-logo-white-100x100.png' | relative_url }}" alt="DeFi Scoring" width="32" height="32"></span>
+        <span class="brand-text"><span class="brand-text__defi">DeFi</span><span class="brand-text__spacing">&nbsp;&nbsp;</span><span class="brand-text__scoring">Scoring</span></span>
+      </a>
+      <nav class="nav-links">
+        <a class="btn btn-primary" href="/dashboard/">Open Dashboard</a>
+      </nav>
+    </div>
+  </header>
+  <main class="container" style="padding:80px 24px">
+    {{ content }}
+  </main>
+  <script>window.DEFI_RISK_WORKER_URL = window.DEFI_RISK_WORKER_URL || "{{ site.defi.worker_url | default: 'https://defiscoring.guillaumelauzier.workers.dev' }}";</script>
+</body>
+</html>

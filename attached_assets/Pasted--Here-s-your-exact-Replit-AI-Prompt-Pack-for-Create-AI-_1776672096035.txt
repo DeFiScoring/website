@@ -1,0 +1,126 @@
+**✅ Here’s your exact “Replit AI Prompt Pack”** for **“Create AI Worker Repl + deploy profiler”**
+
+Copy and paste these **one by one** into the Replit AI chat.  
+**Important**: Do this in a **new Repl** (not your main Jekyll Repl). Replit will create the Cloudflare Workers template automatically.
+
+---
+
+### Prompt 1: Create the new AI Worker Repl
+```
+Create a brand new Repl using the official "Cloudflare Workers" template.
+
+Name it exactly: DeFiScoring-risk-profiler-worker
+
+Set the language to JavaScript.
+
+After creation, open the Repl and confirm the folder structure has src/index.js and wrangler.toml.
+```
+
+### Prompt 2: Replace the Worker code with the full AI Profiler
+```
+Replace the entire content of src/index.js with this complete, production-ready Cloudflare AI Worker code for the DeFi Risk Management Profiler:
+
+export default {
+  async fetch(request, env) {
+    if (request.method !== "POST") {
+      return new Response("Method not allowed", { status: 405 });
+    }
+
+    let body;
+    try {
+      body = await request.json();
+    } catch (e) {
+      return Response.json({ success: false, error: "Invalid JSON" }, { status: 400 });
+    }
+
+    const { wallet, deFiScore, recentActivity } = body;
+
+    if (!wallet || !deFiScore) {
+      return Response.json({ success: false, error: "wallet and deFiScore are required" }, { status: 400 });
+    }
+
+    // Call Cloudflare Workers AI (Llama 3.1 8B - fast version)
+    const aiResponse = await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fast", {
+      messages: [
+        {
+          role: "system",
+          content: `You are a senior DeFi risk advisor. Analyze the user's wallet data and give a concise risk profile + 3-5 tailored crypto project recommendations.
+Output ONLY valid JSON in this exact format (no extra text):
+{
+  "riskProfile": "Conservative / Moderate / Aggressive",
+  "summary": "short 2-3 sentence summary",
+  "recommendations": [
+    { "project": "project name", "reason": "why it fits this user", "riskLevel": "Low/Medium/High" }
+  ]
+}`
+        },
+        {
+          role: "user",
+          content: `Wallet address: ${wallet}
+DeFi Credit Score: ${deFiScore}/850
+Recent activity summary: ${recentActivity || "No activity provided"}`
+        }
+      ],
+      max_tokens: 800,
+      temperature: 0.7
+    });
+
+    let profile;
+    try {
+      profile = JSON.parse(aiResponse.response || aiResponse);
+    } catch (e) {
+      profile = { riskProfile: "Moderate", summary: "AI parsing error - please try again", recommendations: [] };
+    }
+
+    return Response.json({
+      success: true,
+      profile,
+      timestamp: new Date().toISOString()
+    });
+  }
+};
+```
+
+### Prompt 3: Update wrangler.toml with AI binding
+```
+Replace the entire content of wrangler.toml with this exact configuration:
+
+name = "defiscoring-risk-profiler"
+main = "src/index.js"
+compatibility_date = "2025-04-01"
+
+[ai]
+binding = "AI"
+```
+
+### Prompt 4: Add your Cloudflare API token secret + deploy the Worker
+```
+Add a secret named CF_API_TOKEN (paste your full Cloudflare API token that has Workers AI + Workers Scripts Edit permissions).
+
+Then run these commands in the Repl shell one by one and show me the output:
+
+npm install
+npm run deploy
+
+After deployment finishes, tell me:
+- The exact deployed Worker URL (it will look like https://defiscoring-risk-profiler.YOURUSERNAME.workers.dev)
+- Whether it says "Deployment complete"
+```
+
+---
+
+**After you paste all 4 prompts:**
+
+Replit will:
+- Create the new Worker Repl
+- Put the full AI profiler code in place
+- Configure the AI binding
+- Deploy it live to Cloudflare
+
+Once you have the deployed Worker URL, **copy it** and reply here with **“AI Worker deployed”** + the URL.
+
+I will then immediately give you the next prompt pack:  
+**“Wire profiler.js into Jekyll page”** (so the dashboard can actually call this new Worker).
+
+You’re now 4 prompts away from having a live AI-powered risk profiler!  
+Just paste them one by one and let’s get it deployed. 🚀

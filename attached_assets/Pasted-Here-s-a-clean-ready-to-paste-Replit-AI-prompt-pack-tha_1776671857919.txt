@@ -1,0 +1,99 @@
+Here’s a clean, ready-to-paste **Replit AI prompt pack** that will guide Replit Agent / Ghostwriter to complete exactly what you asked for:
+
+**“Import repo, run jekyll serve, add wallet-connect.js”**
+
+Copy and paste these prompts **one by one** into the Replit AI chat (in your main Jekyll Repl: DeFiScoring/website).
+
+### Prompt 1: Import & Setup the Repo (if not already imported)
+```
+I have a Jekyll site in this Repl from the GitHub repo https://github.com/DeFiScoring/website.
+
+Make sure the repo is fully imported and up to date. 
+Run bundle install to install all Ruby gems if needed.
+Then start the Jekyll development server with watch mode enabled so it auto-rebuilds on file changes.
+Use this exact command in the shell: bundle exec jekyll serve --watch --host 0.0.0.0 --port 8080
+After it starts, confirm the live preview URL.
+```
+
+### Prompt 2: Create the wallet-connect.js File (Simple & Lightweight Version)
+Use a **lightweight vanilla JS + viem** approach (best for pure Jekyll static sites — no React or heavy bundlers needed).
+
+```
+Create a new file at assets/js/wallet-connect.js with clean, production-ready code for wallet connection.
+
+Use viem (via CDN or direct script) for a simple "Connect Wallet" button that:
+- Detects injected providers (MetaMask, etc.)
+- Supports WalletConnect fallback if possible
+- Stores the connected address in window.userWallet
+- Shows the shortened address (0x1234...abcd) after connection
+- Adds a disconnect button
+- Includes basic error handling and console logs
+
+Make it compatible with Tailwind (your existing theme) and expose:
+- window.connectWallet()
+- window.disconnectWallet()
+- window.userWallet (global variable)
+
+Add a comment at the top explaining how to include it in any .md page.
+```
+
+### Prompt 3: Add the Connect Button to the Dashboard
+```
+In the main dashboard file (dashboard/index.md), add a prominent "Connect Wallet" section near the top.
+
+Include:
+- A nice button styled with Tailwind that calls window.connectWallet()
+- A display area that shows "Not connected" or the connected address + network
+- Load the wallet-connect.js script at the bottom of the page using <script src="/assets/js/wallet-connect.js"></script>
+
+Make it look professional and match the existing design of the site (use your header/nav styles if possible).
+```
+
+### Prompt 4: Update _config.yml or Layouts (Optional but Recommended)
+```
+Check the main layout file (probably _layouts/default.html or similar) and ensure the new assets/js/wallet-connect.js can be loaded easily.
+
+If needed, add a block in the <head> or before </body> for including custom JS files.
+Also make sure Jekyll processes the assets/js folder correctly.
+```
+
+### Prompt 5: Test Everything
+```
+After making the changes:
+1. Save all files
+2. The Jekyll server should auto-rebuild because of --watch
+3. Test the wallet connect button in the live preview
+4. Tell me if the button appears and what happens when I click it (simulate the result)
+5. Suggest any improvements for mobile responsiveness or dark mode support
+```
+
+### Bonus: If Replit asks for more details, you can add this follow-up prompt later:
+```
+Improve the wallet-connect.js to also:
+- Show current chain (Ethereum, Base, etc.)
+- Use a public RPC via viem for basic balance fetch after connection
+- Add a small "DeFi Score" placeholder that will be populated later
+Keep it lightweight — no build step required for Jekyll + Cloudflare Pages.
+```
+
+---
+
+**How to use these prompts right now:**
+
+1. Open your main Jekyll Repl (`DeFiScoring/website`)
+2. Paste **Prompt 1** first → let it run and start the server
+3. Then paste **Prompt 2** to create the JS file
+4. Then **Prompt 3** to add the button to the dashboard
+5. Finally **Prompt 4** and **Prompt 5**
+
+After this is done, you will have:
+- Jekyll server running with live reload
+- A working “Connect Wallet” button on the dashboard
+- `window.userWallet` available globally (ready for the Risk Profiler later)
+
+Once this step is complete, reply with **“Wallet connect done”** and I’ll give you the next set of prompts for:
+- Adding basic DeFi score display
+- Pulling simple on-chain data (recent activity)
+- Wiring it into the AI Risk Profiler
+
+Would you like me to adjust any of these prompts (e.g., make wallet connect even simpler with just `window.ethereum`, or add RainbowKit-style UI with Tailwind)? Just say what you prefer. Let’s get the wallet connected today! 🚀

@@ -1,0 +1,6 @@
+workers/
+node_modules/
+.git/
+.bundle/
+vendor/
+attached_assets/

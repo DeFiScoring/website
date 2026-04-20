@@ -1,0 +1,64 @@
+To build a **"Connect Wallet" Lite** feature that stays within your Jekyll and Cloudflare stack, you need a workflow that avoids heavy npm packages (like Wagmi or RainbowKit) in favor of lightweight, browser-native interactions.
+
+The goal is to have a user connect their wallet, send their address to a **Cloudflare Worker**, and receive a "Risk Audit" based on the protocols they are currently interacting with.
+
+### 1. The "Lite" Logic (Exposure Detection)
+Since you want to keep it high-value but "Lite," the logic should be:
+* **Step 1:** Use `window.ethereum` to get the user's address.
+* **Step 2:** Use the **Etherscan API** (Account/TokenList) to see which tokens/contracts the user holds.
+* **Step 3:** Cross-reference those contracts with your **DeFiScoring Database** (managed by your Worker).
+* **Step 4:** Display only the "Low Score" protocols the user is currently "exposed" to.
+
+---
+
+### 2. The Replit Agent Master Prompt
+
+Copy and paste this into Replit to build the "Risk Exposure" engine:
+
+> **"Build a 'Connect Wallet' Risk Exposure Engine for a Jekyll site using Cloudflare Workers.**
+>
+> **Task 1: The Connect Wallet Frontend**
+> * Create a lightweight JavaScript module (Vanilla JS or Alpine.js) for a Jekyll site.
+> * Implement a 'Connect Wallet' button that uses **EIP-6963** (the modern standard for browser wallets) to detect and connect to MetaMask, Rabby, or Coinbase Wallet.
+> * Once connected, the script should pass the user's Ethereum address to a Cloudflare Worker endpoint.
+>
+> **Task 2: The Exposure Worker (Backend)**
+> * Create a Cloudflare Worker that accepts an Ethereum address via a POST request.
+> * Use the **Etherscan API** (`account?module=account&action=tokentx`) to fetch the last 50 token transactions for that address.
+> * Identify the protocols the user is currently in by checking the 'Contract Address' of their tokens.
+> * **Integration:** Compare these contract addresses against my existing DeFiScoring data (stored in **Cloudflare KV** or fetched from my other scoring worker).
+>
+> **Task 3: The Risk Calculation**
+> * For every protocol found in the user's wallet, calculate an **'Exposure Index'**: 
+>   * If the protocol score is < 40, flag it as 'High Risk Exposure'.
+>   * Return a JSON object containing the protocol name, the user's balance, and the current Risk Score.
+>
+> **Task 4: UI Feedback**
+> * Provide a 'Risk Report' UI component (a simple Tailwind CSS modal or div) that populates with the results. If no high-risk protocols are found, show a 'Safety Verified' badge.
+>
+> **Security:** Use **Cloudflare Web3 Gateways** as the RPC provider to verify the user's current token balances on-chain if Etherscan data is stale. Ensure all API keys are stored as Cloudflare Secret environment variables."
+
+---
+
+### 3. Implementation Flow in your Jekyll Site
+
+To make this work on GitHub Pages, you will add the generated code in three specific places:
+
+| Component | File Location | Purpose |
+| :--- | :--- | :--- |
+| **The Button** | `_includes/wallet-check.html` | The "Connect Wallet" button and the results table. |
+| **The Logic** | `assets/js/risk-scanner.js` | The JS that talks to the Cloudflare Worker. |
+| **The Data** | `_data/protocols.yml` | Your "Source of Truth" list of contract addresses and their scores. |
+
+---
+
+### 4. High-Value "Add-on": The Approval Scanner
+In the DeFi world of 2026, **"Unlimited Approvals"** are a bigger risk than low scores. 
+
+**Pro-Tip for your Replit Prompt:** Add this sentence to your prompt to make it even higher value: 
+> *"Include a check that scans for 'Unlimited Token Approvals' given to protocols with a score below 60. Alert the user to revoke these permissions immediately."*
+
+### 5. Why this is "High Demand"
+Users are tired of "Portfolios" that just show their balance. They want **Actionable Security**. By telling a user, *"You have $5,000 in Protocol X, which just had a 'Centralization Risk' score drop to 30; you should consider moving it,"* you provide a service that even major wallets like MetaMask don't provide natively yet.
+
+**Would you like me to draft the specific JSON structure for your `protocols.yml` so the Worker knows exactly which contracts to look for?**

@@ -1,0 +1,58 @@
+---
+layout: dashboard
+permalink: /dashboard/alerts/
+title: Alerts
+dashboard_section: alerts
+dashboard_title: Alerts
+dashboard_subtitle: Configure rules and review recent triggers. Email delivery handled by the Cloudflare Worker.
+sitemap: false
+---
+
+<div class="defi-card" style="margin-bottom:18px">
+  <div class="defi-card__title">New Rule</div>
+  <form id="rule-form" class="defi-form-row">
+    <div class="defi-form-group">
+      <label for="rule-type">Trigger</label>
+      <select class="defi-select" id="rule-type" name="type" required>
+        <option>Score drop &gt; threshold</option>
+        <option>Health factor &lt; threshold</option>
+        <option>New liquidation event</option>
+        <option>Position size &gt; threshold (USD)</option>
+      </select>
+    </div>
+    <div class="defi-form-group">
+      <label for="rule-threshold">Threshold</label>
+      <input class="defi-input" id="rule-threshold" name="threshold" placeholder="e.g. 30 or 1.5 or 10000" required>
+    </div>
+    <div class="defi-form-group">
+      <label for="rule-email">Notify email</label>
+      <input class="defi-input" id="rule-email" name="email" type="email" placeholder="you@example.com">
+    </div>
+    <div class="defi-form-group" style="flex:0 0 auto;min-width:0">
+      <label>&nbsp;</label>
+      <button type="submit" class="defi-btn defi-btn--primary">Add rule</button>
+    </div>
+  </form>
+</div>
+
+<div class="defi-card" style="margin-bottom:18px">
+  <div class="defi-card__title">Your Rules</div>
+  <table class="defi-table">
+    <thead>
+      <tr><th>Trigger</th><th>Threshold</th><th>Email</th><th></th></tr>
+    </thead>
+    <tbody id="rules-tbody"></tbody>
+  </table>
+  <p style="margin:12px 0 0;color:var(--defi-text-dim);font-size:12px">
+    Rules are stored locally for now. The Worker will mirror them to D1 once the API is wired up.
+  </p>
+</div>
+
+<div class="defi-card">
+  <div class="defi-card__title">Recent Alerts</div>
+  <div id="alerts-empty" class="defi-empty" style="display:none">
+    Connect a wallet to view recent alerts.
+  </div>
+  <div id="alerts-list"></div>
+  <div id="alerts-notice" class="defi-card__delta" style="margin-top:14px;font-size:12px;color:var(--defi-text-dim);display:none"></div>
+</div>

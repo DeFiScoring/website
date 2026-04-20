@@ -1,0 +1,48 @@
+<aside class="defi-sidebar">
+  <div class="defi-sidebar__brand">
+    <a href="/dashboard/" class="defi-sidebar__logo">
+      <img src="{{ '/assets/defiscoring-logo-white-100x100.png' | relative_url }}" alt="DeFi Scoring" class="defi-logo-image defi-logo-image--white" width="32" height="32">
+      <span class="defi-logo-text">DeFi Scoring</span>
+    </a>
+  </div>
+  <nav class="defi-sidebar__nav">
+    <a href="/dashboard/" class="defi-sidebar__link {% if page.dashboard_section == 'home' %}is-active{% endif %}">
+      <span class="defi-icon">&#9632;</span> Overview
+    </a>
+    <a href="/dashboard/score/" class="defi-sidebar__link {% if page.dashboard_section == 'score' %}is-active{% endif %}">
+      <span class="defi-icon">&#9650;</span> My Score
+    </a>
+    <a href="/dashboard/portfolio/" class="defi-sidebar__link {% if page.dashboard_section == 'portfolio' %}is-active{% endif %}">
+      <span class="defi-icon">&#9670;</span> Portfolio Heatmap
+    </a>
+    <a href="/dashboard/scanner/" class="defi-sidebar__link {% if page.dashboard_section == 'scanner' %}is-active{% endif %}">
+      <span class="defi-icon">&#9678;</span> Wallet Scanner
+    </a>
+    <a href="/dashboard/approvals/" class="defi-sidebar__link {% if page.dashboard_section == 'approvals' %}is-active{% endif %}">
+      <span class="defi-icon">&#9888;</span> Token Approvals
+    </a>
+    <a href="/audits/" class="defi-sidebar__link {% if page.dashboard_section == 'audits' %}is-active{% endif %}">
+      <span class="defi-icon">&#9745;</span> Audit Directory
+    </a>
+    <a href="/dashboard/risk-profiler/" class="defi-sidebar__link {% if page.dashboard_section == 'risk' %}is-active{% endif %}">
+      <span class="defi-icon">&#9733;</span> Risk Profiler
+    </a>
+    <a href="/dashboard/alerts/" class="defi-sidebar__link {% if page.dashboard_section == 'alerts' %}is-active{% endif %}">
+      <span class="defi-icon">&#9679;</span> Alerts
+    </a>
+    <a href="/dashboard/risk-chatbot/" class="defi-sidebar__link {% if page.dashboard_section == 'chatbot' %}is-active{% endif %}">
+      <span class="defi-icon">&#9742;</span> AI Risk Advisor
+    </a>
+    <a href="/dashboard/report/" class="defi-sidebar__link {% if page.dashboard_section == 'report' %}is-active{% endif %}">
+      <span class="defi-icon">&#9998;</span> Report Issue
+    </a>
+  </nav>
+  <div class="defi-sidebar__footer">
+    <small>Phase 1 chains</small>
+    <div class="defi-chain-tags">
+      <span class="defi-chip">Ethereum</span>
+      <span class="defi-chip">Arbitrum</span>
+      <span class="defi-chip">Polygon</span>
+    </div>
+  </div>
+</aside>

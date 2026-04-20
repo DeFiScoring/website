@@ -1,0 +1,22 @@
+---
+permalink: /assets/data/protocols.json
+sitemap: false
+---
+{
+  "version": 1,
+  "generated_at": "{{ site.time | date_to_xmlschema }}",
+  "protocols": [
+    {%- for p in site.data.protocols.protocols -%}
+    {
+      "slug": {{ p.slug | jsonify }},
+      "name": {{ p.name | jsonify }},
+      "category": {{ p.category | jsonify }},
+      "contracts": [
+        {%- for c in p.contracts -%}
+        { "chain_id": {{ c.chain_id }}, "address": {{ c.address | downcase | jsonify }}, "label": {{ c.label | jsonify }} }{%- unless forloop.last -%},{%- endunless -%}
+        {%- endfor -%}
+      ]
+    }{%- unless forloop.last -%},{%- endunless -%}
+    {%- endfor -%}
+  ]
+}
