@@ -71,23 +71,45 @@
 .defi-chip--ok      { background: rgba(43,212,164,0.14);  color: var(--defi-ok);      border-color: rgba(43,212,164,0.45); }
 .defi-chip--muted   { background: var(--defi-bg-2);       color: var(--defi-text-dim); border-color: var(--defi-border); }
 
-/* Market-intel consent banner — pinned above the dashboard footer. */
+/* Market-intel consent banner — pinned above the dashboard footer. Sits in
+   its own card so it reads as an intentional ask rather than an afterthought
+   tacked onto the page. */
 .defi-consent {
-  margin: 14px 18px 0;
-  padding: 14px 16px;
-  border-radius: 12px;
-  border: 1px solid var(--defi-border);
-  background: rgba(91, 140, 255, 0.06);
+  margin: 24px 32px 8px;
+  padding: 18px 22px;
+  border-radius: 14px;
+  border: 1px solid rgba(91, 140, 255, 0.28);
+  background:
+    linear-gradient(135deg, rgba(91, 140, 255, 0.10), rgba(138, 92, 255, 0.10));
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset;
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 18px;
   align-items: center;
   justify-content: space-between;
 }
-.defi-consent__text   { font-size: 13px; color: var(--defi-text); line-height: 1.5; flex: 1 1 320px; }
+.defi-consent__text {
+  font-size: 13.5px;
+  color: var(--defi-text);
+  line-height: 1.55;
+  flex: 1 1 360px;
+}
+.defi-consent__text strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+  color: #fff;
+  letter-spacing: 0.1px;
+}
 .defi-consent__text em { color: var(--defi-text-dim); font-style: normal; }
-.defi-consent__actions { display: flex; gap: 8px; flex-wrap: wrap; }
-.defi-consent[hidden]  { display: none; }
+.defi-consent__actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+.defi-consent__actions .defi-btn { padding: 9px 18px; }
+.defi-consent[hidden] { display: none; }
 
 /* AI Risk Advisor chat window. */
 .chat-window {
