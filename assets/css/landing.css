@@ -31,12 +31,10 @@ a:hover { color: var(--accent-2); }
   border-bottom: 1px solid var(--border);
 }
 .nav-inner { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; max-width: 1140px; margin: 0 auto; }
-.brand { display: flex; align-items: center; gap: 10px; color: var(--text); font-weight: 700; }
-.brand-text { display: flex; align-items: baseline; gap: 2px; letter-spacing: .01em; font-size: 17px; }
-.brand-text__defi { font-weight: 800; color: var(--text); }
-.brand-text__scoring { font-weight: 800; color: var(--text); opacity: .95; margin-left: 0; }
+.brand { display: flex; align-items: center; gap: 10px; color: var(--text); text-decoration: none; min-width: 0; }
+.brand-text { font-weight: 700; font-size: 15px; letter-spacing: .2px; color: var(--text); white-space: nowrap; }
 .brand-mark {
-  width: 32px; height: 32px; border-radius: 8px;
+  width: 32px; height: 32px;
   display: inline-flex; align-items: center; justify-content: center;
   overflow: hidden; background: transparent; flex-shrink: 0;
 }
