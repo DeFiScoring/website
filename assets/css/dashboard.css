@@ -255,16 +255,119 @@
   border: 1px dashed var(--defi-border); border-radius: 12px;
 }
 
-@media (max-width: 768px) {
+/* ---- Responsive ---------------------------------------------------------- */
+
+/* Tablet: shrink rails, allow topbar to wrap. */
+@media (max-width: 900px) {
   .defi-sidebar { width: 200px; }
-  .defi-content { padding: 18px; }
-  .defi-topbar { padding: 16px 18px; flex-wrap: wrap; gap: 12px; }
+  .defi-content { padding: 22px 20px; }
+  .defi-topbar { padding: 16px 20px; flex-wrap: wrap; gap: 12px; }
+  .defi-topbar__actions { flex-wrap: wrap; }
 }
 
-@media (max-width: 600px) {
+/* Phone: stack sidebar above content, no horizontal page scroll. */
+@media (max-width: 720px) {
   .defi-shell { flex-direction: column; }
-  .defi-sidebar { width: 100%; flex-direction: row; padding: 10px; align-items: center; overflow-x: auto; }
-  .defi-sidebar__brand { border: 0; padding: 0 16px 0 8px; }
-  .defi-sidebar__nav { flex-direction: row; padding: 0; flex: 0; }
+
+  /* Sidebar becomes a sticky top bar with the brand on the left and a
+     horizontally-scrollable nav row on the right. */
+  .defi-sidebar {
+    position: sticky; top: 0; z-index: 11;
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    padding: 10px 12px;
+    border-right: 0;
+    border-bottom: 1px solid var(--defi-border);
+    gap: 10px;
+  }
+  .defi-sidebar__brand {
+    padding: 0;
+    border: 0;
+    flex-shrink: 0;
+  }
+  .defi-sidebar__logo { gap: 8px; }
+  .defi-logo-text { display: none; }                /* logo only on phones */
+
+  .defi-sidebar__nav {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    padding: 0;
+    gap: 6px;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;                          /* Firefox */
+    -webkit-overflow-scrolling: touch;
+  }
+  .defi-sidebar__nav::-webkit-scrollbar { display: none; }
+  .defi-sidebar__link {
+    flex-shrink: 0;
+    padding: 8px 12px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  .defi-sidebar__link .defi-icon { display: none; }  /* save horizontal space */
+
   .defi-sidebar__footer { display: none; }
+
+  /* Topbar: title on its own row, actions wrap below. */
+  .defi-topbar {
+    padding: 14px 16px;
+    gap: 10px;
+    flex-direction: column;
+    align-items: stretch;
+    position: static;                                /* sidebar handles sticky */
+  }
+  .defi-topbar__title h1 { font-size: 18px; }
+  .defi-topbar__title p  { font-size: 12px; }
+  .defi-topbar__actions {
+    width: 100%;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .defi-topbar__actions [data-defi-gas] {
+    flex: 1 1 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .defi-wallet-status { flex: 0 0 auto; }
+  .defi-topbar__actions .defi-btn { flex: 1 1 auto; min-width: 110px; }
+
+  .defi-content { padding: 16px; }
+  .defi-footer  { padding: 16px; font-size: 12px; }
+
+  /* Cards & sections: trim chrome to give content more room. */
+  .defi-card { padding: 16px; border-radius: 10px; }
+  .defi-card__value { font-size: 24px; }
+  .defi-grid { gap: 12px; }
+
+  /* Score panel: center the dial and let factor bars stack. */
+  .defi-score-wrap { gap: 18px; justify-content: center; }
+  .defi-score-circle { width: 180px; height: 180px; }
+  .defi-score-circle svg { width: 180px; height: 180px; }
+  .defi-score-circle__value { font-size: 44px; }
+  .defi-factors { min-width: 0; width: 100%; }
+
+  /* Tables overflow horizontally inside their card instead of pushing the
+     viewport wider. Authors get this for free by putting <table> in a card. */
+  .defi-card .defi-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Forms: full-width inputs, no awkward two-up layouts. */
+  .defi-form-row { gap: 10px; }
+  .defi-form-group { min-width: 0; flex: 1 1 100%; }
+
+  /* Chat window: a bit shorter to leave room for the keyboard. */
+  .chat-window { height: 320px; }
+
+  /* Consent banner: stack text above buttons. */
+  .defi-consent { margin: 12px; padding: 12px 14px; }
+  .defi-consent__actions { width: 100%; }
+  .defi-consent__actions .defi-btn { flex: 1 1 auto; }
+}
+
+/* Hard guard: never let the dashboard cause horizontal page scroll. */
+@media (max-width: 720px) {
+  html, body.defi-body { overflow-x: hidden; }
 }
