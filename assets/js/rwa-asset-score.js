@@ -386,9 +386,11 @@
         // Expose the active issuer so downstream modules (Legal & Regulatory
         // Compliance, etc.) can re-render against the same context.
         window.DefiRWAScore.activeIssuer = primary.issuer;
+        window.DefiRWAScore.walletAssets = walletAssets;
+        window.DefiRWAScore.protocols   = protocols;
         try {
           window.dispatchEvent(new CustomEvent("defi:rwa:issuer", {
-            detail: { issuer: primary.issuer, asset: primary, wallet },
+            detail: { issuer: primary.issuer, asset: primary, wallet, walletAssets, protocols },
           }));
         } catch (_) {}
 
@@ -427,7 +429,9 @@
   window.DefiRWAScore = {
     render: () => render(false),
     refresh: () => render(true),
-    activeIssuer: null, // populated after each render so other modules can react
+    activeIssuer: null,   // populated after each render so other modules can react
+    walletAssets: [],     // detected RWA tokens in the user's wallet
+    protocols: [],        // last fetched DeFiLlama RWA protocols
   };
 
   if (document.readyState === "loading") {
