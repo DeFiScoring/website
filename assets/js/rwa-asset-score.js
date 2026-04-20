@@ -383,6 +383,15 @@
 
         const scored = scoreAsset(primary, tvlForScore);
 
+        // Expose the active issuer so downstream modules (Legal & Regulatory
+        // Compliance, etc.) can re-render against the same context.
+        window.DefiRWAScore.activeIssuer = primary.issuer;
+        try {
+          window.dispatchEvent(new CustomEvent("defi:rwa:issuer", {
+            detail: { issuer: primary.issuer, asset: primary, wallet },
+          }));
+        } catch (_) {}
+
         container.innerHTML = buildHtml({ wallet, scored, walletAssets, totalTvl });
         const refreshBtn = document.getElementById("rwa-refresh-btn");
         if (refreshBtn) refreshBtn.addEventListener("click", () => render(true));
@@ -415,7 +424,11 @@
     }
   }
 
-  window.DefiRWAScore = { render: () => render(false), refresh: () => render(true) };
+  window.DefiRWAScore = {
+    render: () => render(false),
+    refresh: () => render(true),
+    activeIssuer: null, // populated after each render so other modules can react
+  };
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);
