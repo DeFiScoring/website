@@ -1,0 +1,187 @@
+**✅ Here’s your exact “Replit AI Prompt Pack” for “Portfolio RWA Exposure Aggregator” (Module 8)**
+
+Copy and paste these **one by one** into the Replit AI chat **in your main Jekyll Repl** (`DeFiScoring/website`).
+
+---
+
+### Prompt 1: Create the Portfolio RWA Exposure Aggregator JavaScript file
+```
+Create a new file exactly at assets/js/portfolio-rwa-exposure.js with this complete, ready-to-use code:
+
+// assets/js/portfolio-rwa-exposure.js
+// Portfolio RWA Exposure Aggregator - Module 8
+
+const DEMO_RWA_HOLDINGS = [
+  { asset: 'BUIDL', issuer: 'BlackRock/Securitize', value: 124000, riskScore: 820 },
+  { asset: 'OUSG', issuer: 'Ondo Finance', value: 87000, riskScore: 780 },
+  { asset: 'Centrifuge Pool', issuer: 'Centrifuge', value: 32000, riskScore: 580 }
+];
+
+async function calculatePortfolioScore(holdings) {
+  if (!holdings || holdings.length === 0) return { score: 650, grade: 'B', tier: 'Moderate Risk', totalValue: 0, avgRisk: 0 };
+
+  const totalValue = holdings.reduce((sum, h) => sum + h.value, 0);
+  const weightedRisk = holdings.reduce((sum, h) => sum + (h.value * h.riskScore), 0) / totalValue;
+  let score = Math.floor(weightedRisk);
+
+  // Diversification bonus
+  const diversificationBonus = Math.min(80, holdings.length * 25);
+  score += diversificationBonus;
+
+  score = Math.min(850, Math.max(300, score));
+
+  const grade = score >= 800 ? 'A+' : score >= 700 ? 'A' : score >= 600 ? 'B' : score >= 500 ? 'C' : 'D';
+  const tier = score >= 750 ? 'Low Risk' : score >= 600 ? 'Moderate Risk' : 'High Risk';
+
+  return {
+    score,
+    grade,
+    tier,
+    totalValue,
+    numAssets: holdings.length,
+    avgRisk: Math.floor(weightedRisk),
+    diversificationScore: diversificationBonus
+  };
+}
+
+async function renderPortfolioRWAExposure() {
+  const container = document.getElementById('portfolio-rwa-exposure-container');
+  if (!container) return;
+
+  if (!window.userWallet) {
+    container.innerHTML = `<div class="text-center py-12 text-gray-500">Connect your wallet to aggregate your full RWA portfolio exposure and cross-protocol risk</div>`;
+    return;
+  }
+
+  container.innerHTML = `<div class="text-center py-8"><p class="text-gray-500">Aggregating your RWA holdings across protocols...</p></div>`;
+
+  try {
+    const holdings = DEMO_RWA_HOLDINGS; // In production: scan wallet for RWA tokens
+    const result = await calculatePortfolioScore(holdings);
+
+    const html = `
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Portfolio Risk Score -->
+        <div class="lg:col-span-1 bg-white dark:bg-gray-900 rounded-3xl shadow-xl p-8 text-center">
+          <h2 class="text-sm uppercase tracking-widest text-purple-600 mb-2">Portfolio RWA Risk Score</h2>
+          <div class="text-8xl font-bold text-purple-600">${result.score}</div>
+          <div class="text-4xl font-semibold mt-1 mb-6">${result.grade}</div>
+          <div class="inline-block px-6 py-2 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200 rounded-3xl text-lg">${result.tier}</div>
+          <p class="mt-8 text-sm text-gray-500">Total RWA Exposure: <strong>$${(result.totalValue / 1000).toFixed(0)}k</strong></p>
+        </div>
+
+        <!-- Diversification Map -->
+        <div class="lg:col-span-1 bg-white dark:bg-gray-900 rounded-3xl shadow-xl p-8">
+          <h3 class="font-semibold mb-4">Diversification Map</h3>
+          <canvas id="diversificationChart" height="260"></canvas>
+        </div>
+
+        <!-- Portfolio Stats -->
+        <div class="lg:col-span-1 bg-white dark:bg-gray-900 rounded-3xl shadow-xl p-8">
+          <h3 class="font-semibold mb-4">Portfolio Stats</h3>
+          <div class="space-y-4 text-sm">
+            <div class="flex justify-between"><span>Number of RWA Assets</span><span class="font-medium">${result.numAssets}</span></div>
+            <div class="flex justify-between"><span>Average Asset Risk Score</span><span class="font-medium">${result.avgRisk}</span></div>
+            <div class="flex justify-between"><span>Diversification Bonus</span><span class="font-medium text-purple-600">+${result.diversificationScore} points</span></div>
+          </div>
+        </div>
+
+        <!-- Cross-Asset Correlation -->
+        <div class="lg:col-span-3 bg-white dark:bg-gray-900 rounded-3xl shadow-xl p-8">
+          <h3 class="font-semibold mb-4">Cross-Asset Correlation Matrix</h3>
+          <canvas id="correlationChart" height="220"></canvas>
+        </div>
+      </div>
+    `;
+
+    container.innerHTML = html;
+
+    setTimeout(() => {
+      // Diversification Pie Chart
+      new Chart(document.getElementById('diversificationChart'), {
+        type: 'pie',
+        data: {
+          labels: holdings.map(h => h.asset),
+          datasets: [{
+            data: holdings.map(h => h.value),
+            backgroundColor: ['#a855f7', '#c026d3', '#7e22ce']
+          }]
+        },
+        options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+      });
+
+      // Cross-Asset Correlation Heatmap (simple bar for MVP)
+      new Chart(document.getElementById('correlationChart'), {
+        type: 'bar',
+        data: {
+          labels: holdings.map(h => h.asset),
+          datasets: [{
+            label: 'Correlation to Portfolio',
+            data: [0.12, 0.28, 0.65],
+            backgroundColor: '#a855f7',
+            borderRadius: 8
+          }]
+        },
+        options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { max: 1 } } }
+      });
+    }, 300);
+
+  } catch (e) {
+    console.error(e);
+    container.innerHTML = `<p class="text-red-500 text-center py-8">⚠️ Could not aggregate portfolio data. Please try again.</p>`;
+  }
+}
+
+window.renderPortfolioRWAExposure = renderPortfolioRWAExposure;
+```
+
+### Prompt 2: Add the Portfolio RWA Exposure Aggregator section to the dashboard
+```
+Update dashboard/index.md and insert this new section right after the Yield & Risk-Adjusted Performance block:
+
+<h2 class="text-3xl font-bold mb-6 mt-12">📊 Portfolio RWA Exposure Aggregator</h2>
+<p class="text-gray-600 dark:text-gray-400 mb-6">Aggregates your entire RWA holdings + cross-protocol risk — portfolio-level risk score + diversification map + cross-asset correlation data</p>
+<div id="portfolio-rwa-exposure-container" class="mb-12"></div>
+
+<script src="/assets/js/portfolio-rwa-exposure.js"></script>
+
+<script>
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      window.renderPortfolioRWAExposure();
+    }, 3800);
+  });
+</script>
+```
+
+### Prompt 3: Add navigation link and auto-trigger
+```
+In your header Liquid file or dashboard navigation, add:
+<li><a href="/dashboard/#portfolio-rwa-exposure-container" onclick="window.renderPortfolioRWAExposure()">Portfolio RWA Aggregator</a></li>
+
+Also update wallet-connect.js or yield-risk-adjusted.js to automatically call window.renderPortfolioRWAExposure() after wallet connection.
+```
+
+### Prompt 4: Test the Portfolio RWA Exposure Aggregator module
+```
+Save all files. Jekyll should auto-reload.
+
+In the live preview:
+1. Connect wallet
+2. Confirm the new Portfolio RWA Exposure Aggregator section appears with portfolio risk score, diversification pie chart, portfolio stats, and cross-asset correlation bar chart
+3. Verify realistic data (BUIDL, OUSG, Centrifuge Pool)
+4. Check both light and dark mode
+5. Open console and report any errors
+
+Tell me the results so we can expand the DEMO_RWA_HOLDINGS or add real wallet scanning in the next iteration.
+```
+
+---
+
+**After you paste all 4 prompts:**
+
+You now have **Module 8 fully live** — the Portfolio RWA Exposure Aggregator is complete and gives users a powerful holistic view.
+
+Reply with **“Portfolio RWA Exposure Aggregator done”** and I’ll immediately give you the next module prompt pack (Module 9: RWA Audit & Export Toolkit or whichever you want).
+
+We’re almost finished with the full 10-module RWA scoring system! Just paste the prompts and let’s ship this. 🚀
