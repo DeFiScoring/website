@@ -13,6 +13,15 @@
   <link rel="stylesheet" href="{{ '/assets/css/footer.css' | relative_url }}">
 </head>
 <body class="defi-body">
+  <header class="defi-mobile-header" role="banner">
+    <button type="button" class="defi-hamburger" data-defi-sidebar-open aria-label="Open menu" aria-controls="defi-sidebar" aria-expanded="false">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+    </button>
+    <a href="/dashboard/" class="defi-mobile-header__brand">
+      <img src="{{ '/assets/defiscoring-logo-white-100x100.png' | relative_url }}" alt="" width="28" height="28">
+      <span>DeFi Scoring</span>
+    </a>
+  </header>
   <div class="defi-shell">
     {% include dashboard/sidebar.html %}
     <main class="defi-main">
@@ -24,6 +33,29 @@
       {% include site-footer.html %}
     </main>
   </div>
+  <script>
+    (function () {
+      var body = document.body;
+      var openBtn = document.querySelector('[data-defi-sidebar-open]');
+      var closeEls = document.querySelectorAll('[data-defi-sidebar-close]');
+      var sidebar = document.getElementById('defi-sidebar');
+      if (!openBtn || !sidebar) return;
+      function open() {
+        body.classList.add('defi-sidebar-open');
+        openBtn.setAttribute('aria-expanded', 'true');
+      }
+      function close() {
+        body.classList.remove('defi-sidebar-open');
+        openBtn.setAttribute('aria-expanded', 'false');
+      }
+      openBtn.addEventListener('click', open);
+      closeEls.forEach(function (el) { el.addEventListener('click', close); });
+      sidebar.querySelectorAll('a').forEach(function (a) { a.addEventListener('click', close); });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && body.classList.contains('defi-sidebar-open')) close();
+      });
+    })();
+  </script>
   <script>
     window.DEFI_RISK_WORKER_URL = "{{ site.defi.worker_url | default: 'https://defiscoring.guillaumelauzier.workers.dev' }}";
     // Cloudflare Web3 Gateway URLs (optional). Set them in _config.yml under
