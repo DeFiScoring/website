@@ -1,0 +1,94 @@
+{%- comment -%}
+  Shared site footer. Used by the landing layout, the dashboard layout, and the
+  legal/doc pages. Link contents are driven by `_data/footer.yml`. Styles live
+  in `assets/css/footer.css` and are scoped under `.df-footer`.
+{%- endcomment -%}
+
+<footer class="df-footer">
+  <div class="df-footer__inner">
+
+    <div class="df-footer__disclaimer" role="note" aria-label="Financial disclaimer">
+      <strong>Not Financial Advice.</strong>
+      {{ site.data.footer.disclaimer_short | strip_newlines }}
+      <a href="{{ '/disclaimer/' | relative_url }}">Read the full disclaimer →</a>
+    </div>
+
+    <div class="df-footer__grid">
+      <div class="df-footer__brand">
+        <a class="df-footer__logo" href="{{ '/' | relative_url }}">
+          <img src="{{ '/assets/defiscoring-logo-white-100x100.png' | relative_url }}"
+               alt="" width="32" height="32">
+          <span>DeFi Scoring</span>
+        </a>
+        <p class="df-footer__tagline">
+          On-chain credit scoring, portfolio risk, and real-time alerts across
+          Ethereum, Arbitrum, and Polygon.
+        </p>
+        <p class="df-footer__stack">
+          Built on <span>Cloudflare Workers · Workers AI · D1 · KV</span>
+        </p>
+      </div>
+
+      <div class="df-footer__col">
+        <h4>Product</h4>
+        <ul>
+          {% for item in site.data.footer.product %}
+            <li><a href="{{ item.link | relative_url }}">{{ item.name }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <div class="df-footer__col">
+        <h4>For developers</h4>
+        <ul>
+          {% for item in site.data.footer.developers %}
+            <li>
+              {% if item.link and item.link != "" %}
+                <a href="{% if item.link contains '://' %}{{ item.link }}{% else %}{{ item.link | relative_url }}{% endif %}"
+                   {% if item.link contains '://' %}target="_blank" rel="noopener"{% endif %}>{{ item.name }}</a>
+              {% else %}
+                <span class="df-footer__soon">{{ item.name }} <em>soon</em></span>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <div class="df-footer__col">
+        <h4>Legal</h4>
+        <ul>
+          {% for item in site.data.footer.legal %}
+            <li><a href="{{ item.link | relative_url }}">{{ item.name }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <div class="df-footer__col">
+        <h4>Community</h4>
+        <ul>
+          {% for item in site.data.footer.community %}
+            <li>
+              {% if item.link and item.link != "" %}
+                <a href="{{ item.link }}"
+                   {% if item.link contains '://' %}target="_blank" rel="noopener"{% endif %}>
+                  {{ item.name }} <em>{{ item.handle }}</em>
+                </a>
+              {% else %}
+                <span class="df-footer__soon">{{ item.name }} <em>{{ item.handle }}</em></span>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+
+    <div class="df-footer__meta">
+      <div>&copy; {{ 'now' | date: '%Y' }} DeFi Scoring · defiscoring.com</div>
+      <div>
+        Methodology v1.0 · Last security review: {{ site.time | date: '%b %Y' }}
+        · Page rendered {{ site.time | date: '%Y-%m-%d %H:%M UTC' }}
+      </div>
+    </div>
+
+  </div>
+</footer>

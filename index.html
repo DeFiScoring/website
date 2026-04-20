@@ -19,6 +19,7 @@ sitemap: true
   <link rel="icon" type="image/x-icon" href="{{ '/assets/favicon/favicon.ico' | relative_url }}">
   <link rel="apple-touch-icon" sizes="180x180" href="{{ '/assets/favicon/apple-touch-icon.png' | relative_url }}">
   <link rel="stylesheet" href="{{ '/assets/css/landing.css' | relative_url }}">
+  <link rel="stylesheet" href="{{ '/assets/css/footer.css' | relative_url }}">
 </head>
 <body>
 
@@ -154,16 +155,7 @@ sitemap: true
   </div>
 </section>
 
-<footer class="footer">
-  <div class="container footer-inner">
-    <div>&copy; {{ 'now' | date: '%Y' }} DeFi Scoring</div>
-    <div>
-      <a href="/dashboard/">Dashboard</a> ·
-      <a href="#features">Features</a> ·
-      <a href="/snowlake/">Theme demo</a>
-    </div>
-  </div>
-</footer>
+{% include site-footer.html %}
 
 </body>
 </html>

@@ -1,0 +1,88 @@
+A **Terms of Service (ToS)** is the legal contract between you and your users. Since you are providing "scores" that might influence financial decisions, this document needs to be robust, specifically addressing data usage, "as-is" service delivery, and the fact that you aren't an investment advisor.
+
+Here is a comprehensive ToS for **DeFiScoring.com**.
+
+-----
+
+# Terms of Service
+
+**Effective Date:** April 20, 2026
+
+Welcome to **DeFiScoring.com**. By accessing or using our website, services, or tools (collectively, the "Service"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, please do not use the Service.
+
+-----
+
+## 1\. Acceptance of Terms
+
+By using DeFiScoring.com, you represent that you are at least 18 years of age and have the legal capacity to enter into this agreement. These Terms apply to all visitors, users, and others who access the Service.
+
+## 2\. Description of Service
+
+DeFiScoring.com provides data-driven analytics, risk assessments, and scoring for decentralized finance (DeFi) protocols.
+
+  * **Informational Only:** The Service is a data aggregator and analysis tool. We do not facilitate trades, hold custody of funds, or provide financial brokerage services.
+  * **Service Evolution:** We reserve the right to withdraw or amend the Service and any functionality without notice.
+
+## 3\. Intellectual Property Rights
+
+The Service and its original content (excluding data sourced from third-party APIs like Etherscan or DeFiLlama), features, and functionality are and will remain the exclusive property of DeFiScoring.
+
+  * **Limited License:** You are granted a limited, non-exclusive, non-transferable license to access the data for personal, non-commercial use.
+  * **Restrictions:** You may not "scrape," crawl, or data-mine the Service for commercial purposes without express written consent.
+
+## 4\. User Obligations & Conduct
+
+When using our Service, you agree **not** to:
+
+  * Use the Service for any illegal purpose or in violation of any local, state, national, or international law.
+  * Attempt to interfere with the proper working of the Service, including bypassing any measures we may use to prevent or restrict access.
+  * Use our "Connect Wallet" features to engage in any fraudulent activity.
+
+## 5\. Third-Party Links and Services
+
+Our Service contains links to third-party DeFi protocols, websites, or services that are not owned or controlled by DeFiScoring.
+
+  * **No Control:** We have no control over, and assume no responsibility for, the content, privacy policies, or practices of any third-party services.
+  * **User Risk:** You acknowledge and agree that DeFiScoring shall not be responsible or liable, directly or indirectly, for any damage or loss caused by your use of any third-party protocol.
+
+## 6\. Financial Disclaimer & Risk Acknowledgement
+
+**YOUR USE OF THE SERVICE IS AT YOUR SOLE RISK.** The Service provides scores and analysis "AS IS" and "AS AVAILABLE." We do not warrant the accuracy of any score. You acknowledge that DeFi is inherently risky and that you have read and understood our [Financial Disclaimer](https://www.google.com/search?q=/disclaimer).
+
+## 7\. Limitation of Liability
+
+To the maximum extent permitted by applicable law, in no event shall DeFiScoring, its developers, or affiliates be liable for any indirect, incidental, special, consequential, or punitive damages, including without limitation:
+
+  * Loss of profits, data, or funds.
+  * Use of or inability to use the Service.
+  * Any conduct or content of any third party on the Service.
+  * Any unauthorized access to your wallet or data.
+
+## 8\. Indemnification
+
+You agree to defend, indemnify, and hold harmless DeFiScoring and its affiliates from and against any and all claims, damages, obligations, losses, liabilities, costs, or debt, and expenses arising from your use of the Service or your violation of these Terms.
+
+## 9\. Governing Law
+
+These Terms shall be governed and construed in accordance with the laws of **[Insert Your Jurisdiction, e.g., Delaware, USA / Singapore]**, without regard to its conflict of law provisions.
+
+## 10\. Changes to Terms
+
+We reserve the right, at our sole discretion, to modify or replace these Terms at any time. We will provide notice of significant changes by posting the new Terms on this page and updating the "Effective Date."
+
+## 11\. Contact Us
+
+If you have any questions about these Terms, please contact us at:
+**Email:** admin@defiscoring.com
+**GitHub:** [https://github.com/DeFiScoring/website](https://github.com/DeFiScoring/website)
+
+-----
+
+### Implementation Tips for a Pro Finish:
+
+  * **Markdown Placement:** Save this as `_pages/terms.md`. Jekyll will automatically render it into your site's layout.
+  * **The "Agreement" Checkbox:** If you add that "Connect Wallet" feature we discussed earlier, make sure the user clicks a box that says: *"I agree to the Terms of Service and Privacy Policy."* This makes these terms legally enforceable.
+  * **Footer Link:** Add `[Terms of Service](/terms)` next to your `[Privacy Policy](/privacy)` in the footer.
+  * **Witty Pro-Tip:** Don't just copy-paste and forget. In the DeFi world, being transparent about **Section 5 (Third-Party Links)** is huge. Users need to know that just because Uniswap has a "99/100" score on your site, you aren't responsible if the Uniswap frontend gets hijacked.
+
+**Should I draft a Privacy Policy next to complete your "Legal Trio"?**

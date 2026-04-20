@@ -1,0 +1,72 @@
+The **Methodology** page is the most important document for your users. In a world of "black box" algorithms, being transparent about how you calculate a protocol's safety score is what separates a professional tool from a hobby project. 
+
+Here is a comprehensive **Scoring Methodology** document for **DeFiScoring.com**.
+
+---
+
+# DeFiScoring Methodology (v1.0)
+**Last Updated:** April 20, 2026
+
+At **DeFiScoring.com**, we believe that transparency is the ultimate hedge against risk. Our scoring system is designed to move beyond "Total Value Locked" (TVL) and focus on the technical, economic, and governance health of a protocol. 
+
+The **DeFiScoring Safety Rating** is a quantitative index ranging from **0 (High Risk)** to **100 (Verified Safety)**.
+
+---
+
+## 1. The Four Pillars of Risk
+Our algorithm aggregates data into four weighted categories.
+
+### A. Security & Code Integrity (35%)
+* **Audit Quality:** We don't just count audits; we weigh them. An audit from a top-tier firm (e.g., OpenZeppelin, Trail of Bits) carries more weight than a self-published report.
+* **Bug Bounty Programs:** Protocols with active, high-reward bug bounties (via platforms like Immunefi) receive a score boost.
+* **AI-Driven Code Scan:** Using our proprietary LLM worker, we scan for "red flag" patterns in the Solidity code, such as `selfdestruct` functions or unverified implementation contracts.
+
+### B. Decentralization & Governance (30%)
+* **Admin Key Security:** Is the protocol controlled by a single EOA (Externally Owned Account) or a secure Multi-sig?
+* **Timelocks:** We check for the presence of a Timelock (minimum 48 hours). Protocols that can change their logic instantly receive a significant penalty.
+* **Governance Participation:** Using Snapshot data, we measure how decentralized the decision-making process truly is.
+
+### C. Market & Economic Health (25%)
+* **Liquidity Concentration:** If 80% of the TVL is held by 5 "whale" wallets, the score is penalized due to exit-risk volatility.
+* **TVL Stability:** We track the 7-day and 30-day TVL trends. Rapid "bleeding" of assets often precedes a protocol failure.
+* **Oracle Reliability:** We verify if the protocol uses decentralized oracles (Chainlink/Pyth) or if it relies on easily manipulated spot-price pools.
+
+### D. Protocol Maturity (10%)
+* **Days Since Genesis:** The longer a protocol survives under "Live Fire" (with millions in TVL) without an exploit, the higher its trust score. 
+* **Lindys Effect:** We reward protocols that have successfully navigated major market crashes or volatility events.
+
+---
+
+## 2. The Calculation Formula
+The final score ($S$) is calculated using the following weighted average:
+
+**$S = (Security \times 0.35) + (Decentralization \times 0.30) + (Economics \times 0.25) + (Maturity \times 0.10)$**
+
+| Score Range | Rating | Actionable Insight |
+| :--- | :--- | :--- |
+| **90 - 100** | **AAA** | Industry standard. Low trust assumptions. |
+| **70 - 89** | **B** | Solid protocol, but may have minor centralization risks. |
+| **50 - 69** | **C** | Caution advised. Significant admin privileges or low audit count. |
+| **Below 50** | **D/F** | High Risk. Potential for rug-pull or major technical failure. |
+
+---
+
+## 3. Data Sources
+To ensure neutrality, we pull data from multiple independent sources via our **Cloudflare Web3 Infrastructure**:
+* **On-Chain Data:** Cloudflare Web3 Gateways (Ethereum/L2s).
+* **Metric Aggregation:** DeFiLlama API.
+* **Governance:** Snapshot & Tally Subgraphs.
+* **Verification:** Etherscan & Sourcify.
+
+---
+
+## 4. Limitations
+While our methodology is rigorous, no algorithm can predict a "Zero Day" exploit. A high score indicates that a protocol has followed best practices and demonstrated historical resilience, but it is **not a guarantee of fund safety**. Users should always perform their own due diligence.
+
+---
+
+### Implementation Tips for Your Website:
+
+* **Interactive Gauges:** Use a JS library like `Chart.js` to show the "Pillar Breakdown" on each protocol page. Users love seeing that a protocol has a "100/100" in Security but a "20/100" in Decentralization.
+* **The "Methodology Badge":** Put a small link next to every score that says *"How was this calculated?"* leading to this page.
+* **Open Source Math:** Consider hosting the exact scoring script (the `.js` file from your Cloudflare Worker) in a public GitHub folder called `/methodology`. It proves you aren't manually "pumping" scores for partners.

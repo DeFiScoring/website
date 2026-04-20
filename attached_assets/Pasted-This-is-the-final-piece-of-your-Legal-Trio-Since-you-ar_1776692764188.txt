@@ -1,0 +1,91 @@
+This is the final piece of your "Legal Trio." Since you are using **Cloudflare** and **GitHub Pages**, your Privacy Policy needs to reflect that while you aren't a traditional "data-hungry" tech company, you are using edge computing and blockchain data that have specific privacy implications.
+
+-----
+
+# Privacy Policy
+
+**Effective Date:** April 20, 2026
+
+At **DeFiScoring.com**, we prioritize the privacy of our users. This Privacy Policy outlines the types of information we collect, how we use it, and the steps we take to ensure your data is handled responsibly in the decentralized ecosystem.
+
+-----
+
+## 1\. Information We Collect
+
+We aim to collect the minimum amount of data necessary to provide our services.
+
+  * **Public Blockchain Data:** When you use our "Connect Wallet" or "Health Score" features, we process your public wallet address (e.g., `0x...`). This data is already public on the blockchain. We do not "own" this data.
+  * **Usage Data:** Like most websites, we use **Cloudflare** to optimize performance and security. Cloudflare may automatically collect metadata such as your IP address, browser type, and time spent on pages to prevent DDoS attacks and improve site speed.
+  * **Direct Communication:** If you contact us via email or GitHub, we collect your email address and the content of your message to respond to your inquiry.
+
+## 2\. How We Use Your Information
+
+We use the collected information to:
+
+  * Provide and maintain our DeFi scoring metrics.
+  * Analyze user trends to improve our scoring algorithms.
+  * Protect our website from malicious activity and bot traffic.
+  * Comply with legal obligations where applicable.
+
+## 3\. Web3 and Blockchain Transparency
+
+Please be aware that **blockchain transactions are public by nature**.
+
+  * When you connect a wallet to DeFiScoring.com, you are sharing a public identifier that is visible to everyone on the network.
+  * We do not have the power to edit or delete information that is recorded on the blockchain (such as your transaction history or token holdings).
+
+## 4\. Cookies and Tracking Technologies
+
+We use a "Privacy-First" approach to tracking.
+
+  * **Functional Cookies:** We use essential cookies provided by Cloudflare to ensure the security and stability of the site.
+  * **No Marketing Trackers:** We do not use third-party marketing cookies (like Facebook Pixel or Google AdSense) to track your behavior across other websites.
+
+## 5\. Third-Party Service Providers
+
+We rely on trusted third-party providers to power our data:
+
+  * **Infrastructure:** GitHub Pages (Hosting) and Cloudflare (DNS, Workers, Web3 Gateway).
+  * **Data APIs:** Etherscan, DeFiLlama, and The Graph.
+  * These services have their own privacy policies, and we encourage you to review them.
+
+## 6\. Data Retention
+
+  * **Wallet Addresses:** We may cache your wallet's "Health Score" in our **Cloudflare D1** database to improve load times. This data is stored for as long as it is relevant to the service.
+  * **Server Logs:** Cloudflare logs are typically deleted or anonymized within 30 days.
+
+## 7\. Your Rights (GDPR/CCPA)
+
+Depending on your location, you may have the following rights:
+
+  * **Access & Portability:** You can request a copy of the data we hold about you (usually just your cached score).
+  * **Deletion:** You can request that we delete your cached data from our private databases. Note: **We cannot delete data from the blockchain.**
+  * **Opt-out:** You can stop using the service and disconnect your wallet at any time.
+
+## 8\. Security
+
+We implement industry-standard security measures provided by Cloudflare to protect your data. However, no method of transmission over the internet or electronic storage is 100% secure. We cannot guarantee absolute security.
+
+## 9\. Changes to This Policy
+
+We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Effective Date."
+
+## 10\. Contact Us
+
+For any privacy-related questions, please reach out:
+
+  * **Email:** admin@defiscoring.com
+  * **GitHub:** [DeFiScoring/website](https://github.com/DeFiScoring/website)
+
+-----
+
+### Pro-Tip for your Jekyll Setup:
+
+1.  **The "Legal Hub":** I recommend creating a footer section called **"Governance"** or **"Legal"** and listing all three:
+      * [Terms of Service](https://www.google.com/search?q=/terms)
+      * [Privacy Policy](https://www.google.com/search?q=/privacy)
+      * [Financial Disclaimer](https://www.google.com/search?q=/disclaimer)
+2.  **Cloudflare AI Privacy:** Since you are planning to use an LLM for contract assessment, add a small note in Section 5 if you ever start sending user-specific queries to OpenAI or Anthropic. (e.g., *"We may use AI providers to analyze contract code; no personal identity is shared during this process."*)
+3.  **No-Log Policy:** If you really want to win over the DeFi crowd, explicitly state in your README: *"We do not sell user data. Period."* It’s a simple statement that builds a lot of "vibe" points in Web3.
+
+You're now legally shielded and ready to build\! What's the first feature we're tackling in Replit?

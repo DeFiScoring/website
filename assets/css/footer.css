@@ -1,0 +1,122 @@
+/* Shared site footer. Scoped under .df-footer so it can sit alongside the
+   landing-page (.footer) and dashboard (.defi-footer) styles without
+   collisions. Inherits the page's base font + colour tokens. */
+
+.df-footer {
+  background: rgba(11, 16, 32, 0.6);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  color: #9aa5cf;
+  font-size: 13px;
+  line-height: 1.55;
+  padding: 56px 0 32px;
+  margin-top: 60px;
+}
+.df-footer__inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 28px;
+}
+
+/* Disclaimer banner — deliberately readable, not 8pt grey legalese. */
+.df-footer__disclaimer {
+  background: rgba(255, 181, 71, 0.08);
+  border: 1px solid rgba(255, 181, 71, 0.35);
+  border-radius: 12px;
+  padding: 16px 20px;
+  color: #f5e4c5;
+  font-size: 14px;
+  margin-bottom: 44px;
+}
+.df-footer__disclaimer strong { color: #ffb547; margin-right: 6px; }
+.df-footer__disclaimer a {
+  color: #ffd99c;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  margin-left: 6px;
+  white-space: nowrap;
+}
+.df-footer__disclaimer a:hover { color: #fff; }
+
+/* Five-column grid: brand block + four link columns. Auto-fit collapses
+   gracefully on tablet and phone. */
+.df-footer__grid {
+  display: grid;
+  grid-template-columns: 1.6fr repeat(4, 1fr);
+  gap: 36px;
+  margin-bottom: 36px;
+}
+.df-footer__brand .df-footer__logo {
+  display: inline-flex; align-items: center; gap: 10px;
+  color: #e6ebff; text-decoration: none; font-weight: 700; font-size: 15px;
+  letter-spacing: 0.2px; margin-bottom: 12px;
+}
+.df-footer__tagline { margin: 0 0 14px; color: #9aa5cf; }
+.df-footer__stack {
+  margin: 0; font-size: 12px; color: #6f7aa0;
+}
+.df-footer__stack span { color: #c8d2f5; }
+
+.df-footer__col h4 {
+  margin: 0 0 14px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #c8d2f5;
+  font-weight: 600;
+}
+.df-footer__col ul { list-style: none; padding: 0; margin: 0; }
+.df-footer__col li { margin-bottom: 9px; }
+.df-footer__col a {
+  color: #9aa5cf; text-decoration: none;
+  transition: color 120ms ease;
+}
+.df-footer__col a:hover { color: #fff; }
+.df-footer__col em {
+  font-style: normal; color: #6f7aa0; font-size: 11px; margin-left: 4px;
+}
+.df-footer__soon {
+  color: #6f7aa0; cursor: not-allowed;
+}
+.df-footer__soon em {
+  font-style: normal;
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 10px;
+  color: #9aa5cf;
+}
+
+.df-footer__meta {
+  display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  padding-top: 22px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 12px;
+  color: #6f7aa0;
+}
+
+/* Inside the dashboard, `.defi-content` already has its own padding, and the
+   footer should hug the edges. Reset the default 60px top margin so the
+   footer sits flush below the consent banner. */
+.defi-main .df-footer { margin-top: 0; }
+
+/* Tablet: collapse the brand block above the four columns. */
+@media (max-width: 960px) {
+  .df-footer__grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 32px;
+  }
+  .df-footer__brand { grid-column: 1 / -1; }
+}
+
+/* Phone: single column, tighter padding. */
+@media (max-width: 560px) {
+  .df-footer { padding: 40px 0 28px; margin-top: 40px; }
+  .df-footer__inner { padding: 0 18px; }
+  .df-footer__grid { grid-template-columns: 1fr; gap: 28px; margin-bottom: 28px; }
+  .df-footer__disclaimer { font-size: 13px; padding: 14px 16px; margin-bottom: 32px; }
+  .df-footer__disclaimer a { display: inline-block; margin-left: 0; margin-top: 4px; }
+  .df-footer__meta { flex-direction: column; gap: 6px; }
+}

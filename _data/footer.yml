@@ -1,0 +1,54 @@
+# Footer link inventory. Empty `link:` values render as muted "soon" labels
+# instead of broken anchors — populate them as channels go live.
+
+product:
+  - name: Dashboard
+    link: /dashboard/
+  - name: Portfolio Heatmap
+    link: /dashboard/portfolio/
+  - name: Audit Directory
+    link: /dashboard/audits/
+  - name: Risk Profiler
+    link: /dashboard/risk-chatbot/
+  - name: Token Approvals
+    link: /dashboard/approvals/
+
+developers:
+  - name: API Documentation
+    link: /api/
+  - name: Methodology
+    link: /methodology/
+  - name: GitHub Repository
+    link: https://github.com/DeFiScoring/website
+  - name: Report an Issue
+    link: /dashboard/report-issue/
+  - name: System Status
+    link: ""
+
+legal:
+  - name: Financial Disclaimer
+    link: /disclaimer/
+  - name: Terms of Service
+    link: /terms/
+  - name: Privacy Policy
+    link: /privacy/
+
+community:
+  - name: X (Twitter)
+    link: ""
+    handle: "@defiscoring"
+  - name: Telegram
+    link: ""
+    handle: "Coming soon"
+  - name: Discord
+    link: ""
+    handle: "Coming soon"
+  - name: Email
+    link: "mailto:admin@defiscoring.com"
+    handle: "admin@defiscoring.com"
+
+# Short text shown in the prominent disclaimer banner above the link columns.
+disclaimer_short: >
+  DeFi Scoring provides data-driven insights for educational purposes only.
+  High scores do not guarantee protocol safety. DeFi involves significant
+  risk of loss. Not Financial Advice.

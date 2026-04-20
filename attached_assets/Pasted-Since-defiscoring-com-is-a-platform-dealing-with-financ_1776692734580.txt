@@ -1,0 +1,68 @@
+Since **defiscoring.com** is a platform dealing with financial data, risk assessments, and (eventually) wallet connections, your footer needs to do more than just provide links. It needs to establish **trust** and **legal protection**. 
+
+In the DeFi space, a footer is often the first place savvy users look to verify if a project is legitimate or just another "fly-by-night" operation.
+
+---
+
+## 1. The "Non-Negotiables" (Legal & Trust)
+You absolutely need these to avoid regulatory headaches and user confusion.
+
+* **Financial Disclaimer:** This is priority #1. You must state: *"Not Financial Advice. DeFiScoring provides data-driven insights for educational purposes only. Investing in DeFi involves significant risk."*
+* **Terms of Service (ToS):** Defines how users can use your data (e.g., "Don't scrape our API for commercial use without permission").
+* **Privacy Policy:** Since you are using Cloudflare and potentially tracking wallet addresses, you need to disclose what data is collected (standard GDPR/CCPA compliance).
+* **Methodology Link:** In 2026, transparency is the ultimate currency. Link to a page that explains exactly how your "Health Score" or "Risk Score" is calculated.
+
+---
+
+## 2. High-Value "Power User" Links
+These additions turn a static footer into a resource hub.
+
+| Link | Why it's High Value |
+| :--- | :--- |
+| **API Documentation** | High demand. Developers want to pull your scores into their own dashboards or bots. |
+| **Open Source (GitHub)** | Since you're on GitHub Pages, show it off. It builds massive trust in the crypto community. |
+| **Media Kit** | For protocols you've scored to grab badges/logos to display on *their* sites ("Rated A+ by DeFiScoring"). |
+| **Status Page** | Link to your Cloudflare status or a simple "All Systems Operational" badge. |
+
+---
+
+## 3. Community & Ecosystem
+DeFi is social. Your footer should be the "exit ramp" to your community.
+
+* **Social Icons:** X (Twitter), Telegram, and Discord are the "Big Three" for DeFi.
+* **Newsletter Signup:** A simple "Get Weekly Risk Alerts" box in the footer is the best way to build a recurring user base.
+* **"Built on Cloudflare":** Mentioning your stack (Cloudflare Web3, Workers) signals that your infra is modern and resilient.
+
+---
+
+## 4. How to Implement this in Jekyll
+Since you're using Jekyll, don't hardcode this in every page. Use your `_data` folder to make it dynamic.
+
+**Step 1: Create `_data/footer.yml`**
+```yaml
+socials:
+  - name: X
+    link: https://x.com/defiscoring
+  - name: GitHub
+    link: https://github.com/DeFiScoring/website
+legal:
+  - name: Privacy Policy
+    link: /privacy
+  - name: Terms of Service
+    link: /terms
+```
+
+**Step 2: Update `_includes/footer.html`**
+Use a Jekyll loop to pull these links. This makes it incredibly easy to update later without digging through HTML.
+
+---
+
+## 5. The "Professional Touch" (The Gemini Recommendation)
+Add a **"Latest Audit"** timestamp.
+> "Last Security Update: Oct 2026 | Data refreshed 5 minutes ago."
+
+This tells the user that the site is active and the scores aren't stale. Stale data is a death sentence for a scoring platform.
+
+> **One direct piece of advice:** Many DeFi founders hide their "Not Financial Advice" disclaimer in tiny, gray text. **Don't do that.** Put it in a readable font. It shows you’re a grounded, responsible actor in a space that is often seen as the "Wild West."
+
+**Would you like me to help you draft the specific "Not Financial Advice" legal text for your disclaimer?**

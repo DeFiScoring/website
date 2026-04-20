@@ -10,6 +10,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="{{ '/assets/favicon/apple-touch-icon.png' | relative_url }}">
   <link rel="stylesheet" href="{{ '/assets/css/bootstrap.min.css' | relative_url }}">
   <link rel="stylesheet" href="{{ '/assets/css/dashboard.css' | relative_url }}">
+  <link rel="stylesheet" href="{{ '/assets/css/footer.css' | relative_url }}">
 </head>
 <body class="defi-body">
   <div class="defi-shell">
@@ -20,9 +21,7 @@
         {{ content }}
       </div>
       {% include dashboard/intel-consent.html %}
-      <footer class="defi-footer">
-        <small>&copy; {{ 'now' | date: '%Y' }} DeFi Scoring · defiscoring.com · MVP scaffold</small>
-      </footer>
+      {% include site-footer.html %}
     </main>
   </div>
   <script>

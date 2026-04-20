@@ -1,0 +1,53 @@
+Since you are building a platform that provides risk assessments and "scores," your disclaimer needs to be airtight. It serves two purposes: protecting you from liability and educating your users on the inherent dangers of the DeFi space.
+
+Here is a comprehensive **Financial Disclaimer** tailored for **DeFiScoring.com**. You can place this on a dedicated `/disclaimer` page and include a summarized version in your footer.
+
+-----
+
+## Financial Disclaimer
+
+### 1\. Not Financial Advice
+
+The content, scores, metrics, and analysis provided on **DeFiScoring.com** (the "Website") are for **educational and informational purposes only**. None of the information provided on this Website constitutes investment, financial, trading, or any other form of professional advice.
+
+DeFiScoring does not recommend that any cryptocurrency, DeFi protocol, or financial product should be bought, sold, or held by you. You should not treat any of the Website's content as a call to action. We strongly recommend that you consult with a qualified financial professional before making any investment decisions.
+
+### 2\. Nature of the Scores
+
+All scores (Risk Scores, Health Scores, Safety Ratings) are generated via proprietary algorithms and AI-driven analysis. These scores are **subjective opinions** based on available on-chain data, smart contract audits, and historical performance.
+
+  * A "High Score" is not a guarantee of safety.
+  * A "Low Score" is not a definitive prediction of failure.
+  * The scoring methodology may change at any time without prior notice.
+
+### 3\. Inherent Risks of Decentralized Finance (DeFi)
+
+By using this Website, you acknowledge that participating in Decentralized Finance involves extreme risk, including but not limited to:
+
+  * **Smart Contract Vulnerabilities:** Even audited protocols can be subject to exploits, hacks, or "rug pulls."
+  * **Market Volatility:** Digital assets are subject to high price volatility and may lose 100% of their value.
+  * **Regulatory Risk:** Changes in global regulations may impact the legality or functionality of certain protocols.
+  * **Oracle Failures:** Data feeds used by protocols can fail or be manipulated, leading to liquidations or loss of funds.
+
+### 4\. Accuracy of Information
+
+While DeFiScoring strives to provide accurate and up-to-date information, we cannot guarantee that all data is current or error-free. Information sourced from third-party APIs (e.g., DeFiLlama, Etherscan, The Graph) is provided "as is." DeFiScoring will not be held responsible for any missing or wrong information.
+
+### 5\. Limitation of Liability
+
+In no event shall **DeFiScoring**, its owners, developers, or affiliates be liable for any loss or damage, including without limitation, indirect or consequential loss or damage, or any loss or damage whatsoever arising from loss of data or profits arising out of, or in connection with, the use of this Website. **You use the information on this site entirely at your own risk.**
+
+### 6\. External Links
+
+The Website contains links to external DeFi protocols and third-party services. DeFiScoring has no control over the nature, content, and availability of those sites. The inclusion of any links does not necessarily imply a recommendation or endorse the views expressed within them.
+
+-----
+
+### Best Practices for Your Site:
+
+  * **The "Footer Summary":** You don't need the whole text in the footer. Use this condensed version:
+    > **Disclaimer:** DeFiScoring provides data-driven insights for educational purposes only. High scores do not guarantee protocol safety. DeFi involves significant risk of loss. **Not Financial Advice.** [Read Full Disclaimer](https://www.google.com/search?q=/disclaimer)
+  * **The "Connect Wallet" Modal:** If you implement the "Connect Wallet" feature, add a checkbox that says: *"I have read the Financial Disclaimer and understand that DeFiScoring is not liable for my investment decisions."* This adds a layer of "click-through" legal protection.
+  * **Scannability:** In your `/disclaimer` page, bold the most important sentences (like **"You use the information on this site entirely at your own risk"**) so users can't claim they missed the point.
+
+Since you're using Jekyll, I recommend saving this as a Markdown file in `_pages/disclaimer.md` so it automatically inherits your site's styling\!
