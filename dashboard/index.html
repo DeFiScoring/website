@@ -168,6 +168,17 @@ sitemap: false
 <script src="{{ '/assets/js/rwa-audit-toolkit.js' | relative_url }}" defer></script>
 
 <div style="margin-top:32px">
+  <h2 style="font-size:22px;font-weight:700;margin:0 0 6px">🤖 AI RWA Chatbot + Personalised PDF</h2>
+  <p style="color:var(--defi-text-dim);font-size:13px;margin:0 0 16px">
+    Conversational deep-dive into your RWA portfolio. Gated behind email consent. The AI reads the live module scores
+    above and produces a premium personalised PDF blending its analysis with the deterministic dashboard data.
+  </p>
+  <div id="rwa-chatbot-container"></div>
+</div>
+<script>window.DEFI_RISK_WORKER_URL = "{{ site.defi.worker_url }}";</script>
+<script src="{{ '/assets/js/rwa-chatbot.js' | relative_url }}" defer></script>
+
+<div style="margin-top:32px">
   <h2 style="font-size:22px;font-weight:700;margin:0 0 6px">Live market data</h2>
   <p style="color:var(--defi-text-dim);font-size:13px;margin:0 0 16px">
     Real-time TVL from DeFiLlama · Spot prices from CoinGecko · Aave V3 chain breakdown.
