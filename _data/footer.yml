@@ -18,8 +18,6 @@ developers:
     link: /api/
   - name: Methodology
     link: /methodology/
-  - name: GitHub Repository
-    link: https://github.com/DeFiScoring/website
   - name: Report an Issue
     link: /dashboard/report-issue/
   - name: System Status
@@ -37,6 +35,9 @@ social:
   - name: X (Twitter)
     icon: twitter
     link: https://twitter.com/DeFiScoring
+  - name: Telegram
+    icon: telegram
+    link: https://t.me/defiscoring
   - name: Facebook
     icon: facebook
     link: https://www.facebook.com/defiscoring/

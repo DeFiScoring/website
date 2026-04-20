@@ -313,6 +313,8 @@
 }
 .defi-mobile-header__brand img { display: block; flex-shrink: 0; }
 .defi-mobile-header__brand span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.defi-mobile-header__brand { flex: 1; min-width: 0; }
+.defi-mobile-header .defi-hamburger { margin-left: auto; }
 
 .defi-sidebar__close {
   display: none;
