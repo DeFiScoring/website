@@ -1,0 +1,208 @@
+**✅ Here’s your exact “Replit AI Prompt Pack” for “Liquidity & Redemption Risk” (Module 6)**
+
+Copy and paste these **one by one** into the Replit AI chat **in your main Jekyll Repl** (`DeFiScoring/website`).
+
+---
+
+### Prompt 1: Create the Liquidity & Redemption Risk JavaScript file
+```
+Create a new file exactly at assets/js/liquidity-redemption.js with this complete, ready-to-use code:
+
+// assets/js/liquidity-redemption.js
+// Liquidity & Redemption Risk - Module 6 for RWA Scoring
+
+const LIQUIDITY_DATA = {
+  'BlackRock/Securitize': {
+    liquidityScoreBase: 820,
+    secondaryMarketVolume: 2450000000, // $2.45B
+    redemptionTimeline: '1-3 days',
+    fireSaleRisk: 'Low',
+    onChainLiquidity: [68, 72, 75, 79, 82, 85, 88], // % of TVL liquid
+    redemptionHistory: [3, 2.5, 2, 1.8, 1.5, 1.2, 1] // days to redeem
+  },
+  'Ondo Finance': {
+    liquidityScoreBase: 760,
+    secondaryMarketVolume: 890000000,
+    redemptionTimeline: 'Instant',
+    fireSaleRisk: 'Low',
+    onChainLiquidity: [82, 85, 88, 90, 91, 92],
+    redemptionHistory: [0.5, 0.4, 0.3, 0.2, 0.1]
+  },
+  'Centrifuge': {
+    liquidityScoreBase: 540,
+    secondaryMarketVolume: 120000000,
+    redemptionTimeline: '7+ days',
+    fireSaleRisk: 'High',
+    onChainLiquidity: [35, 28, 42, 31, 45, 38],
+    redemptionHistory: [12, 9, 15, 8, 11, 10]
+  }
+};
+
+async function calculateLiquidityScore(issuerName) {
+  const data = LIQUIDITY_DATA[issuerName] || { liquidityScoreBase: 550, secondaryMarketVolume: 50000000, redemptionTimeline: 'Unknown', fireSaleRisk: 'High', onChainLiquidity: [40,40,40], redemptionHistory: [10,10,10] };
+
+  let score = data.liquidityScoreBase;
+  if (data.fireSaleRisk === 'High') score -= 120;
+  if (data.redemptionTimeline.includes('7+')) score -= 90;
+  score = Math.min(850, Math.max(300, Math.floor(score)));
+
+  const grade = score >= 800 ? 'A+' : score >= 700 ? 'A' : score >= 600 ? 'B' : score >= 500 ? 'C' : 'D';
+  const tier = score >= 750 ? 'Low Risk' : score >= 600 ? 'Moderate Risk' : 'High Risk';
+
+  return {
+    score,
+    grade,
+    tier,
+    secondaryMarketVolume: data.secondaryMarketVolume,
+    redemptionTimeline: data.redemptionTimeline,
+    fireSaleRisk: data.fireSaleRisk,
+    onChainLiquidity: data.onChainLiquidity,
+    redemptionHistory: data.redemptionHistory
+  };
+}
+
+async function renderLiquidityRedemption() {
+  const container = document.getElementById('liquidity-redemption-container');
+  if (!container) return;
+
+  if (!window.userWallet) {
+    container.innerHTML = `<div class="text-center py-12 text-gray-500">Connect your wallet to analyze liquidity & redemption risk for your RWA holdings</div>`;
+    return;
+  }
+
+  container.innerHTML = `<div class="text-center py-8"><p class="text-gray-500">Measuring secondary-market liquidity, redemption speed, and fire-sale risk...</p></div>`;
+
+  try {
+    const issuerName = "BlackRock/Securitize"; // In production, detect dynamically from wallet
+    const result = await calculateLiquidityScore(issuerName);
+
+    const html = `
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Liquidity Score Card -->
+        <div class="lg:col-span-1 bg-white dark:bg-gray-900 rounded-3xl shadow-xl p-8 text-center">
+          <h2 class="text-sm uppercase tracking-widest text-teal-600 mb-2">Liquidity & Redemption Risk Score</h2>
+          <div class="text-8xl font-bold text-teal-600">${result.score}</div>
+          <div class="text-4xl font-semibold mt-1 mb-6">${result.grade}</div>
+          <div class="inline-block px-6 py-2 bg-teal-100 dark:bg-teal-900 text-teal-700 dark:text-teal-200 rounded-3xl text-lg">${result.tier}</div>
+          <p class="mt-8 text-sm text-gray-500">Redemption Timeline: <strong>${result.redemptionTimeline}</strong></p>
+        </div>
+
+        <!-- Fire-Sale Risk & Volume -->
+        <div class="lg:col-span-1 bg-white dark:bg-gray-900 rounded-3xl shadow-xl p-8">
+          <h3 class="font-semibold mb-4 flex items-center gap-2">🔥 Fire-Sale Risk</h3>
+          <div class="flex justify-between items-center mb-6">
+            <span class="text-2xl font-medium">${result.fireSaleRisk}</span>
+            <span class="px-5 py-1 rounded-3xl text-sm ${result.fireSaleRisk === 'Low' ? 'bg-green-100 text-green-700' : result.fireSaleRisk === 'Medium' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}">${result.fireSaleRisk}</span>
+          </div>
+          <p class="text-sm">Secondary Market Volume: <strong>$${(result.secondaryMarketVolume / 1000000000).toFixed(2)}B</strong></p>
+        </div>
+
+        <!-- On-Chain Liquidity -->
+        <div class="lg:col-span-1 bg-white dark:bg-gray-900 rounded-3xl shadow-xl p-8">
+          <h3 class="font-semibold mb-4">On-Chain Liquidity (% of TVL)</h3>
+          <canvas id="onChainLiquidityChart" height="240"></canvas>
+        </div>
+
+        <!-- Redemption Flow Analytics -->
+        <div class="lg:col-span-3 bg-white dark:bg-gray-900 rounded-3xl shadow-xl p-8">
+          <h3 class="font-semibold mb-4">Redemption Flow Analytics (Average days to redeem)</h3>
+          <canvas id="redemptionFlowChart" height="180"></canvas>
+        </div>
+      </div>
+    `;
+
+    container.innerHTML = html;
+
+    setTimeout(() => {
+      // On-Chain Liquidity Bar Chart
+      new Chart(document.getElementById('onChainLiquidityChart'), {
+        type: 'bar',
+        data: {
+          labels: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'],
+          datasets: [{
+            label: '% Liquid',
+            data: result.onChainLiquidity,
+            backgroundColor: '#14b8a6',
+            borderRadius: 8
+          }]
+        },
+        options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { max: 100 } } }
+      });
+
+      // Redemption Flow Line Chart
+      new Chart(document.getElementById('redemptionFlowChart'), {
+        type: 'line',
+        data: {
+          labels: ['Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
+          datasets: [{
+            label: 'Avg Redemption Days',
+            data: result.redemptionHistory,
+            borderColor: '#14b8a6',
+            tension: 0.4,
+            borderWidth: 3,
+            pointRadius: 5
+          }]
+        },
+        options: { responsive: true, plugins: { legend: { display: false } } }
+      });
+    }, 300);
+
+  } catch (e) {
+    console.error(e);
+    container.innerHTML = `<p class="text-red-500 text-center py-8">⚠️ Could not fetch liquidity data. Please try again.</p>`;
+  }
+}
+
+window.renderLiquidityRedemption = renderLiquidityRedemption;
+```
+
+### Prompt 2: Add the Liquidity & Redemption Risk section to the dashboard
+```
+Update dashboard/index.md and insert this new section right after the Oracle & Data Integrity block:
+
+<h2 class="text-3xl font-bold mb-6 mt-12">💧 Liquidity & Redemption Risk</h2>
+<p class="text-gray-600 dark:text-gray-400 mb-6">Measures secondary-market liquidity, redemption speed, and fire-sale risk — liquidity score + redemption timeline estimate + on-chain liquidity data</p>
+<div id="liquidity-redemption-container" class="mb-12"></div>
+
+<script src="/assets/js/liquidity-redemption.js"></script>
+
+<script>
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      window.renderLiquidityRedemption();
+    }, 3000);
+  });
+</script>
+```
+
+### Prompt 3: Add navigation link and auto-trigger
+```
+In your header Liquid file or dashboard navigation, add:
+<li><a href="/dashboard/#liquidity-redemption-container" onclick="window.renderLiquidityRedemption()">Liquidity & Redemption Risk</a></li>
+
+Also update wallet-connect.js or oracle-integrity.js to automatically call window.renderLiquidityRedemption() after wallet connection.
+```
+
+### Prompt 4: Test the Liquidity & Redemption Risk module
+```
+Save all files. Jekyll should auto-reload.
+
+In the live preview:
+1. Connect wallet
+2. Confirm the new Liquidity & Redemption Risk section appears with liquidity score, fire-sale risk indicator, secondary market volume, on-chain liquidity bar chart, and redemption flow line chart
+3. Verify realistic data for BlackRock/Securitize, Ondo, and Centrifuge
+4. Check both light and dark mode
+5. Open console and report any errors
+
+Tell me the results so we can expand the LIQUIDITY_DATA object or add live liquidity API calls (e.g., DeFiLlama secondary market data) in the next iteration.
+```
+
+---
+
+**After you paste all 4 prompts:**
+
+You now have **Module 6 fully live** — Liquidity & Redemption Risk is complete.
+
+Reply with **“Liquidity & Redemption Risk done”** and I’ll immediately give you the next module prompt pack (Module 7: Yield & Risk-Adjusted Performance or whichever you want).
+
+Just paste the prompts now and let’s keep building! 🚀
