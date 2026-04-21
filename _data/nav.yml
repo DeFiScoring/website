@@ -1,0 +1,52 @@
+# Dashboard sidebar — single source of truth.
+# Each group renders as a collapsible <details> section.
+# `match` is the page.dashboard_section value used to highlight the active item
+# and auto-open the parent group.
+
+groups:
+  - id: overview
+    items:
+      - id: dashboard
+        label: Overview
+        path: /dashboard/
+        icon: layout-dashboard
+        match: home
+
+  - id: wallet-tools
+    label: Wallet Tools
+    icon: key-round
+    items:
+      - { id: score,     label: My Score,           path: /dashboard/score/,     icon: trending-up,    match: score }
+      - { id: portfolio, label: Portfolio Heatmap,  path: /dashboard/portfolio/, icon: grid-2x2,       match: portfolio }
+      - { id: scanner,   label: Wallet Scanner,     path: /dashboard/scanner/,   icon: scan-line,      match: scanner }
+      - { id: approvals, label: Token Approvals,    path: /dashboard/approvals/, icon: alert-triangle, match: approvals }
+
+  - id: rwa-scoring
+    label: RWA Scoring
+    icon: building-2
+    default_open: true
+    items:
+      - { id: rwa-asset,     label: RWA Asset Risk Score,    path: /dashboard/rwa-asset-score/,        icon: landmark,        match: rwa-asset }
+      - { id: rwa-issuer,    label: Issuer Due Diligence,    path: /dashboard/issuer-due-diligence/,   icon: search,          match: rwa-issuer }
+      - { id: rwa-legal,     label: Legal & Regulatory,      path: /dashboard/legal-compliance/,       icon: scale,           match: rwa-legal }
+      - { id: rwa-custody,   label: Custody & PoR,           path: /dashboard/custody-por/,            icon: lock,            match: rwa-custody }
+      - { id: rwa-oracle,    label: Oracle & Data Integrity, path: /dashboard/oracle-integrity/,       icon: database,        match: rwa-oracle }
+      - { id: rwa-liquidity, label: Liquidity & Redemption,  path: /dashboard/liquidity-redemption/,   icon: droplets,        match: rwa-liquidity }
+      - { id: rwa-yield,     label: Yield & Risk-Adjusted,   path: /dashboard/yield-risk-adjusted/,    icon: bar-chart-2,     match: rwa-yield }
+      - { id: rwa-portfolio, label: Portfolio Aggregator,    path: /dashboard/portfolio-rwa-exposure/, icon: layers,          match: rwa-portfolio }
+
+  - id: tools
+    label: Tools & Insights
+    icon: wrench
+    items:
+      - { id: audit-toolkit, label: Audit & Export, path: /dashboard/audit-toolkit/, icon: download,      match: audit-toolkit }
+      - { id: rwa-chatbot,   label: AI RWA Advisor, path: /dashboard/rwa-chatbot/,   icon: sparkles,      match: rwa-chatbot }
+      - { id: risk,          label: Risk Profiler,  path: /dashboard/risk-profiler/, icon: target,        match: risk }
+      - { id: chatbot,       label: AI Risk Advisor, path: /dashboard/risk-chatbot/, icon: brain,         match: chatbot }
+      - { id: audits,        label: Audit Directory, path: /audits/,                 icon: book-open,     match: audits }
+
+  - id: footer
+    items:
+      - { id: market, label: Live Market Data, path: /dashboard/market-intel/, icon: radio, match: market }
+      - { id: alerts, label: Alerts,           path: /dashboard/alerts/,       icon: bell,  match: alerts }
+      - { id: report, label: Report Issue,     path: /dashboard/report/,       icon: flag,  match: report }

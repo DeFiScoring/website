@@ -538,3 +538,105 @@
 .defi-tile__emoji { font-size: 24px; line-height: 1; }
 .defi-tile__name { font-size: 15px; font-weight: 700; }
 .defi-tile__desc { font-size: 12px; color: var(--defi-text-dim); line-height: 1.45; }
+
+/* ---------- Lucide icon sizing in sidebar ---------- */
+.defi-icon-svg { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.defi-icon-svg svg { width: 16px; height: 16px; stroke-width: 2; }
+.defi-sidebar__group-label { display: inline-flex; align-items: center; gap: 10px; }
+.defi-sidebar__link { display: flex; align-items: center; gap: 10px; }
+.defi-sidebar__chevron { transition: transform .2s ease; color: var(--defi-text-dim); }
+.defi-sidebar__chevron svg { width: 14px; height: 14px; }
+.defi-sidebar__group[open] > summary > .defi-sidebar__chevron { transform: rotate(180deg); }
+
+/* ---------- Sidebar footer: chain selector + gas pill ---------- */
+.defi-sidebar__footer { display: flex; flex-direction: column; gap: 10px; }
+.defi-chain-selector {
+  display: flex; gap: 6px; padding: 4px;
+  background: rgba(15,23,42,.5); border: 1px solid var(--defi-border);
+  border-radius: 10px;
+}
+.defi-chain-btn {
+  flex: 1;
+  padding: 6px 8px; font-size: 11px; font-weight: 700; letter-spacing: .04em;
+  background: transparent; color: var(--defi-text-dim);
+  border: 0; border-radius: 6px; cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+}
+.defi-chain-btn:hover { color: var(--defi-text); background: rgba(255,255,255,.04); }
+.defi-chain-btn.is-active { background: var(--defi-accent); color: #fff; }
+.defi-sidebar__gas { width: 100%; }
+.defi-sidebar__gas .defi-gas { width: 100%; justify-content: center; }
+
+/* ---------- Bottom Live Market strip ---------- */
+.defi-market-strip {
+  position: fixed; left: 0; right: 0; bottom: 0;
+  z-index: 40;
+  background: linear-gradient(180deg, rgba(15,23,42,.92), rgba(11,18,32,.98));
+  border-top: 1px solid var(--defi-border);
+  backdrop-filter: blur(10px);
+  font-size: 12px;
+  display: flex; flex-direction: column;
+  transition: transform .25s ease;
+}
+.defi-market-strip__toggle {
+  display: inline-flex; align-items: center; gap: 8px;
+  align-self: flex-start; margin-left: 16px; margin-top: -28px;
+  padding: 5px 12px;
+  background: var(--defi-card); color: var(--defi-text-dim);
+  border: 1px solid var(--defi-border); border-bottom: 0;
+  border-top-left-radius: 8px; border-top-right-radius: 8px;
+  font: 600 11px/1 inherit; cursor: pointer; letter-spacing: .04em;
+}
+.defi-market-strip__toggle:hover { color: var(--defi-text); }
+.defi-market-strip__toggle svg { width: 14px; height: 14px; }
+.defi-market-strip__chevron { transition: transform .2s ease; }
+.defi-market-strip[data-collapsed="false"] .defi-market-strip__chevron { transform: rotate(180deg); }
+.defi-market-strip__body {
+  display: flex; align-items: center; gap: 18px;
+  padding: 10px 18px;
+  overflow: hidden;
+  max-height: 60px;
+  transition: max-height .25s ease, padding .25s ease, opacity .2s ease;
+}
+.defi-market-strip[data-collapsed="true"] .defi-market-strip__body {
+  max-height: 0; padding-top: 0; padding-bottom: 0; opacity: 0;
+}
+.defi-market-strip__items { display: flex; gap: 18px; flex-wrap: wrap; flex: 1; min-width: 0; }
+.defi-market-strip__item { display: inline-flex; align-items: baseline; gap: 6px; white-space: nowrap; }
+.defi-market-strip__label { color: var(--defi-text-dim); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+.defi-market-strip__value { color: var(--defi-text); font-weight: 700; font-variant-numeric: tabular-nums; }
+.defi-market-strip__updated { font-size: 10px; color: var(--defi-text-dim); white-space: nowrap; }
+/* Reserve space at bottom of the whole scrolling main area so the fixed strip
+ * never covers content, footer or consent banner. The variable updates when the
+ * strip is toggled (see market-strip.js). */
+:root { --defi-market-strip-h: 44px; }
+body.defi-market-open { --defi-market-strip-h: 96px; }
+.defi-main { padding-bottom: var(--defi-market-strip-h); transition: padding-bottom .25s ease; }
+
+/* ---------- Generic tab strip ---------- */
+.defi-tabs {
+  display: flex; gap: 2px;
+  background: rgba(15,23,42,.4);
+  padding: 4px; border-radius: 10px;
+  border: 1px solid var(--defi-border);
+  margin-bottom: 14px;
+  overflow-x: auto;
+}
+.defi-tab {
+  flex: 0 0 auto;
+  padding: 8px 14px;
+  font: 600 13px/1 inherit;
+  background: transparent; color: var(--defi-text-dim);
+  border: 0; border-radius: 7px; cursor: pointer; white-space: nowrap;
+  transition: background .15s ease, color .15s ease;
+}
+.defi-tab:hover { color: var(--defi-text); background: rgba(255,255,255,.04); }
+.defi-tab.is-active { background: var(--defi-accent); color: #fff; }
+[data-defi-tab-panel][hidden] { display: none; }
+
+@media (max-width: 720px) {
+  .defi-market-strip__toggle { margin-left: 12px; }
+  .defi-market-strip__body { padding: 10px 12px; gap: 12px; }
+  .defi-market-strip__items { gap: 12px; }
+  body.defi-market-open { --defi-market-strip-h: 130px; }
+}

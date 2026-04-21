@@ -12,79 +12,49 @@
   </div>
 
   <nav class="defi-sidebar__nav">
-    <a href="/dashboard/" class="defi-sidebar__link {% if sec == 'home' %}is-active{% endif %}">
-      <span class="defi-icon">&#9632;</span> Overview
-    </a>
+    {%- for group in site.data.nav.groups -%}
+      {%- comment -%} Auto-open group if any item matches the current section {%- endcomment -%}
+      {%- assign group_open = group.default_open | default: false -%}
+      {%- for item in group.items -%}
+        {%- if item.match and item.match == sec -%}{%- assign group_open = true -%}{%- endif -%}
+      {%- endfor -%}
 
-    {%- assign wallet_open = false -%}
-    {%- if sec == 'score' or sec == 'portfolio' or sec == 'scanner' or sec == 'approvals' -%}{%- assign wallet_open = true -%}{%- endif -%}
-    <details class="defi-sidebar__group" {% if wallet_open %}open{% endif %}>
-      <summary class="defi-sidebar__group-title">
-        <span><span class="defi-icon">&#128273;</span> Wallet Tools</span>
-        <span class="defi-sidebar__chevron" aria-hidden="true">&#8249;</span>
-      </summary>
-      <div class="defi-sidebar__group-items">
-        <a href="/dashboard/score/" class="defi-sidebar__link {% if sec == 'score' %}is-active{% endif %}">My Score</a>
-        <a href="/dashboard/portfolio/" class="defi-sidebar__link {% if sec == 'portfolio' %}is-active{% endif %}">Portfolio Heatmap</a>
-        <a href="/dashboard/scanner/" class="defi-sidebar__link {% if sec == 'scanner' %}is-active{% endif %}">Wallet Scanner</a>
-        <a href="/dashboard/approvals/" class="defi-sidebar__link {% if sec == 'approvals' %}is-active{% endif %}">Token Approvals</a>
-      </div>
-    </details>
-
-    {%- assign rwa_sections = 'rwa-asset,rwa-issuer,rwa-legal,rwa-custody,rwa-oracle,rwa-liquidity,rwa-yield,rwa-portfolio' | split: ',' -%}
-    {%- assign rwa_open = false -%}
-    {%- if rwa_sections contains sec -%}{%- assign rwa_open = true -%}{%- endif -%}
-    <details class="defi-sidebar__group" {% if rwa_open or sec == 'home' %}open{% endif %}>
-      <summary class="defi-sidebar__group-title">
-        <span><span class="defi-icon">&#127974;</span> RWA Scoring</span>
-        <span class="defi-sidebar__chevron" aria-hidden="true">&#8249;</span>
-      </summary>
-      <div class="defi-sidebar__group-items">
-        <a href="/dashboard/rwa-asset-score/"        class="defi-sidebar__link {% if sec == 'rwa-asset' %}is-active{% endif %}">RWA Asset Risk Score</a>
-        <a href="/dashboard/issuer-due-diligence/"   class="defi-sidebar__link {% if sec == 'rwa-issuer' %}is-active{% endif %}">Issuer Due Diligence</a>
-        <a href="/dashboard/legal-compliance/"       class="defi-sidebar__link {% if sec == 'rwa-legal' %}is-active{% endif %}">Legal &amp; Regulatory</a>
-        <a href="/dashboard/custody-por/"            class="defi-sidebar__link {% if sec == 'rwa-custody' %}is-active{% endif %}">Custody &amp; PoR</a>
-        <a href="/dashboard/oracle-integrity/"       class="defi-sidebar__link {% if sec == 'rwa-oracle' %}is-active{% endif %}">Oracle &amp; Data Integrity</a>
-        <a href="/dashboard/liquidity-redemption/"   class="defi-sidebar__link {% if sec == 'rwa-liquidity' %}is-active{% endif %}">Liquidity &amp; Redemption</a>
-        <a href="/dashboard/yield-risk-adjusted/"    class="defi-sidebar__link {% if sec == 'rwa-yield' %}is-active{% endif %}">Yield &amp; Risk-Adjusted</a>
-        <a href="/dashboard/portfolio-rwa-exposure/" class="defi-sidebar__link {% if sec == 'rwa-portfolio' %}is-active{% endif %}">Portfolio Aggregator</a>
-      </div>
-    </details>
-
-    {%- assign tools_open = false -%}
-    {%- if sec == 'audit-toolkit' or sec == 'rwa-chatbot' or sec == 'risk' or sec == 'chatbot' or sec == 'audits' -%}{%- assign tools_open = true -%}{%- endif -%}
-    <details class="defi-sidebar__group" {% if tools_open %}open{% endif %}>
-      <summary class="defi-sidebar__group-title">
-        <span><span class="defi-icon">&#128295;</span> Tools &amp; Insights</span>
-        <span class="defi-sidebar__chevron" aria-hidden="true">&#8249;</span>
-      </summary>
-      <div class="defi-sidebar__group-items">
-        <a href="/dashboard/audit-toolkit/"  class="defi-sidebar__link {% if sec == 'audit-toolkit' %}is-active{% endif %}">Audit &amp; Export</a>
-        <a href="/dashboard/rwa-chatbot/"    class="defi-sidebar__link {% if sec == 'rwa-chatbot' %}is-active{% endif %}">AI RWA Advisor</a>
-        <a href="/dashboard/risk-profiler/"  class="defi-sidebar__link {% if sec == 'risk' %}is-active{% endif %}">Risk Profiler</a>
-        <a href="/dashboard/risk-chatbot/"   class="defi-sidebar__link {% if sec == 'chatbot' %}is-active{% endif %}">AI Risk Advisor</a>
-        <a href="/audits/"                   class="defi-sidebar__link {% if sec == 'audits' %}is-active{% endif %}">Audit Directory</a>
-      </div>
-    </details>
-
-    <div class="defi-sidebar__divider"></div>
-    <a href="/dashboard/market-intel/" class="defi-sidebar__link {% if sec == 'market' %}is-active{% endif %}">
-      <span class="defi-icon">&#128225;</span> Live Market Data
-    </a>
-    <a href="/dashboard/alerts/" class="defi-sidebar__link {% if sec == 'alerts' %}is-active{% endif %}">
-      <span class="defi-icon">&#128276;</span> Alerts
-    </a>
-    <a href="/dashboard/report/" class="defi-sidebar__link {% if sec == 'report' %}is-active{% endif %}">
-      <span class="defi-icon">&#128027;</span> Report Issue
-    </a>
+      {%- if group.label -%}
+      <details class="defi-sidebar__group" {% if group_open %}open{% endif %}>
+        <summary class="defi-sidebar__group-title">
+          <span class="defi-sidebar__group-label">
+            <i class="defi-icon-svg" data-lucide="{{ group.icon }}" aria-hidden="true"></i>
+            {{ group.label }}
+          </span>
+          <i class="defi-sidebar__chevron" data-lucide="chevron-down" aria-hidden="true"></i>
+        </summary>
+        <div class="defi-sidebar__group-items">
+          {%- for item in group.items -%}
+          <a href="{{ item.path }}" class="defi-sidebar__link {% if item.match == sec %}is-active{% endif %}">
+            <i class="defi-icon-svg" data-lucide="{{ item.icon }}" aria-hidden="true"></i>
+            <span>{{ item.label }}</span>
+          </a>
+          {%- endfor -%}
+        </div>
+      </details>
+      {%- else -%}
+        {%- if group.id == 'footer' -%}<div class="defi-sidebar__divider"></div>{%- endif -%}
+        {%- for item in group.items -%}
+        <a href="{{ item.path }}" class="defi-sidebar__link {% if item.match == sec %}is-active{% endif %}">
+          <i class="defi-icon-svg" data-lucide="{{ item.icon }}" aria-hidden="true"></i>
+          <span>{{ item.label }}</span>
+        </a>
+        {%- endfor -%}
+      {%- endif -%}
+    {%- endfor -%}
   </nav>
 
   <div class="defi-sidebar__footer">
-    <small>Phase 1 chains</small>
-    <div class="defi-chain-tags">
-      <span class="defi-chip">Ethereum</span>
-      <span class="defi-chip">Arbitrum</span>
-      <span class="defi-chip">Polygon</span>
+    <div class="defi-chain-selector" role="group" aria-label="Active chain">
+      <button type="button" class="defi-chain-btn is-active" data-defi-chain="ethereum">ETH</button>
+      <button type="button" class="defi-chain-btn" data-defi-chain="arbitrum">ARB</button>
+      <button type="button" class="defi-chain-btn" data-defi-chain="polygon">POL</button>
     </div>
+    <div class="defi-sidebar__gas" data-defi-gas></div>
   </div>
 </aside>
