@@ -1,0 +1,32 @@
+---
+layout: dashboard
+permalink: /dashboard/audit-toolkit/
+title: RWA Audit & Export Toolkit
+dashboard_section: audit-toolkit
+dashboard_title: RWA Audit & Export Toolkit
+dashboard_subtitle: One-click institutional audit reports aggregating every module into a downloadable PDF, raw CSV dataset, and machine-readable JSON. Anonymized events feed the Market Intelligence layer.
+sitemap: false
+---
+
+<!-- All modules loaded hidden so the toolkit can aggregate every score. -->
+<div style="display:none" aria-hidden="true">
+  <div id="rwa-score-container"></div>
+  <div id="issuer-diligence-container"></div>
+  <div id="legal-compliance-container"></div>
+  <div id="custody-por-container"></div>
+  <div id="oracle-integrity-container"></div>
+  <div id="liquidity-redemption-container"></div>
+  <div id="yield-risk-adjusted-container"></div>
+  <div id="portfolio-rwa-exposure-container"></div>
+</div>
+<script src="{{ '/assets/js/rwa-asset-score.js' | relative_url }}" defer></script>
+<script src="{{ '/assets/js/issuer-due-diligence.js' | relative_url }}" defer></script>
+<script src="{{ '/assets/js/legal-compliance.js' | relative_url }}" defer></script>
+<script src="{{ '/assets/js/custody-por.js' | relative_url }}" defer></script>
+<script src="{{ '/assets/js/oracle-integrity.js' | relative_url }}" defer></script>
+<script src="{{ '/assets/js/liquidity-redemption.js' | relative_url }}" defer></script>
+<script src="{{ '/assets/js/yield-risk-adjusted.js' | relative_url }}" defer></script>
+<script src="{{ '/assets/js/portfolio-rwa-exposure.js' | relative_url }}" defer></script>
+
+<div id="audit-toolkit-container"></div>
+<script src="{{ '/assets/js/rwa-audit-toolkit.js' | relative_url }}" defer></script>

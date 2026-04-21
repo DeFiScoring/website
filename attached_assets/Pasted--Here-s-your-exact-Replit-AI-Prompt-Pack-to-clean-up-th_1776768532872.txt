@@ -1,0 +1,149 @@
+**✅ Here’s your exact “Replit AI Prompt Pack” to clean up the dashboard and sidebar**
+
+The current layout is overloaded (too many modules on one page + 18+ sidebar items).  
+We will make it **neat, professional, and optimized** with:
+
+- **Clean collapsible sidebar** grouped by categories
+- **High-level Overview dashboard** (only key highlights + cards)
+- **Dedicated pages** for each major module (no more vertical scrolling hell)
+- Consistent card-based design, better mobile experience, and clear navigation
+
+---
+
+### Prompt 1: Refactor the Sidebar (Clean & Collapsible)
+```
+Update the sidebar navigation (probably in _includes/sidebar.html or the main layout) to make it tidy and organized.
+
+Replace the entire sidebar with this improved structure using Tailwind + details/summary for collapsible sections:
+
+<nav class="sidebar">
+  <div class="logo flex items-center gap-3 px-6 py-8 border-b">
+    <img src="/assets/logo.svg" alt="DeFi Scoring" class="w-9">
+    <span class="font-bold text-2xl">DeFi Scoring</span>
+  </div>
+
+  <div class="px-3 py-2">
+    <a href="/dashboard/" class="flex items-center gap-3 px-4 py-3 rounded-2xl bg-blue-600 text-white">📊 Overview</a>
+  </div>
+
+  <!-- Group 1: Wallet Tools -->
+  <details class="px-3 py-1">
+    <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer font-medium">🔑 Wallet Tools</summary>
+    <div class="pl-8 space-y-1">
+      <a href="/dashboard/wallet-scanner/" class="block px-4 py-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800">Wallet Scanner</a>
+      <a href="/dashboard/token-approvals/" class="block px-4 py-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800">Token Approvals</a>
+    </div>
+  </details>
+
+  <!-- Group 2: RWA Scoring -->
+  <details class="px-3 py-1" open>
+    <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer font-medium">🏦 RWA Scoring</summary>
+    <div class="pl-8 space-y-1">
+      <a href="/dashboard/rwa-asset-score/" class="block px-4 py-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800">RWA Asset Risk Score</a>
+      <a href="/dashboard/issuer-due-diligence/" class="block px-4 py-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800">Issuer Due Diligence</a>
+      <a href="/dashboard/legal-compliance/" class="block px-4 py-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800">Legal & Regulatory</a>
+      <a href="/dashboard/custody-por/" class="block px-4 py-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800">Custody & PoR</a>
+      <a href="/dashboard/oracle-integrity/" class="block px-4 py-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800">Oracle & Data Integrity</a>
+      <a href="/dashboard/liquidity-redemption/" class="block px-4 py-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800">Liquidity & Redemption</a>
+      <a href="/dashboard/yield-risk-adjusted/" class="block px-4 py-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800">Yield & Risk-Adjusted</a>
+      <a href="/dashboard/portfolio-rwa-exposure/" class="block px-4 py-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800">Portfolio Aggregator</a>
+    </div>
+  </details>
+
+  <!-- Group 3: Tools & Insights -->
+  <details class="px-3 py-1">
+    <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer font-medium">🛠️ Tools & Insights</summary>
+    <div class="pl-8 space-y-1">
+      <a href="/dashboard/audit-toolkit/" class="block px-4 py-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800">Audit & Export Toolkit</a>
+      <a href="/dashboard/rwa-chatbot/" class="block px-4 py-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800">AI RWA Advisor</a>
+      <a href="/dashboard/risk-profiler/" class="block px-4 py-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800">Risk Profiler</a>
+    </div>
+  </details>
+
+  <!-- Group 4: Market & Account -->
+  <div class="px-3 py-2 mt-4 border-t">
+    <a href="/dashboard/market-data/" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-800">📡 Live Market Data</a>
+    <a href="/dashboard/alerts/" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-800">🛎️ Alerts</a>
+    <a href="/dashboard/report-issue/" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-800">🐞 Report Issue</a>
+  </div>
+</nav>
+```
+
+### Prompt 2: Redesign the Overview Dashboard (Clean & High-Level)
+```
+Completely redesign dashboard/index.md to be clean and high-level.
+
+Replace the entire content with this new Overview layout:
+
+---
+title: Overview
+layout: default
+---
+
+<div class="max-w-7xl mx-auto px-6 py-8">
+
+  <!-- Hero -->
+  <div class="flex justify-between items-start mb-10">
+    <div>
+      <h1 class="text-5xl font-bold">Good morning, <span id="user-name">Wallet Owner</span></h1>
+      <p class="text-xl text-gray-400">Your RWA portfolio at a glance</p>
+    </div>
+    <button onclick="window.renderPortfolioRWAExposure()" class="bg-violet-600 text-white px-8 py-4 rounded-3xl text-lg font-medium">View Full Portfolio</button>
+  </div>
+
+  <!-- Overall Score Card -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+    <div class="bg-white dark:bg-gray-900 rounded-3xl p-8">
+      <p class="text-sm uppercase tracking-widest text-violet-600">Portfolio RWA Risk Score</p>
+      <div class="text-8xl font-bold text-violet-600 mt-2">850</div>
+      <div class="text-3xl">A+</div>
+    </div>
+    <!-- Add 2 more key metric cards here if desired -->
+  </div>
+
+  <!-- Quick Access Cards -->
+  <h2 class="text-2xl font-semibold mb-6">RWA Modules</h2>
+  <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+    <a href="/dashboard/rwa-asset-score/" class="bg-white dark:bg-gray-900 rounded-3xl p-6 hover:shadow-xl transition">RWA Asset Risk Score</a>
+    <a href="/dashboard/issuer-due-diligence/" class="bg-white dark:bg-gray-900 rounded-3xl p-6 hover:shadow-xl transition">Issuer Due Diligence</a>
+    <a href="/dashboard/legal-compliance/" class="bg-white dark:bg-gray-900 rounded-3xl p-6 hover:shadow-xl transition">Legal & Regulatory</a>
+    <a href="/dashboard/custody-por/" class="bg-white dark:bg-gray-900 rounded-3xl p-6 hover:shadow-xl transition">Custody & PoR</a>
+    <!-- Continue for the remaining 6 modules -->
+  </div>
+
+  <!-- Live Market Data (small section) -->
+  <h2 class="text-2xl font-semibold mt-16 mb-6">Live Market Data</h2>
+  <div id="live-market-small" class="bg-white dark:bg-gray-900 rounded-3xl p-6"></div>
+</div>
+
+<script src="/assets/js/dashboard-overview.js"></script>
+```
+
+### Prompt 3: Create a supporting overview JS file
+```
+Create assets/js/dashboard-overview.js that loads the small live market data and any other quick widgets.
+```
+
+### Prompt 4: Test & Final Polish
+```
+After applying the changes:
+- The sidebar should now be clean with collapsible groups
+- The Overview page should be high-level, beautiful, and not cluttered
+- All individual module pages (rwa-asset-score.md, etc.) should still work
+- Test on mobile — everything should be responsive
+
+Suggest any final tweaks for spacing, icons, or colors.
+```
+
+---
+
+**Next steps after Replit finishes:**
+
+Reply with **“Dashboard cleanup done”** and I’ll give you prompts for:
+- Creating dedicated clean pages for each module
+- Adding a top navigation bar for mobile
+- Or final polish (dark mode consistency, loading states, etc.)
+
+This will make the entire platform feel **professional, modern, and easy to use** — exactly what users and institutions expect.  
+
+Just paste the prompts one by one into Replit and let’s clean this up! 🚀

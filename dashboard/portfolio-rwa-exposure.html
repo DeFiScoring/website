@@ -1,0 +1,15 @@
+---
+layout: dashboard
+permalink: /dashboard/portfolio-rwa-exposure/
+title: Portfolio RWA Exposure Aggregator
+dashboard_section: rwa-portfolio
+dashboard_title: Portfolio RWA Exposure Aggregator
+dashboard_subtitle: Aggregates your full RWA holdings across protocols — portfolio-level risk score, diversification map, asset-class & issuer breakdown, Herfindahl concentration index, and cross-asset BTC-correlation matrix. When a wallet is connected, holdings come from the live on-chain RWA scan.
+sitemap: false
+---
+
+<div style="display:none" aria-hidden="true"><div id="rwa-score-container"></div></div>
+<script src="{{ '/assets/js/rwa-asset-score.js' | relative_url }}" defer></script>
+
+<div id="portfolio-rwa-exposure-container"></div>
+<script src="{{ '/assets/js/portfolio-rwa-exposure.js' | relative_url }}" defer></script>

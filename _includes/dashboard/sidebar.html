@@ -1,3 +1,4 @@
+{%- assign sec = page.dashboard_section -%}
 <button type="button" class="defi-sidebar-backdrop" data-defi-sidebar-close aria-hidden="true" tabindex="-1"></button>
 <aside class="defi-sidebar" id="defi-sidebar" aria-label="Dashboard navigation">
   <div class="defi-sidebar__brand">
@@ -9,68 +10,75 @@
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
     </button>
   </div>
+
   <nav class="defi-sidebar__nav">
-    <a href="/dashboard/" class="defi-sidebar__link {% if page.dashboard_section == 'home' %}is-active{% endif %}">
+    <a href="/dashboard/" class="defi-sidebar__link {% if sec == 'home' %}is-active{% endif %}">
       <span class="defi-icon">&#9632;</span> Overview
     </a>
-    <a href="/dashboard/score/" class="defi-sidebar__link {% if page.dashboard_section == 'score' %}is-active{% endif %}">
-      <span class="defi-icon">&#9650;</span> My Score
+
+    {%- assign wallet_open = false -%}
+    {%- if sec == 'score' or sec == 'portfolio' or sec == 'scanner' or sec == 'approvals' -%}{%- assign wallet_open = true -%}{%- endif -%}
+    <details class="defi-sidebar__group" {% if wallet_open %}open{% endif %}>
+      <summary class="defi-sidebar__group-title">
+        <span><span class="defi-icon">&#128273;</span> Wallet Tools</span>
+        <span class="defi-sidebar__chevron" aria-hidden="true">&#8249;</span>
+      </summary>
+      <div class="defi-sidebar__group-items">
+        <a href="/dashboard/score/" class="defi-sidebar__link {% if sec == 'score' %}is-active{% endif %}">My Score</a>
+        <a href="/dashboard/portfolio/" class="defi-sidebar__link {% if sec == 'portfolio' %}is-active{% endif %}">Portfolio Heatmap</a>
+        <a href="/dashboard/scanner/" class="defi-sidebar__link {% if sec == 'scanner' %}is-active{% endif %}">Wallet Scanner</a>
+        <a href="/dashboard/approvals/" class="defi-sidebar__link {% if sec == 'approvals' %}is-active{% endif %}">Token Approvals</a>
+      </div>
+    </details>
+
+    {%- assign rwa_sections = 'rwa-asset,rwa-issuer,rwa-legal,rwa-custody,rwa-oracle,rwa-liquidity,rwa-yield,rwa-portfolio' | split: ',' -%}
+    {%- assign rwa_open = false -%}
+    {%- if rwa_sections contains sec -%}{%- assign rwa_open = true -%}{%- endif -%}
+    <details class="defi-sidebar__group" {% if rwa_open or sec == 'home' %}open{% endif %}>
+      <summary class="defi-sidebar__group-title">
+        <span><span class="defi-icon">&#127974;</span> RWA Scoring</span>
+        <span class="defi-sidebar__chevron" aria-hidden="true">&#8249;</span>
+      </summary>
+      <div class="defi-sidebar__group-items">
+        <a href="/dashboard/rwa-asset-score/"        class="defi-sidebar__link {% if sec == 'rwa-asset' %}is-active{% endif %}">RWA Asset Risk Score</a>
+        <a href="/dashboard/issuer-due-diligence/"   class="defi-sidebar__link {% if sec == 'rwa-issuer' %}is-active{% endif %}">Issuer Due Diligence</a>
+        <a href="/dashboard/legal-compliance/"       class="defi-sidebar__link {% if sec == 'rwa-legal' %}is-active{% endif %}">Legal &amp; Regulatory</a>
+        <a href="/dashboard/custody-por/"            class="defi-sidebar__link {% if sec == 'rwa-custody' %}is-active{% endif %}">Custody &amp; PoR</a>
+        <a href="/dashboard/oracle-integrity/"       class="defi-sidebar__link {% if sec == 'rwa-oracle' %}is-active{% endif %}">Oracle &amp; Data Integrity</a>
+        <a href="/dashboard/liquidity-redemption/"   class="defi-sidebar__link {% if sec == 'rwa-liquidity' %}is-active{% endif %}">Liquidity &amp; Redemption</a>
+        <a href="/dashboard/yield-risk-adjusted/"    class="defi-sidebar__link {% if sec == 'rwa-yield' %}is-active{% endif %}">Yield &amp; Risk-Adjusted</a>
+        <a href="/dashboard/portfolio-rwa-exposure/" class="defi-sidebar__link {% if sec == 'rwa-portfolio' %}is-active{% endif %}">Portfolio Aggregator</a>
+      </div>
+    </details>
+
+    {%- assign tools_open = false -%}
+    {%- if sec == 'audit-toolkit' or sec == 'rwa-chatbot' or sec == 'risk' or sec == 'chatbot' or sec == 'audits' -%}{%- assign tools_open = true -%}{%- endif -%}
+    <details class="defi-sidebar__group" {% if tools_open %}open{% endif %}>
+      <summary class="defi-sidebar__group-title">
+        <span><span class="defi-icon">&#128295;</span> Tools &amp; Insights</span>
+        <span class="defi-sidebar__chevron" aria-hidden="true">&#8249;</span>
+      </summary>
+      <div class="defi-sidebar__group-items">
+        <a href="/dashboard/audit-toolkit/"  class="defi-sidebar__link {% if sec == 'audit-toolkit' %}is-active{% endif %}">Audit &amp; Export</a>
+        <a href="/dashboard/rwa-chatbot/"    class="defi-sidebar__link {% if sec == 'rwa-chatbot' %}is-active{% endif %}">AI RWA Advisor</a>
+        <a href="/dashboard/risk-profiler/"  class="defi-sidebar__link {% if sec == 'risk' %}is-active{% endif %}">Risk Profiler</a>
+        <a href="/dashboard/risk-chatbot/"   class="defi-sidebar__link {% if sec == 'chatbot' %}is-active{% endif %}">AI Risk Advisor</a>
+        <a href="/audits/"                   class="defi-sidebar__link {% if sec == 'audits' %}is-active{% endif %}">Audit Directory</a>
+      </div>
+    </details>
+
+    <div class="defi-sidebar__divider"></div>
+    <a href="/dashboard/market-intel/" class="defi-sidebar__link {% if sec == 'market' %}is-active{% endif %}">
+      <span class="defi-icon">&#128225;</span> Live Market Data
     </a>
-    <a href="/dashboard/portfolio/" class="defi-sidebar__link {% if page.dashboard_section == 'portfolio' %}is-active{% endif %}">
-      <span class="defi-icon">&#9670;</span> Portfolio Heatmap
+    <a href="/dashboard/alerts/" class="defi-sidebar__link {% if sec == 'alerts' %}is-active{% endif %}">
+      <span class="defi-icon">&#128276;</span> Alerts
     </a>
-    <a href="/dashboard/scanner/" class="defi-sidebar__link {% if page.dashboard_section == 'scanner' %}is-active{% endif %}">
-      <span class="defi-icon">&#9678;</span> Wallet Scanner
-    </a>
-    <a href="/dashboard/approvals/" class="defi-sidebar__link {% if page.dashboard_section == 'approvals' %}is-active{% endif %}">
-      <span class="defi-icon">&#9888;</span> Token Approvals
-    </a>
-    <a href="/dashboard/#rwa-score-container" class="defi-sidebar__link">
-      <span class="defi-icon">&#127974;</span> RWA Asset Score
-    </a>
-    <a href="/dashboard/#issuer-diligence-container" class="defi-sidebar__link">
-      <span class="defi-icon">&#128270;</span> Issuer Due Diligence
-    </a>
-    <a href="/dashboard/#legal-compliance-container" class="defi-sidebar__link">
-      <span class="defi-icon">&#9878;</span> Legal &amp; Regulatory
-    </a>
-    <a href="/dashboard/#custody-por-container" class="defi-sidebar__link">
-      <span class="defi-icon">&#128274;</span> Custody &amp; PoR
-    </a>
-    <a href="/dashboard/#oracle-integrity-container" class="defi-sidebar__link">
-      <span class="defi-icon">&#128302;</span> Oracle Integrity
-    </a>
-    <a href="/dashboard/#liquidity-redemption-container" class="defi-sidebar__link">
-      <span class="defi-icon">&#128167;</span> Liquidity &amp; Redemption
-    </a>
-    <a href="/dashboard/#yield-risk-adjusted-container" class="defi-sidebar__link">
-      <span class="defi-icon">&#128200;</span> Yield &amp; Risk-Adjusted
-    </a>
-    <a href="/dashboard/#portfolio-rwa-exposure-container" class="defi-sidebar__link">
-      <span class="defi-icon">&#128202;</span> Portfolio Aggregator
-    </a>
-    <a href="/dashboard/#audit-toolkit-container" class="defi-sidebar__link">
-      <span class="defi-icon">&#128228;</span> Audit &amp; Export
-    </a>
-    <a href="/dashboard/#rwa-chatbot-container" class="defi-sidebar__link">
-      <span class="defi-icon">&#129302;</span> AI RWA Advisor
-    </a>
-    <a href="/audits/" class="defi-sidebar__link {% if page.dashboard_section == 'audits' %}is-active{% endif %}">
-      <span class="defi-icon">&#9745;</span> Audit Directory
-    </a>
-    <a href="/dashboard/risk-profiler/" class="defi-sidebar__link {% if page.dashboard_section == 'risk' %}is-active{% endif %}">
-      <span class="defi-icon">&#9733;</span> Risk Profiler
-    </a>
-    <a href="/dashboard/alerts/" class="defi-sidebar__link {% if page.dashboard_section == 'alerts' %}is-active{% endif %}">
-      <span class="defi-icon">&#9679;</span> Alerts
-    </a>
-    <a href="/dashboard/risk-chatbot/" class="defi-sidebar__link {% if page.dashboard_section == 'chatbot' %}is-active{% endif %}">
-      <span class="defi-icon">&#9742;</span> AI Risk Advisor
-    </a>
-    <a href="/dashboard/report/" class="defi-sidebar__link {% if page.dashboard_section == 'report' %}is-active{% endif %}">
-      <span class="defi-icon">&#9998;</span> Report Issue
+    <a href="/dashboard/report/" class="defi-sidebar__link {% if sec == 'report' %}is-active{% endif %}">
+      <span class="defi-icon">&#128027;</span> Report Issue
     </a>
   </nav>
+
   <div class="defi-sidebar__footer">
     <small>Phase 1 chains</small>
     <div class="defi-chain-tags">

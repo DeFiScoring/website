@@ -486,3 +486,55 @@
   .defi-consent__actions { width: 100%; }
   .defi-consent__actions .defi-btn { flex: 1 1 auto; }
 }
+
+/* ---------- Collapsible sidebar groups ---------- */
+.defi-sidebar__group { border: 0; padding: 0; margin: 2px 0; }
+.defi-sidebar__group > summary {
+  list-style: none;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; padding: 10px 12px; border-radius: 8px;
+  font-size: 13px; font-weight: 600; color: var(--defi-text);
+  cursor: pointer; user-select: none;
+}
+.defi-sidebar__group > summary::-webkit-details-marker,
+.defi-sidebar__group > summary::marker { display: none; content: ""; }
+.defi-sidebar__group > summary:hover { background: var(--defi-card); }
+.defi-sidebar__group-title { display: contents; }
+.defi-sidebar__chevron {
+  display: inline-block; transition: transform .2s ease;
+  transform: rotate(-90deg); color: var(--defi-text-dim); font-size: 18px; line-height: 1;
+}
+.defi-sidebar__group[open] > summary > .defi-sidebar__chevron { transform: rotate(-180deg); }
+.defi-sidebar__group-items { display: flex; flex-direction: column; gap: 2px; padding: 4px 0 6px 14px; }
+.defi-sidebar__group-items .defi-sidebar__link {
+  font-size: 13px; padding: 8px 10px; color: var(--defi-text-dim);
+}
+.defi-sidebar__group-items .defi-sidebar__link.is-active {
+  color: var(--defi-text); background: var(--defi-card-hover);
+}
+.defi-sidebar__divider { height: 1px; background: var(--defi-border); margin: 10px 4px; }
+
+/* ---------- RWA module tile grid (Overview) ---------- */
+.defi-module-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+.defi-tile {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 18px;
+  background: var(--defi-card);
+  border: 1px solid var(--defi-border);
+  border-radius: 14px;
+  text-decoration: none;
+  color: var(--defi-text);
+  transition: transform .15s ease, border-color .15s ease, background .15s ease;
+}
+.defi-tile:hover {
+  transform: translateY(-2px);
+  border-color: var(--defi-accent);
+  background: var(--defi-card-hover);
+}
+.defi-tile__emoji { font-size: 24px; line-height: 1; }
+.defi-tile__name { font-size: 15px; font-weight: 700; }
+.defi-tile__desc { font-size: 12px; color: var(--defi-text-dim); line-height: 1.45; }

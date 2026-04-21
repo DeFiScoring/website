@@ -86,113 +86,67 @@ sitemap: false
   </div>
 </div>
 
-<div style="margin-top:32px">
-  <h2 style="font-size:22px;font-weight:700;margin:0 0 6px">🏦 RWA Asset Risk Score</h2>
-  <p style="color:var(--defi-text-dim);font-size:13px;margin:0 0 16px">
-    The "FICO for tokenized real-world assets" — scores BUIDL, OUSG, USDY, sDAI and other tokenized treasuries, stablecoins,
-    and private credit pools using live TVL, issuer reputation, redemption pathways, and oracle integrity.
-  </p>
-  <div id="rwa-score-container"></div>
+<h2 style="font-size:22px;font-weight:700;margin:32px 0 6px">RWA Scoring Modules</h2>
+<p style="color:var(--defi-text-dim);font-size:13px;margin:0 0 16px">
+  Open any module for the full breakdown. Each module auto-syncs with your detected primary issuer.
+</p>
+<div class="defi-module-tiles">
+  <a href="/dashboard/rwa-asset-score/" class="defi-tile">
+    <span class="defi-tile__emoji">🏦</span>
+    <span class="defi-tile__name">RWA Asset Risk Score</span>
+    <span class="defi-tile__desc">FICO for tokenized treasuries, stablecoins &amp; private credit</span>
+  </a>
+  <a href="/dashboard/issuer-due-diligence/" class="defi-tile">
+    <span class="defi-tile__emoji">🔍</span>
+    <span class="defi-tile__name">Issuer Due Diligence</span>
+    <span class="defi-tile__desc">Red-flag &amp; default history, jurisdiction, regulator, AUM</span>
+  </a>
+  <a href="/dashboard/legal-compliance/" class="defi-tile">
+    <span class="defi-tile__emoji">⚖️</span>
+    <span class="defi-tile__name">Legal &amp; Regulatory</span>
+    <span class="defi-tile__desc">KYC/AML, MiCA/SEC posture, transfer restrictions</span>
+  </a>
+  <a href="/dashboard/custody-por/" class="defi-tile">
+    <span class="defi-tile__emoji">🔒</span>
+    <span class="defi-tile__name">Custody &amp; PoR</span>
+    <span class="defi-tile__desc">Proof-of-Reserves attestations &amp; custodian reliability</span>
+  </a>
+  <a href="/dashboard/oracle-integrity/" class="defi-tile">
+    <span class="defi-tile__emoji">🔮</span>
+    <span class="defi-tile__name">Oracle &amp; Data Integrity</span>
+    <span class="defi-tile__desc">Pricing oracles, NAV freshness, redemption reliability</span>
+  </a>
+  <a href="/dashboard/liquidity-redemption/" class="defi-tile">
+    <span class="defi-tile__emoji">💧</span>
+    <span class="defi-tile__name">Liquidity &amp; Redemption</span>
+    <span class="defi-tile__desc">Secondary-market depth, fire-sale stress test</span>
+  </a>
+  <a href="/dashboard/yield-risk-adjusted/" class="defi-tile">
+    <span class="defi-tile__emoji">📈</span>
+    <span class="defi-tile__name">Yield &amp; Risk-Adjusted</span>
+    <span class="defi-tile__desc">Sharpe-like scoring, drawdown projections, stress scenarios</span>
+  </a>
+  <a href="/dashboard/portfolio-rwa-exposure/" class="defi-tile">
+    <span class="defi-tile__emoji">📊</span>
+    <span class="defi-tile__name">Portfolio Aggregator</span>
+    <span class="defi-tile__desc">Cross-asset diversification, HHI &amp; correlation matrix</span>
+  </a>
+  <a href="/dashboard/audit-toolkit/" class="defi-tile">
+    <span class="defi-tile__emoji">📤</span>
+    <span class="defi-tile__name">Audit &amp; Export</span>
+    <span class="defi-tile__desc">PDF / CSV / JSON institutional reports</span>
+  </a>
+  <a href="/dashboard/rwa-chatbot/" class="defi-tile">
+    <span class="defi-tile__emoji">🤖</span>
+    <span class="defi-tile__name">AI RWA Advisor</span>
+    <span class="defi-tile__desc">Conversational deep-dive + premium personalised PDF</span>
+  </a>
 </div>
-<script src="{{ '/assets/js/rwa-asset-score.js' | relative_url }}" defer></script>
-
-<div style="margin-top:32px">
-  <h2 style="font-size:22px;font-weight:700;margin:0 0 6px">🔍 Issuer &amp; Protocol Due Diligence</h2>
-  <p style="color:var(--defi-text-dim);font-size:13px;margin:0 0 16px">
-    Evaluates the company / protocol behind each RWA — issuer score, red-flag &amp; default history, jurisdiction,
-    regulator, AUM, and a 12-month issuer-score trend. Auto-syncs with the detected primary issuer.
-  </p>
-  <div id="issuer-diligence-container"></div>
-</div>
-<script src="{{ '/assets/js/issuer-due-diligence.js' | relative_url }}" defer></script>
-
-<div style="margin-top:32px">
-  <h2 style="font-size:22px;font-weight:700;margin:0 0 6px">⚖️ Legal &amp; Regulatory Compliance</h2>
-  <p style="color:var(--defi-text-dim);font-size:13px;margin:0 0 16px">
-    KYC/AML, jurisdiction, MiCA/SEC posture, and transfer restrictions for the detected RWA issuer — compliance grade,
-    jurisdiction risk map, regulatory pillars, exposure heatmap, and 8-month compliance trend.
-  </p>
-  <div id="legal-compliance-container"></div>
-</div>
-<script src="{{ '/assets/js/legal-compliance.js' | relative_url }}" defer></script>
-
-<div style="margin-top:32px">
-  <h2 style="font-size:22px;font-weight:700;margin:0 0 6px">🔒 Custody &amp; Proof-of-Reserves</h2>
-  <p style="color:var(--defi-text-dim);font-size:13px;margin:0 0 16px">
-    Verifies real-world asset backing — the most-requested institutional signal. Custody score, PoR attestation status,
-    custodian reliability metrics, and 7-attestation history for the detected RWA issuer.
-  </p>
-  <div id="custody-por-container"></div>
-</div>
-<script src="{{ '/assets/js/custody-por.js' | relative_url }}" defer></script>
-
-<div style="margin-top:32px">
-  <h2 style="font-size:22px;font-weight:700;margin:0 0 6px">🔮 Oracle &amp; Data Integrity</h2>
-  <p style="color:var(--defi-text-dim);font-size:13px;margin:0 0 16px">
-    Pricing oracles, NAV feeds, and redemption reliability — critical for illiquid RWA. Oracle risk score, latency,
-    redemption-risk badge, oracle stack details, 7-day failure patterns, and NAV freshness.
-  </p>
-  <div id="oracle-integrity-container"></div>
-</div>
-<script src="{{ '/assets/js/oracle-integrity.js' | relative_url }}" defer></script>
-
-<div style="margin-top:32px">
-  <h2 style="font-size:22px;font-weight:700;margin:0 0 6px">💧 Liquidity &amp; Redemption Risk</h2>
-  <p style="color:var(--defi-text-dim);font-size:13px;margin:0 0 16px">
-    Secondary-market depth, redemption speed, fire-sale stress test, and on-chain liquidity ratios for the detected
-    RWA issuer — liquidity score, primary-redemption timeline, 7-day on-chain liquidity, and 7-month redemption flow.
-  </p>
-  <div id="liquidity-redemption-container"></div>
-</div>
-<script src="{{ '/assets/js/liquidity-redemption.js' | relative_url }}" defer></script>
-
-<div style="margin-top:32px">
-  <h2 style="font-size:22px;font-weight:700;margin:0 0 6px">📈 Yield &amp; Risk-Adjusted Performance</h2>
-  <p style="color:var(--defi-text-dim);font-size:13px;margin:0 0 16px">
-    Sharpe-like risk-adjusted yield scoring, projected drawdown, BTC correlation, and stress-test scenarios for the
-    detected RWA issuer — yield score, 12-month Sharpe, 5-month yield-vs-correlation history, and 5-scenario stress test.
-  </p>
-  <div id="yield-risk-adjusted-container"></div>
-</div>
-<script src="{{ '/assets/js/yield-risk-adjusted.js' | relative_url }}" defer></script>
-
-<div style="margin-top:32px">
-  <h2 style="font-size:22px;font-weight:700;margin:0 0 6px">📊 Portfolio RWA Exposure Aggregator</h2>
-  <p style="color:var(--defi-text-dim);font-size:13px;margin:0 0 16px">
-    Aggregates your full RWA holdings across protocols — portfolio-level risk score, diversification map,
-    asset-class &amp; issuer breakdown, Herfindahl concentration index, and cross-asset BTC-correlation matrix.
-    When a wallet is connected, holdings come from the live on-chain RWA scan.
-  </p>
-  <div id="portfolio-rwa-exposure-container"></div>
-</div>
-<script src="{{ '/assets/js/portfolio-rwa-exposure.js' | relative_url }}" defer></script>
-
-<div style="margin-top:32px">
-  <h2 style="font-size:22px;font-weight:700;margin:0 0 6px">📤 RWA Audit &amp; Export Toolkit</h2>
-  <p style="color:var(--defi-text-dim);font-size:13px;margin:0 0 16px">
-    One-click institutional audit reports aggregating every module into a downloadable PDF, raw CSV dataset,
-    and machine-readable JSON. Anonymized events feed the Market Intelligence layer.
-  </p>
-  <div id="audit-toolkit-container"></div>
-</div>
-<script src="{{ '/assets/js/rwa-audit-toolkit.js' | relative_url }}" defer></script>
-
-<div style="margin-top:32px">
-  <h2 style="font-size:22px;font-weight:700;margin:0 0 6px">🤖 AI RWA Chatbot + Personalised PDF</h2>
-  <p style="color:var(--defi-text-dim);font-size:13px;margin:0 0 16px">
-    Conversational deep-dive into your RWA portfolio. Gated behind email consent. The AI reads the live module scores
-    above and produces a premium personalised PDF blending its analysis with the deterministic dashboard data.
-  </p>
-  <div id="rwa-chatbot-container"></div>
-</div>
-<script>window.DEFI_RISK_WORKER_URL = "{{ site.defi.worker_url }}";</script>
-<script src="{{ '/assets/js/rwa-chatbot.js' | relative_url }}" defer></script>
 
 <div style="margin-top:32px">
   <h2 style="font-size:22px;font-weight:700;margin:0 0 6px">Live market data</h2>
   <p style="color:var(--defi-text-dim);font-size:13px;margin:0 0 16px">
     Real-time TVL from DeFiLlama · Spot prices from CoinGecko · Aave V3 chain breakdown.
-    No wallet required — auto-refreshes every 60 seconds.
   </p>
   <div id="data-aggregation-container"></div>
 </div>
