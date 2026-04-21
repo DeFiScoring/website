@@ -458,12 +458,17 @@
   .defi-card__value { font-size: 24px; }
   .defi-grid { gap: 12px; }
 
-  /* Score panel: center the dial and let factor bars stack. */
-  .defi-score-wrap { gap: 18px; justify-content: center; }
-  .defi-score-circle { width: 180px; height: 180px; }
+  /* Score panel: stack dial above factor bars on mobile. */
+  .defi-score-wrap {
+    flex-direction: column;
+    align-items: center;
+    gap: 22px;
+    justify-content: center;
+  }
+  .defi-score-circle { width: 180px; height: 180px; flex-shrink: 0; }
   .defi-score-circle svg { width: 180px; height: 180px; }
   .defi-score-circle__value { font-size: 44px; }
-  .defi-factors { min-width: 0; width: 100%; }
+  .defi-factors { min-width: 0; width: 100%; flex: 1 1 100%; }
 
   /* Tables overflow horizontally inside their card instead of pushing the
      viewport wider. */
