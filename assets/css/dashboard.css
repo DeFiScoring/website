@@ -15,6 +15,7 @@
   --defi-danger: #ff5d6c;
   --defi-warning: #ffb547;
   --defi-ok: #2bd4a4;
+  --defi-market-strip-h: 44px;
 }
 
 * { box-sizing: border-box; }
@@ -26,6 +27,8 @@
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   min-height: 100vh;
 }
+
+body.defi-market-open { --defi-market-strip-h: 96px; }
 
 .defi-shell {
   display: flex;
@@ -150,7 +153,7 @@
 .defi-card--stat .defi-card__label { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--defi-text-dim); font-weight: 600; }
 .defi-card--stat .defi-card__big   { font-size: 32px; font-weight: 700; margin-top: 6px; color: var(--defi-text); }
 
-.defi-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.defi-main { flex: 1; display: flex; flex-direction: column; min-width: 0; padding-bottom: var(--defi-market-strip-h); transition: padding-bottom .25s ease; }
 .defi-topbar {
   display: flex; align-items: center; justify-content: space-between;
   padding: 22px 32px; border-bottom: 1px solid var(--defi-border);
@@ -606,12 +609,6 @@
 .defi-market-strip__label { color: var(--defi-text-dim); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
 .defi-market-strip__value { color: var(--defi-text); font-weight: 700; font-variant-numeric: tabular-nums; }
 .defi-market-strip__updated { font-size: 10px; color: var(--defi-text-dim); white-space: nowrap; }
-/* Reserve space at bottom of the whole scrolling main area so the fixed strip
- * never covers content, footer or consent banner. The variable updates when the
- * strip is toggled (see market-strip.js). */
-:root { --defi-market-strip-h: 44px; }
-body.defi-market-open { --defi-market-strip-h: 96px; }
-.defi-main { padding-bottom: var(--defi-market-strip-h); transition: padding-bottom .25s ease; }
 
 /* ---------- Generic tab strip ---------- */
 .defi-tabs {
