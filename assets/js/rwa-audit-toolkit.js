@@ -52,6 +52,7 @@
 
     const moduleScores = {
       assetRisk:           readScoreFromContainer("rwa-score-container"),
+      issuerDueDiligence:  readScoreFromContainer("issuer-diligence-container"),
       legalCompliance:     readScoreFromContainer("legal-compliance-container"),
       custodyPor:          readScoreFromContainer("custody-por-container"),
       oracleIntegrity:     readScoreFromContainer("oracle-integrity-container"),
@@ -144,6 +145,7 @@
     // Module scores table
     const moduleLabels = {
       assetRisk:           "Module 1 · Asset & Protocol Risk",
+      issuerDueDiligence:  "Module 2 · Issuer & Protocol Due Diligence",
       legalCompliance:     "Module 3 · Legal & Regulatory Compliance",
       custodyPor:          "Module 4 · Custody & Proof-of-Reserves",
       oracleIntegrity:     "Module 5 · Oracle & Data Integrity",
