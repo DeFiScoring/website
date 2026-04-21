@@ -1,0 +1,1052 @@
+# DeFi Scoring Dashboard — Jekyll + Cloudflare + Web3 Redesign Prompt
+
+## Stack Constraints (strict — no exceptions)
+
+| Layer | Technology |
+|---|---|
+| Static site | **Jekyll 4.x** (Ruby) |
+| Hosting | **Cloudflare Pages** |
+| API / backend logic | **Cloudflare Workers** (JS/TS) |
+| Persistent storage | **Cloudflare KV** (watchlist, user prefs) |
+| Edge cache | **Cloudflare Cache API** (market data TTL) |
+| Wallet connection | **ethers.js v6** via CDN (no npm build) |
+| Styling | **Vanilla CSS** with custom properties (no Tailwind, no frameworks) |
+| JS interactivity | **Vanilla JS ES modules** (no React, no Vue, no bundler) |
+| Charts | **Chart.js v4** via CDN |
+| Web3 chains | Ethereum mainnet · Arbitrum · Polygon |
+
+No Node.js build step. No npm. No React. Jekyll builds HTML → Cloudflare Pages serves it → Workers handle all dynamic data.
+
+---
+
+## Project Structure
+
+```
+/ (repo root)
+├── _config.yml
+├── Gemfile
+├── _layouts/
+│   ├── default.html          ← base shell: sidebar + topbar + main slot
+│   └── module.html           ← extends default, adds score header + tabs
+├── _includes/
+│   ├── sidebar.html          ← grouped nav (5 groups, vanilla JS toggle)
+│   ├── topbar.html           ← breadcrumb + chain selector + wallet btn
+│   ├── score-card.html       ← reusable score badge include
+│   ├── stat-cards.html       ← row of 3–4 metric tiles
+│   ├── market-strip.html     ← collapsible bottom bar (JS-driven)
+│   └── wallet-modal.html     ← Web3 connect modal
+├── _data/
+│   └── nav.yml               ← sidebar group/item definitions (YAML)
+├── assets/
+│   ├── css/
+│   │   ├── base.css          ← CSS custom properties + reset
+│   │   ├── sidebar.css
+│   │   ├── modules.css
+│   │   └── components.css
+│   └── js/
+│       ├── sidebar.js        ← accordion toggle, collapse to rail
+│       ├── wallet.js         ← ethers.js wallet connect + chain switch
+│       ├── market.js         ← polls /api/market every 60s
+│       ├── charts.js         ← Chart.js wrappers
+│       └── tabs.js           ← tab strip switching
+├── pages/
+│   ├── index.md              → redirect to /dashboard
+│   ├── dashboard.html        ← Overview page
+│   ├── risk/
+│   │   ├── rwa-score.html
+│   │   ├── issuer.html
+│   │   ├── legal.html
+│   │   ├── custody.html
+│   │   └── oracle.html
+│   ├── portfolio/
+│   │   ├── heatmap.html
+│   │   ├── liquidity.html
+│   │   ├── yield.html
+│   │   └── aggregator.html
+│   ├── tools/
+│   │   ├── wallet-scanner.html
+│   │   ├── token-approvals.html
+│   │   ├── audit-export.html
+│   │   └── audit-directory.html
+│   └── advisory/
+│       ├── ai-rwa.html
+│       ├── ai-risk.html
+│       ├── risk-profiler.html
+│       ├── alerts.html
+│       └── report.html
+├── workers/                  ← Cloudflare Workers (deployed separately)
+│   ├── api-market.js         ← /api/market — proxies DeFiLlama + CoinGecko
+│   ├── api-scores.js         ← /api/scores — RWA scoring logic
+│   ├── api-wallet.js         ← /api/wallet?address= — on-chain RWA scan
+│   ├── api-watchlist.js      ← /api/watchlist — KV read/write
+│   └── wrangler.toml
+└── _config.yml
+```
+
+---
+
+## `_config.yml`
+
+```yaml
+title: DeFi Scoring
+baseurl: ""
+url: "https://defiscoring.com"
+
+# Jekyll collections
+collections:
+  modules:
+    output: false
+
+# Exclude from build
+exclude:
+  - workers/
+  - Gemfile
+  - README.md
+
+# Defaults
+defaults:
+  - scope:
+      path: "pages/risk"
+    values:
+      layout: module
+      group: risk
+  - scope:
+      path: "pages/portfolio"
+    values:
+      layout: module
+      group: portfolio
+  - scope:
+      path: "pages/tools"
+    values:
+      layout: module
+      group: tools
+  - scope:
+      path: "pages/advisory"
+    values:
+      layout: module
+      group: advisory
+```
+
+---
+
+## `_data/nav.yml` — Single source of truth for sidebar
+
+```yaml
+groups:
+  - id: overview
+    label: null
+    icon: grid
+    items:
+      - id: dashboard
+        label: Dashboard
+        path: /dashboard
+        icon: layout-dashboard
+
+  - id: risk
+    label: Risk Analysis
+    icon: shield-alert
+    default_open: true
+    items:
+      - { id: rwa-score,  label: RWA Asset Score,       path: /risk/rwa-score,  icon: trending-up }
+      - { id: issuer,     label: Issuer Due Diligence,  path: /risk/issuer,     icon: search }
+      - { id: legal,      label: Legal & Regulatory,    path: /risk/legal,      icon: scale }
+      - { id: custody,    label: Custody & PoR,         path: /risk/custody,    icon: lock }
+      - { id: oracle,     label: Oracle Integrity,      path: /risk/oracle,     icon: database }
+
+  - id: portfolio
+    label: Portfolio
+    icon: pie-chart
+    default_open: true
+    items:
+      - { id: heatmap,    label: Portfolio Heatmap,     path: /portfolio/heatmap,    icon: grid-2x2 }
+      - { id: liquidity,  label: Liquidity & Redemption,path: /portfolio/liquidity,  icon: droplets }
+      - { id: yield,      label: Yield & Risk-Adjusted, path: /portfolio/yield,      icon: bar-chart-2 }
+      - { id: aggregator, label: Portfolio Aggregator,  path: /portfolio/aggregator, icon: layers }
+
+  - id: tools
+    label: Tools
+    icon: wrench
+    default_open: false
+    items:
+      - { id: wallet-scanner,  label: Wallet Scanner,    path: /tools/wallet-scanner,  icon: scan-line }
+      - { id: token-approvals, label: Token Approvals,   path: /tools/token-approvals, icon: alert-triangle }
+      - { id: audit-export,    label: Audit & Export,    path: /tools/audit-export,    icon: download }
+      - { id: audit-directory, label: Audit Directory,   path: /tools/audit-directory, icon: book-open }
+
+  - id: advisory
+    label: Advisory
+    icon: bot
+    default_open: false
+    items:
+      - { id: ai-rwa,       label: AI RWA Advisor,  path: /advisory/ai-rwa,       icon: sparkles }
+      - { id: ai-risk,      label: AI Risk Advisor, path: /advisory/ai-risk,      icon: brain }
+      - { id: risk-profiler,label: Risk Profiler,   path: /advisory/risk-profiler,icon: star }
+      - { id: alerts,       label: Alerts,          path: /advisory/alerts,       icon: bell }
+      - { id: report,       label: Report Issue,    path: /advisory/report,       icon: flag }
+```
+
+---
+
+## `_layouts/default.html`
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ page.title | default: site.title }}</title>
+  <link rel="stylesheet" href="/assets/css/base.css">
+  <link rel="stylesheet" href="/assets/css/sidebar.css">
+  <link rel="stylesheet" href="/assets/css/components.css">
+  <link rel="stylesheet" href="/assets/css/modules.css">
+  <!-- Lucide icons via CDN (SVG sprite approach) -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    {% include sidebar.html %}
+    <div class="app-main">
+      {% include topbar.html %}
+      <main class="app-content">
+        {{ content }}
+      </main>
+      {% include market-strip.html %}
+    </div>
+  </div>
+
+  {% include wallet-modal.html %}
+
+  <script type="module" src="/assets/js/sidebar.js"></script>
+  <script type="module" src="/assets/js/wallet.js"></script>
+  <script type="module" src="/assets/js/market.js"></script>
+  <script type="module" src="/assets/js/tabs.js"></script>
+  <script>lucide.createIcons();</script>
+</body>
+</html>
+```
+
+---
+
+## `_layouts/module.html`
+
+```html
+---
+layout: default
+---
+
+<div class="module-header">
+  <div class="module-title-row">
+    <div>
+      <h1 class="module-title">{{ page.module_title }}</h1>
+      <p class="module-desc">{{ page.module_desc }}</p>
+    </div>
+    <button class="btn-refresh" data-module="{{ page.module_id }}">
+      <i data-lucide="refresh-cw"></i> Refresh
+    </button>
+  </div>
+</div>
+
+<div class="module-body">
+  <div class="module-score-col">
+    {% include score-card.html
+       score=page.score
+       grade=page.grade
+       risk_label=page.risk_label
+       size="lg" %}
+  </div>
+  <div class="module-stats-col">
+    {{ page.stats_html }}
+  </div>
+</div>
+
+{% if page.tabs %}
+<div class="tab-strip" data-tabs="{{ page.module_id }}">
+  {% for tab in page.tabs %}
+  <button class="tab-btn {% if forloop.first %}active{% endif %}"
+          data-target="{{ page.module_id }}-{{ tab.id }}">
+    {{ tab.label }}
+  </button>
+  {% endfor %}
+</div>
+
+{% for tab in page.tabs %}
+<div class="tab-panel {% if forloop.first %}active{% endif %}"
+     id="{{ page.module_id }}-{{ tab.id }}">
+  {{ tab.content }}
+</div>
+{% endfor %}
+{% endif %}
+
+{{ content }}
+```
+
+---
+
+## `_includes/sidebar.html`
+
+```html
+<aside class="sidebar" id="sidebar" data-collapsed="false">
+  <!-- Logo -->
+  <div class="sidebar-logo">
+    <svg><!-- DeFi Scoring icon --></svg>
+    <span class="sidebar-logo-text">DeFi Scoring</span>
+  </div>
+
+  <!-- Nav groups from _data/nav.yml -->
+  <nav class="sidebar-nav">
+    {% for group in site.data.nav.groups %}
+    <div class="nav-group {% if group.default_open %}open{% endif %}"
+         data-group="{{ group.id }}">
+
+      {% if group.label %}
+      <button class="nav-group-header" aria-expanded="{{ group.default_open }}">
+        <i data-lucide="{{ group.icon }}"></i>
+        <span class="nav-group-label">{{ group.label }}</span>
+        <i data-lucide="chevron-right" class="nav-chevron"></i>
+      </button>
+      {% endif %}
+
+      <ul class="nav-items">
+        {% for item in group.items %}
+        <li>
+          <a href="{{ item.path }}"
+             class="nav-item {% if page.url == item.path %}active{% endif %}">
+            <i data-lucide="{{ item.icon }}"></i>
+            <span class="nav-item-label">{{ item.label }}</span>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endfor %}
+  </nav>
+
+  <!-- Sidebar footer -->
+  <div class="sidebar-footer">
+    <div class="chain-selector">
+      <button class="chain-btn active" data-chain="eth">ETH</button>
+      <button class="chain-btn" data-chain="arb">ARB</button>
+      <button class="chain-btn" data-chain="pol">POL</button>
+    </div>
+    <div class="gas-pill" id="gas-price">-- gwei</div>
+    <button class="btn-connect-wallet" id="connect-wallet">
+      <i data-lucide="wallet"></i>
+      <span>Connect Wallet</span>
+    </button>
+  </div>
+
+  <!-- Collapse toggle -->
+  <button class="sidebar-collapse-btn" id="sidebar-toggle">
+    <i data-lucide="panel-left-close"></i>
+  </button>
+</aside>
+```
+
+---
+
+## `assets/css/base.css` — Design tokens
+
+```css
+:root {
+  --bg-base:      #0d0f14;
+  --bg-surface:   #13161d;
+  --bg-elevated:  #1a1e27;
+  --bg-border:    rgba(255,255,255,0.07);
+  --bg-border-md: rgba(255,255,255,0.12);
+
+  --text-primary:   #f1f3f7;
+  --text-secondary: #8b909a;
+  --text-muted:     #4a4f5e;
+
+  --green:   #10b981;
+  --green-bg: rgba(16,185,129,0.12);
+  --blue:    #3b82f6;
+  --blue-bg: rgba(59,130,246,0.12);
+  --amber:   #f59e0b;
+  --amber-bg: rgba(245,158,11,0.12);
+  --red:     #ef4444;
+  --red-bg:  rgba(239,68,68,0.12);
+
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+
+  --sidebar-width: 240px;
+  --sidebar-rail: 56px;
+  --topbar-height: 52px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: var(--bg-base); color: var(--text-primary); font-family: var(--font-sans); font-size: 14px; }
+
+.app-shell {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+.app-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.app-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+/* Score number = always monospace */
+.score-number {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+}
+
+/* Grade color helpers */
+.grade-a-plus, .grade-a { --grade-color: var(--green); --grade-bg: var(--green-bg); }
+.grade-b               { --grade-color: var(--blue);  --grade-bg: var(--blue-bg);  }
+.grade-c               { --grade-color: var(--amber); --grade-bg: var(--amber-bg); }
+.grade-d, .grade-f     { --grade-color: var(--red);   --grade-bg: var(--red-bg);   }
+```
+
+---
+
+## `assets/css/sidebar.css`
+
+```css
+.sidebar {
+  width: var(--sidebar-width);
+  height: 100vh;
+  background: var(--bg-surface);
+  border-right: 1px solid var(--bg-border);
+  display: flex;
+  flex-direction: column;
+  transition: width 0.2s ease;
+  overflow: hidden;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.sidebar[data-collapsed="true"] {
+  width: var(--sidebar-rail);
+}
+.sidebar[data-collapsed="true"] .sidebar-logo-text,
+.sidebar[data-collapsed="true"] .nav-item-label,
+.sidebar[data-collapsed="true"] .nav-group-label,
+.sidebar[data-collapsed="true"] .nav-chevron,
+.sidebar[data-collapsed="true"] .chain-btn span,
+.sidebar[data-collapsed="true"] .btn-connect-wallet span {
+  display: none;
+}
+.sidebar[data-collapsed="true"] .nav-group-header { justify-content: center; }
+.sidebar[data-collapsed="true"] .nav-items { display: none; }
+
+/* Logo */
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 14px;
+  border-bottom: 1px solid var(--bg-border);
+  font-weight: 600;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+/* Nav */
+.sidebar-nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+  scrollbar-width: none;
+}
+.sidebar-nav::-webkit-scrollbar { display: none; }
+
+.nav-group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 14px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.nav-group-header:hover { color: var(--text-secondary); }
+
+.nav-chevron {
+  margin-left: auto;
+  width: 14px;
+  height: 14px;
+  transition: transform 0.2s;
+}
+.nav-group.open .nav-chevron { transform: rotate(90deg); }
+
+.nav-items {
+  list-style: none;
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.25s ease;
+}
+.nav-group.open .nav-items { max-height: 400px; }
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 14px 7px 28px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+  font-size: 13px;
+}
+.nav-item:hover { color: var(--text-primary); background: rgba(255,255,255,0.03); }
+.nav-item.active {
+  color: var(--text-primary);
+  border-left-color: var(--blue);
+  background: rgba(59,130,246,0.07);
+}
+.nav-item i { width: 15px; height: 15px; flex-shrink: 0; }
+
+/* Footer */
+.sidebar-footer {
+  padding: 12px;
+  border-top: 1px solid var(--bg-border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.chain-selector {
+  display: flex;
+  gap: 4px;
+}
+.chain-btn {
+  flex: 1;
+  padding: 4px;
+  background: none;
+  border: 1px solid var(--bg-border-md);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.chain-btn.active {
+  background: var(--blue-bg);
+  border-color: var(--blue);
+  color: var(--blue);
+}
+.gas-pill {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: center;
+}
+.btn-connect-wallet {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 8px;
+  background: none;
+  border: 1px solid var(--bg-border-md);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-connect-wallet:hover {
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+/* Collapse toggle */
+.sidebar-collapse-btn {
+  position: absolute;
+  bottom: 120px;
+  right: -12px;
+  width: 24px;
+  height: 24px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--bg-border-md);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-muted);
+  z-index: 10;
+}
+
+/* Mobile: drawer */
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    left: -100%;
+    z-index: 100;
+    transition: left 0.25s ease;
+  }
+  .sidebar.open { left: 0; }
+}
+```
+
+---
+
+## `assets/js/sidebar.js`
+
+```js
+// Accordion groups
+document.querySelectorAll('.nav-group-header').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const group = btn.closest('.nav-group');
+    const isOpen = group.classList.toggle('open');
+    btn.setAttribute('aria-expanded', isOpen);
+  });
+});
+
+// Collapse sidebar to rail
+const sidebar = document.getElementById('sidebar');
+const toggle = document.getElementById('sidebar-toggle');
+toggle?.addEventListener('click', () => {
+  const collapsed = sidebar.dataset.collapsed === 'true';
+  sidebar.dataset.collapsed = !collapsed;
+  toggle.querySelector('[data-lucide]').setAttribute('data-lucide',
+    collapsed ? 'panel-left-close' : 'panel-left-open');
+  lucide.createIcons();
+});
+
+// Chain selector
+document.querySelectorAll('.chain-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.chain-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    window.dispatchEvent(new CustomEvent('chain-change', { detail: btn.dataset.chain }));
+  });
+});
+```
+
+---
+
+## `assets/js/wallet.js` — ethers.js v6 Web3 connection
+
+```js
+import { BrowserProvider, formatEther } from 'https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.min.js';
+
+const CHAIN_IDS = { eth: 1, arb: 42161, pol: 137 };
+const CHAIN_NAMES = { 1: 'Ethereum', 42161: 'Arbitrum', 137: 'Polygon' };
+
+let provider = null;
+let signer = null;
+
+async function connectWallet() {
+  if (!window.ethereum) {
+    alert('No Web3 wallet detected. Install MetaMask or Rabby.');
+    return;
+  }
+  provider = new BrowserProvider(window.ethereum);
+  await provider.send('eth_requestAccounts', []);
+  signer = await provider.getSigner();
+  const address = await signer.getAddress();
+  const balance = await provider.getBalance(address);
+
+  // Update UI
+  const btn = document.getElementById('connect-wallet');
+  btn.innerHTML = `<i data-lucide="wallet"></i> ${address.slice(0,6)}…${address.slice(-4)}`;
+  lucide.createIcons();
+
+  // Dispatch for other modules to pick up
+  window.dispatchEvent(new CustomEvent('wallet-connected', {
+    detail: { address, balance: formatEther(balance) }
+  }));
+
+  // Fetch wallet scan from Worker
+  fetchWalletScan(address);
+}
+
+async function switchChain(chainKey) {
+  if (!provider) return;
+  const chainId = CHAIN_IDS[chainKey];
+  await window.ethereum.request({
+    method: 'wallet_switchEthereumChain',
+    params: [{ chainId: '0x' + chainId.toString(16) }]
+  });
+}
+
+async function fetchWalletScan(address) {
+  const res = await fetch(`/api/wallet?address=${address}`);
+  const data = await res.json();
+  window.dispatchEvent(new CustomEvent('wallet-scan', { detail: data }));
+}
+
+document.getElementById('connect-wallet')?.addEventListener('click', connectWallet);
+window.addEventListener('chain-change', e => switchChain(e.detail));
+```
+
+---
+
+## `assets/js/market.js` — Polls Cloudflare Worker every 60s
+
+```js
+async function fetchMarket() {
+  const strip = document.getElementById('market-strip-data');
+  if (!strip) return;
+  try {
+    const res = await fetch('/api/market');
+    const data = await res.json();
+    // Update BTC, ETH, gas, top protocols
+    document.querySelectorAll('[data-market]').forEach(el => {
+      const key = el.dataset.market;
+      if (data[key] !== undefined) el.textContent = data[key];
+    });
+    document.getElementById('market-updated').textContent =
+      new Date().toLocaleTimeString();
+  } catch (e) {
+    console.warn('Market fetch failed', e);
+  }
+}
+
+fetchMarket();
+setInterval(fetchMarket, 60_000);
+
+// Collapsible strip
+document.getElementById('market-strip-toggle')?.addEventListener('click', () => {
+  const strip = document.getElementById('market-strip-body');
+  strip.hidden = !strip.hidden;
+});
+```
+
+---
+
+## Cloudflare Workers
+
+### `workers/api-market.js` — Proxy DeFiLlama + CoinGecko with edge cache
+
+```js
+export default {
+  async fetch(request, env) {
+    const cache = caches.default;
+    const cacheKey = new Request('https://defiscoring.com/__cache/market', request);
+
+    // Serve from cache if fresh (60s TTL)
+    let cached = await cache.match(cacheKey);
+    if (cached) return cached;
+
+    // Fetch in parallel
+    const [llama, gecko] = await Promise.all([
+      fetch('https://api.llama.fi/protocols').then(r => r.json()),
+      fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,usd-coin&vs_currencies=usd&include_24hr_change=true')
+        .then(r => r.json())
+    ]);
+
+    // Filter RWA protocols
+    const rwaProtocols = llama.filter(p => p.category === 'RWA')
+      .sort((a, b) => b.tvl - a.tvl)
+      .slice(0, 10)
+      .map(p => ({ name: p.name, tvl: p.tvl, change24h: p.change_1d }));
+
+    const payload = {
+      btc: gecko.bitcoin.usd,
+      btc_24h: gecko.bitcoin.usd_24h_change,
+      eth: gecko.ethereum.usd,
+      eth_24h: gecko.ethereum.usd_24h_change,
+      usdc: gecko['usd-coin'].usd,
+      rwa: rwaProtocols,
+      ts: Date.now()
+    };
+
+    const response = new Response(JSON.stringify(payload), {
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'public, max-age=60',
+        'Access-Control-Allow-Origin': '*'
+      }
+    });
+
+    // Store in edge cache
+    await cache.put(cacheKey, response.clone());
+    return response;
+  }
+};
+```
+
+### `workers/api-wallet.js` — On-chain RWA scan via Alchemy/Infura
+
+```js
+// Scans wallet for known RWA token holdings on ETH/ARB/POL
+const RWA_TOKENS = {
+  '0x7712c34205737192402172409a8F7ccef8aA2AE': { name: 'BUIDL', issuer: 'BlackRock' },
+  '0x1B19C19393e2d034D8Ff31ff34c81252FcBbee6': { name: 'OUSG',  issuer: 'Ondo' },
+  // ... extend with full RWA token registry
+};
+
+export default {
+  async fetch(request, env) {
+    const { searchParams } = new URL(request.url);
+    const address = searchParams.get('address');
+    if (!address) return new Response('Missing address', { status: 400 });
+
+    // Fetch from KV cache first
+    const cached = await env.WALLET_CACHE.get(`scan:${address}`);
+    if (cached) return new Response(cached, { headers: { 'Content-Type': 'application/json' } });
+
+    // Call Alchemy API (store key in Worker env secret)
+    const res = await fetch(`https://eth-mainnet.g.alchemy.com/v2/${env.ALCHEMY_KEY}/getTokenBalances`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', method: 'alchemy_getTokenBalances', params: [address, Object.keys(RWA_TOKENS)], id: 1 })
+    });
+    const data = await res.json();
+
+    const holdings = data.result.tokenBalances
+      .filter(t => t.tokenBalance !== '0x0000000000000000000000000000000000000000000000000000000000000000')
+      .map(t => ({ ...RWA_TOKENS[t.contractAddress], balance: parseInt(t.tokenBalance, 16) }));
+
+    const payload = JSON.stringify({ address, holdings });
+    await env.WALLET_CACHE.put(`scan:${address}`, payload, { expirationTtl: 300 });
+
+    return new Response(payload, { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+  }
+};
+```
+
+### `workers/api-watchlist.js` — KV-backed watchlist
+
+```js
+// GET  /api/watchlist?wallet=0x...  → returns items
+// POST /api/watchlist               → body { wallet, action: 'add'|'remove', item }
+export default {
+  async fetch(request, env) {
+    const { searchParams } = new URL(request.url);
+    const wallet = searchParams.get('wallet');
+
+    if (request.method === 'GET') {
+      const items = await env.WATCHLIST_KV.get(`wl:${wallet}`, 'json') || [];
+      return Response.json(items);
+    }
+
+    if (request.method === 'POST') {
+      const { wallet: w, action, item } = await request.json();
+      let items = await env.WATCHLIST_KV.get(`wl:${w}`, 'json') || [];
+      if (action === 'add' && !items.find(i => i.id === item.id)) items.push(item);
+      if (action === 'remove') items = items.filter(i => i.id !== item.id);
+      await env.WATCHLIST_KV.put(`wl:${w}`, JSON.stringify(items));
+      return Response.json({ ok: true, count: items.length });
+    }
+
+    return new Response('Method not allowed', { status: 405 });
+  }
+};
+```
+
+### `workers/wrangler.toml`
+
+```toml
+name = "defiscoring-api"
+main = "api-market.js"
+compatibility_date = "2024-01-01"
+
+[[kv_namespaces]]
+binding = "WATCHLIST_KV"
+id = "YOUR_KV_NAMESPACE_ID"
+
+[[kv_namespaces]]
+binding = "WALLET_CACHE"
+id = "YOUR_WALLET_CACHE_KV_ID"
+
+[vars]
+ENVIRONMENT = "production"
+
+# Secrets (set via: wrangler secret put ALCHEMY_KEY)
+# ALCHEMY_KEY
+# COINGECKO_API_KEY (if using pro tier)
+
+[[routes]]
+pattern = "defiscoring.com/api/*"
+zone_name = "defiscoring.com"
+```
+
+---
+
+## `pages/dashboard.html` — Overview page
+
+```html
+---
+layout: default
+title: Dashboard — DeFi Scoring
+permalink: /dashboard
+---
+
+<div class="page-header">
+  <h1>Overview</h1>
+  <p class="page-desc">Your DeFi credit health at a glance.</p>
+</div>
+
+<!-- AI Banner (dismissible) -->
+<div class="banner-cta" id="ai-banner">
+  <span>✦ NEW · AI Risk Profile — match your wallet to a target risk profile</span>
+  <a href="/advisory/risk-profiler" class="btn-sm">Open Profiler →</a>
+  <button onclick="this.closest('.banner-cta').remove()" aria-label="Dismiss">✕</button>
+</div>
+
+<!-- Score summary grid: 6 module cards -->
+<section class="score-grid">
+  <a href="/risk/rwa-score" class="score-tile grade-a">
+    <div class="score-tile-label">RWA Asset Score</div>
+    <div class="score-tile-number score-number">795</div>
+    <div class="score-tile-grade">A · Low Risk</div>
+  </a>
+  <a href="/risk/issuer" class="score-tile grade-d">
+    <div class="score-tile-label">Issuer Due Diligence</div>
+    <div class="score-tile-number score-number">475</div>
+    <div class="score-tile-grade">D · High Risk</div>
+  </a>
+  <a href="/risk/legal" class="score-tile grade-c">
+    <div class="score-tile-label">Legal & Regulatory</div>
+    <div class="score-tile-number score-number">580</div>
+    <div class="score-tile-grade">C · Elevated Risk</div>
+  </a>
+  <a href="/risk/custody" class="score-tile grade-c">
+    <div class="score-tile-label">Custody & PoR</div>
+    <div class="score-tile-number score-number">580</div>
+    <div class="score-tile-grade">C · Elevated Risk</div>
+  </a>
+  <a href="/risk/oracle" class="score-tile grade-d">
+    <div class="score-tile-label">Oracle Integrity</div>
+    <div class="score-tile-number score-number">332</div>
+    <div class="score-tile-grade">D · High Risk</div>
+  </a>
+  <a href="/portfolio/liquidity" class="score-tile grade-b">
+    <div class="score-tile-label">Liquidity & Redemption</div>
+    <div class="score-tile-number score-number">675</div>
+    <div class="score-tile-grade">B · Moderate Risk</div>
+  </a>
+</section>
+
+<!-- Portfolio snapshot -->
+<section class="dashboard-row">
+  <div class="card portfolio-snapshot">
+    <h2>Portfolio Snapshot</h2>
+    <canvas id="portfolio-donut" width="160" height="160"></canvas>
+    <div class="portfolio-meta">
+      <div class="stat-row"><span>Total Exposure</span><strong>$346k</strong></div>
+      <div class="stat-row"><span>Portfolio Score</span><strong class="score-number grade-a-plus">850 · A+</strong></div>
+      <div class="stat-row"><span>HHI Concentration</span><strong>2463 · Moderate</strong></div>
+    </div>
+    <a href="/portfolio/aggregator" class="btn-sm">Full breakdown →</a>
+  </div>
+
+  <!-- Watchlist -->
+  <div class="card watchlist-card">
+    <h2>Watchlist</h2>
+    <p class="text-muted" id="watchlist-empty">Connect a wallet to start a watchlist.</p>
+    <ul id="watchlist-items" class="watchlist-list" hidden></ul>
+    <div class="watchlist-add" hidden id="watchlist-add-row">
+      <input type="text" placeholder="Paste token contract…" id="watchlist-input">
+      <button id="watchlist-add-btn">Add</button>
+    </div>
+  </div>
+</section>
+
+<script type="module">
+  import { Chart, DoughnutController, ArcElement, Tooltip } from
+    'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.esm.js';
+  Chart.register(DoughnutController, ArcElement, Tooltip);
+
+  new Chart(document.getElementById('portfolio-donut'), {
+    type: 'doughnut',
+    data: {
+      labels: ['BUIDL', 'OUSG', 'USDC', 'sUSDS', 'Centrifuge'],
+      datasets: [{ data: [124, 87, 62, 41, 32],
+        backgroundColor: ['#10b981','#3b82f6','#6366f1','#f59e0b','#ef4444'],
+        borderWidth: 0 }]
+    },
+    options: { cutout: '70%', plugins: { legend: { display: false } } }
+  });
+
+  // Watchlist — loads from Worker KV when wallet connects
+  window.addEventListener('wallet-connected', async ({ detail: { address } }) => {
+    const res = await fetch(`/api/watchlist?wallet=${address}`);
+    const items = await res.json();
+    const list = document.getElementById('watchlist-items');
+    if (items.length) {
+      list.hidden = false;
+      document.getElementById('watchlist-empty').hidden = true;
+      list.innerHTML = items.map(i => `<li>${i.name}</li>`).join('');
+    }
+    document.getElementById('watchlist-add-row').hidden = false;
+  });
+</script>
+```
+
+---
+
+## Cloudflare Pages Config (`_headers` file at repo root)
+
+```
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+
+/api/*
+  Access-Control-Allow-Origin: https://defiscoring.com
+  Cache-Control: public, max-age=60
+```
+
+## `_redirects` (Cloudflare Pages routing)
+
+```
+/               /dashboard      301
+/api/*          https://defiscoring-api.workers.dev/:splat  200
+```
+
+---
+
+## Cloudflare Pages Build Settings
+
+```
+Build command:   bundle exec jekyll build
+Output dir:      _site
+Environment:     JEKYLL_ENV=production
+Node version:    (not needed — Ruby only)
+Ruby version:    3.2
+```
+
+Add `Gemfile`:
+```ruby
+source "https://rubygems.org"
+gem "jekyll", "~> 4.3"
+gem "jekyll-feed"
+gem "jekyll-seo-tag"
+```
+
+---
+
+## Acceptance Criteria
+
+1. Jekyll builds with `bundle exec jekyll build` — zero errors
+2. Sidebar has exactly 5 accordion groups, driven from `_data/nav.yml`
+3. `/dashboard` shows score grid, portfolio snapshot, watchlist — no module detail content
+4. Each module is its own Jekyll page at its own URL
+5. Wallet connect uses ethers.js v6 from CDN — no npm
+6. `/api/market` Worker returns combined DeFiLlama + CoinGecko JSON, cached 60s at edge
+7. `/api/watchlist` persists to Cloudflare KV, keyed by wallet address
+8. `/api/wallet` scans for RWA token holdings and caches in KV for 5 minutes
+9. No JavaScript frameworks — vanilla JS ES modules only
+10. Deploys to Cloudflare Pages with Workers routes proxied via `_redirects`
+11. Mobile: sidebar becomes a slide-in drawer via CSS `position: fixed`
+12. Score numbers use monospace font throughout
