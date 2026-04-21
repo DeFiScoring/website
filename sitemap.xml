@@ -1,0 +1,35 @@
+---
+layout: null
+permalink: /sitemap.xml
+sitemap: false
+---
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  {%- for p in site.pages -%}
+    {%- assign skip = false -%}
+    {%- if p.sitemap == false %}{%- assign skip = true -%}{% endif -%}
+    {%- if p.noindex %}{%- assign skip = true -%}{% endif -%}
+    {%- if p.url contains "/dashboard/" %}{%- assign skip = true -%}{% endif -%}
+    {%- if p.url contains "/admin/" %}{%- assign skip = true -%}{% endif -%}
+    {%- if p.url contains "/404" %}{%- assign skip = true -%}{% endif -%}
+    {%- if p.url contains ".xml" or p.url contains ".txt" or p.url contains ".json" %}{%- assign skip = true -%}{% endif -%}
+    {%- unless skip -%}
+    {%- assign loc = p.url | replace: "index.html", "" | prepend: site.baseurl | prepend: site.url -%}
+  <url>
+    <loc>{{ loc }}</loc>
+    <lastmod>{{ site.time | date_to_xmlschema }}</lastmod>
+    <changefreq>{{ p.changefreq | default: "weekly" }}</changefreq>
+    <priority>{{ p.priority | default: "0.7" }}</priority>
+  </url>
+    {%- endunless -%}
+  {%- endfor -%}
+  {%- for doc in site.audits -%}
+    {%- if doc.noindex %}{% continue %}{% endif -%}
+  <url>
+    <loc>{{ doc.url | prepend: site.baseurl | prepend: site.url }}</loc>
+    <lastmod>{{ doc.date | default: site.time | date_to_xmlschema }}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  {%- endfor -%}
+</urlset>

@@ -1,0 +1,124 @@
+{%- comment -%}
+  Central SEO + social head block. Used by index.html and every layout so meta
+  tags, Open Graph, Twitter cards, canonical, favicons, and JSON-LD stay in
+  lockstep. Overridable per-page via front-matter:
+
+    page.title           → <title> (auto-suffixed with site name)
+    page.description     → meta description + og:description + twitter:description
+    page.image           → absolute or /-rooted path for og:image + twitter:image
+    page.keywords        → comma-separated list for meta keywords
+    page.canonical       → explicit canonical URL (otherwise derived)
+    page.noindex         → set true on app/dashboard pages to block indexing
+    page.og_type         → defaults to "website"; use "article" for posts
+    page.structured_data → raw JSON string appended as an extra JSON-LD block
+
+  Site-level defaults live in `_config.yml` (title, description, url,
+  social_image, twitter_username, organization.* fields).
+{%- endcomment -%}
+
+{%- assign seo_title = page.title | default: site.title -%}
+{%- assign seo_desc  = page.description | default: site.description -%}
+{%- assign seo_kw    = page.keywords | default: site.keywords -%}
+{%- assign og_type   = page.og_type | default: "website" -%}
+
+{%- comment -%} Resolve absolute URLs for canonical + social images. {%- endcomment -%}
+{%- assign site_url = site.url | default: "" | append: site.baseurl -%}
+{%- if page.canonical -%}
+  {%- assign canonical_url = page.canonical -%}
+{%- else -%}
+  {%- assign canonical_url = page.url | replace: "index.html", "" | prepend: site_url -%}
+{%- endif -%}
+
+{%- assign social_image_path = page.image | default: site.social_image | default: "/assets/defiscoring-logo-white-2_1776667771148.png" -%}
+{%- if social_image_path contains "://" -%}
+  {%- assign social_image_url = social_image_path -%}
+{%- else -%}
+  {%- assign social_image_url = social_image_path | prepend: site_url -%}
+{%- endif -%}
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+<title>{% if page.title %}{{ page.title }} — {{ site.title }}{% else %}{{ site.title }} — {{ site.tagline | default: site.description | truncate: 70 }}{% endif %}</title>
+<meta name="description" content="{{ seo_desc | strip_newlines | strip }}">
+{% if seo_kw %}<meta name="keywords" content="{{ seo_kw }}">{% endif %}
+<meta name="author" content="{{ site.organization.name | default: site.title }}">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="color-scheme" content="dark">
+
+{% if page.noindex %}<meta name="robots" content="noindex, nofollow">
+{% else %}<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+{% endif %}
+<link rel="canonical" href="{{ canonical_url }}">
+
+{%- comment -%} Favicons / app icons {%- endcomment -%}
+<link rel="icon" type="image/png" sizes="96x96" href="{{ '/assets/favicon/favicon-96x96.png' | relative_url }}">
+<link rel="icon" type="image/x-icon" href="{{ '/assets/favicon/favicon.ico' | relative_url }}">
+<link rel="apple-touch-icon" sizes="180x180" href="{{ '/assets/favicon/apple-touch-icon.png' | relative_url }}">
+<link rel="manifest" href="{{ '/assets/favicon/site.webmanifest' | relative_url }}">
+
+{%- comment -%} Open Graph — full spec. {%- endcomment -%}
+<meta property="og:type"        content="{{ og_type }}">
+<meta property="og:site_name"   content="{{ site.title }}">
+<meta property="og:title"       content="{% if page.title %}{{ page.title }}{% else %}{{ site.title }}{% endif %}">
+<meta property="og:description" content="{{ seo_desc | strip_newlines | strip }}">
+<meta property="og:url"         content="{{ canonical_url }}">
+<meta property="og:image"       content="{{ social_image_url }}">
+<meta property="og:image:alt"   content="{{ site.title }} — {{ site.tagline | default: site.description | truncate: 90 }}">
+<meta property="og:image:width"  content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale"      content="en_US">
+
+{%- comment -%} Twitter / X card. {%- endcomment -%}
+<meta name="twitter:card"        content="summary_large_image">
+<meta name="twitter:title"       content="{% if page.title %}{{ page.title }}{% else %}{{ site.title }}{% endif %}">
+<meta name="twitter:description" content="{{ seo_desc | strip_newlines | strip }}">
+<meta name="twitter:image"       content="{{ social_image_url }}">
+<meta name="twitter:image:alt"   content="{{ site.title }} — {{ site.tagline | default: site.description | truncate: 90 }}">
+{% if site.twitter_username %}<meta name="twitter:site" content="@{{ site.twitter_username }}">
+<meta name="twitter:creator"     content="@{{ site.twitter_username }}">{% endif %}
+
+{%- comment -%} JSON-LD: Organization + WebSite. Always emitted on every page. {%- endcomment -%}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "{{ site_url }}/#organization",
+      "name": "{{ site.organization.name | default: site.title }}",
+      "alternateName": "{{ site.organization.alternate_name | default: 'DeFiScore' }}",
+      "url": "{{ site_url }}/",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "{{ site_url }}{{ site.organization.logo | default: '/assets/defiscoring-logo-white-2_1776667771148.png' }}",
+        "width": 500,
+        "height": 500
+      },
+      "description": "{{ site.description | strip_newlines | strip }}",
+      "sameAs": [
+        {%- assign social_links = site.data.footer.social | default: empty -%}
+        {%- for s in social_links -%}
+          {%- if s.link and s.link != "" -%}
+            "{{ s.link }}"{%- unless forloop.last -%},{%- endunless -%}
+          {%- endif -%}
+        {%- endfor -%}
+      ]
+    },
+    {
+      "@type": "WebSite",
+      "@id": "{{ site_url }}/#website",
+      "url": "{{ site_url }}/",
+      "name": "{{ site.title }}",
+      "description": "{{ site.description | strip_newlines | strip }}",
+      "publisher": { "@id": "{{ site_url }}/#organization" },
+      "inLanguage": "en-US"
+    }
+  ]
+}
+</script>
+
+{%- comment -%} Optional per-page extra JSON-LD (FAQ, HowTo, BreadcrumbList, …). {%- endcomment -%}
+{% if page.structured_data %}
+<script type="application/ld+json">{{ page.structured_data }}</script>
+{% endif %}

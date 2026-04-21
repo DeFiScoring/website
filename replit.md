@@ -18,8 +18,12 @@ A Jekyll static site for **DeFi Scoring** (defiscoring.com) — on-chain credit 
 
 ```
 .
-├── _includes/                  dashboard/* partials only (theme demo includes deleted)
+├── _includes/
+│   ├── head.html               CENTRAL SEO block — meta/OG/Twitter/canonical/JSON-LD
+│   └── dashboard/              dashboard partials (sidebar, wallet-bar, …)
 ├── _layouts/                   exactly 3 layouts: default.html, dashboard.html, audit.html
+├── sitemap.xml                 Liquid-templated sitemap (auto-collects pages + audits)
+├── robots.txt                  Sitemap ref + disallows /dashboard, /admin, /api
 ├── _data/
 │   ├── risk_profiles.yml       conservative/balanced/aggressive/degen presets
 │   ├── protocols.yml           Aave / Uniswap / Compound metadata + chains

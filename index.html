@@ -1,29 +1,72 @@
 ---
 layout: null
 permalink: /
-title: DeFiScore — Your on-chain credit score. Instant. Verifiable. Actionable.
-description: A 300–850 on-chain credit score for any wallet, plus portfolio risk heatmaps and real-time alerts across Ethereum, Arbitrum, and Polygon.
+title: "DeFi Scoring — Your on-chain credit score. Instant. Verifiable. Actionable."
+description: "DeFiScore gives any wallet an on-chain credit score (300–850), portfolio risk heatmaps, real-time alerts, and a free public API across Ethereum, Arbitrum, and Polygon."
+keywords: "on-chain credit score, DeFi credit score, wallet credit score, DeFi FICO, DeFi lending risk, portfolio risk heatmap, DeFiScore, on-chain FICO, Aave risk, Compound risk"
 sitemap: true
+priority: "1.0"
+changefreq: "weekly"
 ---
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <title>{{ page.title }}</title>
-  <meta name="description" content="{{ page.description }}">
-  <meta property="og:title" content="{{ page.title }}">
-  <meta property="og:description" content="{{ page.description }}">
-  <meta property="og:type" content="website">
-  <meta name="theme-color" content="#0a0a0a">
-  <link rel="icon" type="image/png" sizes="96x96" href="{{ '/assets/favicon/favicon-96x96.png' | relative_url }}">
-  <link rel="icon" type="image/x-icon" href="{{ '/assets/favicon/favicon.ico' | relative_url }}">
-  <link rel="apple-touch-icon" sizes="180x180" href="{{ '/assets/favicon/apple-touch-icon.png' | relative_url }}">
+  {% include head.html %}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ '/assets/css/landing.css' | relative_url }}?v={{ site.time | date: '%s' }}">
   <link rel="stylesheet" href="{{ '/assets/css/footer.css' | relative_url }}?v={{ site.time | date: '%s' }}">
+
+  {%- comment -%} HowTo + FAQ rich-results schema for the landing page. {%- endcomment -%}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    "name": "How to get your on-chain DeFi credit score",
+    "description": "Get a 300–850 DeFi credit score for any wallet in under 10 seconds — connect, scan, score, monitor.",
+    "totalTime": "PT10S",
+    "step": [
+      { "@type": "HowToStep", "position": 1, "name": "Connect", "text": "Click connect with MetaMask, Rabby, or any EIP-1193 wallet. We never read your seed or private keys." },
+      { "@type": "HowToStep", "position": 2, "name": "Scan",    "text": "We pull your transaction history across Ethereum, Arbitrum, and Polygon via cached RPCs." },
+      { "@type": "HowToStep", "position": 3, "name": "Score",   "text": "Five rule-based factors combine into a 300–850 on-chain credit score with a clear breakdown of what is pulling you up or down." },
+      { "@type": "HowToStep", "position": 4, "name": "Monitor", "text": "Set alert rules and we email you the moment something material changes." }
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is an on-chain credit score?",
+        "acceptedAnswer": { "@type": "Answer", "text": "An on-chain credit score is a FICO-style rating (300–850) computed from a wallet's public transaction history across DeFi protocols. DeFiScore combines payment history, utilization, account age, activity diversity, and sybil signals into a single defensible number." }
+      },
+      {
+        "@type": "Question",
+        "name": "Which chains does DeFiScore support?",
+        "acceptedAnswer": { "@type": "Answer", "text": "DeFiScore is live on Ethereum, Arbitrum, and Polygon. Optimism, Base, Solana, Scroll, and zkSync are on the roadmap." }
+      },
+      {
+        "@type": "Question",
+        "name": "Is DeFiScore free to use?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. During the private beta every feature — including the public API — is free. There are no signups and no KYC; scoring is wallet-based." }
+      },
+      {
+        "@type": "Question",
+        "name": "Does DeFiScore have a public API?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. A single endpoint GET /api/score?wallet=0x… returns a 300–850 score, factor breakdown, and LTV recommendation. It is KV-cached with a free public tier." }
+      },
+      {
+        "@type": "Question",
+        "name": "Who is DeFiScore for?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Lenders pricing risk, borrowers proving their on-chain track record, DeFi protocols plugging credit scores into their risk engines, and RWA issuers underwriting counterparties." }
+      }
+    ]
+  }
+  </script>
 </head>
 <body class="ds-body">
 
@@ -40,7 +83,7 @@ sitemap: true
   <div class="ds-nav__inner">
     <a class="ds-brand" href="/">
       <span class="ds-brand__mark">
-        <img src="{{ '/assets/defiscoring-logo-white-100x100.png' | relative_url }}" alt="" width="32" height="32">
+        <img src="{{ '/assets/defiscoring-logo-white-100x100.png' | relative_url }}" alt="DeFi Scoring logo" width="32" height="32">
       </span>
       <span class="ds-brand__text">DeFi <span class="ds-brand__accent">Scoring</span></span>
     </a>

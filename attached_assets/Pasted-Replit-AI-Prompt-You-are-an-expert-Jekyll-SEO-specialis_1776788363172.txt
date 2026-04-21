@@ -1,0 +1,33 @@
+Replit AI Prompt:
+You are an expert Jekyll + SEO specialist in 2026. Optimize the entire site (especially index.html and related files) for SEO and social media sharing on this Jekyll static site (DeFiScoring/website repo). The site has already been rebranded to DeFiScore with tagline “Your on-chain credit score. Instant. Verifiable. Actionable.” and modern dark glassmorphic design.
+Current state from _config.yml and index.html:
+* title: "DeFi Scoring" (update to match rebrand)
+* description exists
+* index.html uses layout: null and already has basic meta + partial OG tags
+Tasks (do all of these):
+1. Update _config.yml:
+    * Set title: "DeFi Scoring”
+    * Keep/update description to be highly SEO-optimized: “DeFiScore gives any wallet an on-chain credit score (300-850), portfolio risk heatmaps, real-time alerts, and public API across Ethereum, Arbitrum, Polygon. Instant. Verifiable. Actionable.”
+    * Add url, twitter_username (if any), and any other global SEO fields.
+2. Create or update the <head> section (add to index.html or create _includes/head.html if missing):
+    * Full modern meta tags: title, description, keywords (DeFi credit score, on-chain FICO, wallet credit score, DeFi lending risk, etc.)
+    * Complete Open Graph tags: og:title, og:description, og:image (use a high-quality 1200x630 hero image placeholder or existing asset), og:url, og:type="website", og:site_name="DeFiScore", og:locale="en_US"
+    * Full Twitter/X Card tags: twitter:card="summary_large_image", twitter:title, twitter:description, twitter:image, twitter:site
+    * Canonical URL
+    * Robots, theme-color, favicon links (assume /assets/img/favicon.png exists or use placeholder)
+    * Structured data JSON-LD: Organization + WebSite schema (name: DeFiScore, url, logo, description, sameAs for Twitter/GitHub if available)
+3. On-page SEO improvements in index.html:
+    * Ensure proper H1 (main headline), H2s for sections (Features, How it Works, etc.) with natural keywords.
+    * Add alt text to all images with descriptive keywords.
+    * Add schema markup for FAQ or HowTo if it fits the content.
+    * Include a sitemap reference in robots (but we’ll handle sitemap separately).
+4. Additional Jekyll optimizations:
+    * Add jekyll-seo-tag plugin to _config.yml if possible (or manually implement equivalent).
+    * Ensure sitemap: true in front-matter where appropriate.
+    * Add instructions for generating sitemap.xml (or manually create a basic one).
+Output:
+* The complete updated _config.yml
+* The complete updated index.html (full file with new head content and front-matter)
+* Any new files to create (_includes/head.html if needed)
+* Exact instructions for me to run bundle exec jekyll serve, test meta tags (use browser dev tools), and deploy to Cloudflare Pages
+Make everything production-ready, mobile-first, and focused on ranking for “on-chain credit score”, “DeFi credit score”, “wallet credit score”, “DeFi FICO”. Keep the existing beautiful rebranded design and functionality untouched. Prioritize fast loading and clean code.

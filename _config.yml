@@ -8,8 +8,28 @@
 
 baseurl: ""
 url: "https://defiscoring.com"
+
+# Brand.
 title: "DeFi Scoring"
-description: "On-chain credit scoring, portfolio risk heatmaps, and real-time alerts across Ethereum, Arbitrum, and Polygon."
+tagline: "Your on-chain credit score. Instant. Verifiable. Actionable."
+description: "DeFiScore gives any wallet an on-chain credit score (300–850), portfolio risk heatmaps, real-time alerts, and a free public API across Ethereum, Arbitrum, and Polygon. Instant. Verifiable. Actionable."
+keywords: "on-chain credit score, DeFi credit score, wallet credit score, DeFi FICO, DeFi lending risk, portfolio risk heatmap, on-chain FICO, Aave risk, Compound risk, DeFi underwriting, DeFiScore"
+lang: en_US
+
+# Canonical social image used by Open Graph + Twitter cards when a page does
+# not set its own `image:` in front-matter. 1200×630 recommended — the current
+# asset is the 500×500 brand mark and works as a safe default. Replace with a
+# proper /assets/og-image.png (1200×630) when the marketing art is ready.
+social_image: "/assets/defiscoring-logo-white-2_1776667771148.png"
+
+# Social handle used by `twitter:site` + `twitter:creator` meta tags.
+twitter_username: "DeFiScoring"
+
+# Organization/brand fields consumed by _includes/head.html for JSON-LD.
+organization:
+  name: "DeFi Scoring"
+  alternate_name: "DeFiScore"
+  logo: "/assets/defiscoring-logo-white-2_1776667771148.png"
 
 # DeFi Scoring runtime configuration. Override per-environment if needed.
 defi:
@@ -36,6 +56,9 @@ collections:
 defaults:
   - scope: { path: "", type: "audits" }
     values: { layout: "audit" }
+  # Dashboard pages are app surfaces — keep them out of the search index.
+  - scope: { path: "dashboard" }
+    values: { noindex: true }
 
 # Files / folders Jekyll should ignore during build.
 exclude:

@@ -1,0 +1,11 @@
+---
+permalink: /robots.txt
+sitemap: false
+---
+User-agent: *
+Allow: /
+Disallow: /dashboard/
+Disallow: /admin/
+Disallow: /api/
+
+Sitemap: {{ site.url }}{{ site.baseurl }}/sitemap.xml
