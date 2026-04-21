@@ -21,6 +21,9 @@
     .defi-votes{border:1px solid var(--defi-border,rgba(148,163,184,.25));border-radius:12px;padding:14px 16px;background:var(--defi-card-bg,rgba(15,23,42,.4));color:var(--defi-text,#e6ebff);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:13px;line-height:1.45;display:flex;flex-direction:column;gap:10px}
     .defi-votes__head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
     .defi-votes__title{font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--defi-text-dim,#94a3b8);margin:0}
+    .defi-votes__name{font-weight:700;font-size:15px;color:var(--defi-text,#e6ebff);margin:0;line-height:1.2}
+    .defi-votes__cat{font-size:11px;color:var(--defi-text-dim,#94a3b8);text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
+    .defi-votes__heading{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
     .defi-votes__badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.06em}
     .defi-votes__badge--verified{background:rgba(34,197,94,.12);color:#4ade80;border:1px solid rgba(34,197,94,.4)}
     .defi-votes__badge--unverified{background:rgba(148,163,184,.1);color:#94a3b8;border:1px solid rgba(148,163,184,.3)}
@@ -77,9 +80,14 @@
       ? '<div class="defi-votes__notice' + (status.error ? ' defi-votes__notice--err' : '') + '">' + escapeHtml(status.text) + '</div>'
       : (canVote ? '' : '<div class="defi-votes__notice">Connect a wallet to cast a vote.</div>');
 
+    const label = el.dataset.defiVotesLabel || slug;
+    const cat = el.dataset.defiVotesCat || "";
     el.innerHTML =
       '<div class="defi-votes__head">' +
-        '<h4 class="defi-votes__title">Community safety vote</h4>' +
+        '<div class="defi-votes__heading">' +
+          '<h4 class="defi-votes__name">' + escapeHtml(label) + '</h4>' +
+          (cat ? '<div class="defi-votes__cat">' + escapeHtml(cat) + '</div>' : '') +
+        '</div>' +
         badgeHtml +
       '</div>' +
       '<div class="defi-votes__stats">' +
