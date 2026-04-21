@@ -14,9 +14,9 @@
  */
 (function () {
   const FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
-  const COLOR_TEXT = "#e6ebff";
-  const COLOR_DIM = "#9aa5cf";
-  const COLOR_GRID = "rgba(35, 48, 99, 0.6)";
+  const COLOR_TEXT = "#e8e8f0";
+  const COLOR_DIM = "#8b8b99";
+  const COLOR_GRID = "rgba(255, 255, 255, 0.08)";
 
   function ensureChart() {
     if (typeof window.Chart === "undefined") {
@@ -46,7 +46,7 @@
       type: "line",
       data: { labels, datasets: [{
         label: "Score", data,
-        borderColor: "#5b8cff", backgroundColor: grad,
+        borderColor: "#00f5ff", backgroundColor: grad,
         tension: 0.35, fill: true, pointRadius: 3, pointHoverRadius: 5,
       }] },
       options: {
@@ -68,10 +68,10 @@
     opts = opts || {};
     const labels = Object.keys(weights);
     const data = labels.map((k) => Math.round(weights[k] * 100));
-    const palette = opts.palette || ["#5b8cff", "#8a5cff", "#2bd4a4", "#ffb547", "#ff5d6c", "#33b5ff"];
+    const palette = opts.palette || ["#00f5ff", "#a855f7", "#2bd4a4", "#facc15", "#ff5d6c", "#33b5ff"];
     const chart = new Chart(canvas, {
       type: "doughnut",
-      data: { labels, datasets: [{ data, backgroundColor: labels.map((_, i) => palette[i % palette.length]), borderColor: "#0b1020", borderWidth: 2 }] },
+      data: { labels, datasets: [{ data, backgroundColor: labels.map((_, i) => palette[i % palette.length]), borderColor: "#0a0a0a", borderWidth: 2 }] },
       options: {
         responsive: true, maintainAspectRatio: false, cutout: "62%",
         plugins: {

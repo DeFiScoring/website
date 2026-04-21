@@ -17,10 +17,10 @@
     const r = 38, c = 2 * Math.PI * r;
     const offset = c * (1 - pct);
     const band = window.DefiState.bandFor(score);
-    const color = ({ Excellent: "#2bd4a4", Good: "#5b8cff", Fair: "#ffb547", Poor: "#ff5d6c" })[band] || "#5b8cff";
+    const color = ({ Excellent: "#2bd4a4", Good: "#00f5ff", Fair: "#facc15", Poor: "#ff5d6c" })[band] || "#00f5ff";
     el.innerHTML =
       '<svg width="96" height="96" viewBox="0 0 96 96">' +
-        '<circle cx="48" cy="48" r="' + r + '" stroke="#233063" stroke-width="8" fill="none"/>' +
+        '<circle cx="48" cy="48" r="' + r + '" stroke="rgba(255,255,255,0.08)" stroke-width="8" fill="none"/>' +
         '<circle cx="48" cy="48" r="' + r + '" stroke="' + color + '" stroke-width="8" fill="none"' +
         ' stroke-linecap="round" stroke-dasharray="' + c + '" stroke-dashoffset="' + offset + '"' +
         ' transform="rotate(-90 48 48)"/>' +
@@ -33,7 +33,7 @@
     if (window._breakdownChart) { window._breakdownChart.destroy(); window._breakdownChart = null; }
     const labels = factors.map((f) => f.name.split(" (")[0]);
     const weights = factors.map((f) => f.weight || 0);
-    const colors = factors.map((f) => f.real === false ? "#3a4470" : "#5b8cff");
+    const colors = factors.map((f) => f.real === false ? "#3a3a45" : "#00f5ff");
     window._breakdownChart = new Chart(canvas.getContext("2d"), {
       type: "bar",
       data: { labels, datasets: [{ label: "Weight %", data: weights, backgroundColor: colors, borderRadius: 6 }] },
@@ -48,8 +48,8 @@
           },
         } } },
         scales: {
-          x: { beginAtZero: true, max: 50, ticks: { color: "#9aa5cf" }, grid: { color: "#233063" } },
-          y: { ticks: { color: "#9aa5cf", font: { size: 11 } }, grid: { display: false } },
+          x: { beginAtZero: true, max: 50, ticks: { color: "#8b8b99" }, grid: { color: "rgba(255,255,255,0.08)" } },
+          y: { ticks: { color: "#8b8b99", font: { size: 11 } }, grid: { display: false } },
         },
       },
     });
@@ -74,7 +74,7 @@
         labels: history.map((p) => p.month),
         datasets: [{
           label: "Score", data: history.map((p) => p.score),
-          borderColor: "#5b8cff", backgroundColor: "rgba(91,140,255,0.15)",
+          borderColor: "#00f5ff", backgroundColor: "rgba(0,245,255,0.15)",
           fill: true, tension: 0.35, pointRadius: 3,
         }],
       },
@@ -82,8 +82,8 @@
         responsive: true, maintainAspectRatio: false,
         plugins: { legend: { display: false } },
         scales: {
-          x: { ticks: { color: "#9aa5cf" }, grid: { color: "#233063" } },
-          y: { suggestedMin: 300, suggestedMax: 850, ticks: { color: "#9aa5cf" }, grid: { color: "#233063" } },
+          x: { ticks: { color: "#8b8b99" }, grid: { color: "rgba(255,255,255,0.08)" } },
+          y: { suggestedMin: 300, suggestedMax: 850, ticks: { color: "#8b8b99" }, grid: { color: "rgba(255,255,255,0.08)" } },
         },
       },
     });

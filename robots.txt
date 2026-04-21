@@ -6,6 +6,8 @@ User-agent: *
 Allow: /
 Disallow: /dashboard/
 Disallow: /admin/
-Disallow: /api/
+
+# /api/ is the public API documentation page — keep it indexable.
+# The actual API endpoints live on the Cloudflare Worker subdomain.
 
 Sitemap: {{ site.url }}{{ site.baseurl }}/sitemap.xml

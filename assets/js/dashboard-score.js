@@ -15,11 +15,11 @@
     const r = 90, c = 2 * Math.PI * r;
     const offset = c * (1 - pct);
     const band = window.DefiState.bandFor(score);
-    const colorByBand = { Excellent: "#2bd4a4", Good: "#5b8cff", Fair: "#ffb547", Poor: "#ff5d6c" }[band] || "#5b8cff";
+    const colorByBand = { Excellent: "#2bd4a4", Good: "#00f5ff", Fair: "#facc15", Poor: "#ff5d6c" }[band] || "#00f5ff";
 
     el.innerHTML =
       '<svg width="220" height="220" viewBox="0 0 220 220">' +
-        '<circle cx="110" cy="110" r="' + r + '" stroke="#233063" stroke-width="14" fill="none"/>' +
+        '<circle cx="110" cy="110" r="' + r + '" stroke="rgba(255,255,255,0.08)" stroke-width="14" fill="none"/>' +
         '<circle cx="110" cy="110" r="' + r + '" stroke="' + colorByBand + '" stroke-width="14" fill="none"' +
         ' stroke-linecap="round" stroke-dasharray="' + c + '" stroke-dashoffset="' + offset + '"/>' +
       '</svg>' +
@@ -35,7 +35,7 @@
   function drawFactors(factors) {
     const wrap = document.getElementById("score-factors");
     wrap.innerHTML = factors.map((f) => {
-      const realTag = f.real === false ? ' <span style="color:#ffb547">(data unavailable)</span>' : '';
+      const realTag = f.real === false ? ' <span style="color:#facc15">(data unavailable)</span>' : '';
       const valStr = f.value == null ? '—' : f.value + ' / 100';
       const detail = f.detail ? ' · ' + f.detail : '';
       const fillWidth = f.value == null ? 0 : f.value;

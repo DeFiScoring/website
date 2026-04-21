@@ -29,7 +29,12 @@ A Jekyll static site for **DeFi Scoring** (defiscoring.com) — on-chain credit 
 │   ├── protocols.yml           Aave / Uniswap / Compound metadata + chains
 │   └── scores.yml              snapshot of latest composite scores (cron-refreshed)
 ├── assets/
-│   ├── css/                    landing.css, dashboard.css (+ Snowlake CSS)
+│   ├── css/                    landing.css (.ds-*) and dashboard.css (.defi-*).
+│   │                           Both share one palette: #0a0a0a bg, cyan #00f5ff,
+│   │                           purple #a855f7, gold #facc15. Dashboard variables
+│   │                           (--defi-*) were retuned to the landing values so
+│   │                           cards, buttons, inputs, chips all inherit the glass
+│   │                           + neon aesthetic without per-component rewrites.
 │   ├── js/
 │   │   ├── wallet-connect.js   NEW – EIP-6963 + EIP-1193 connector (DefiWallet)
 │   │   ├── wallet-modal.js     NEW – RainbowKit-style multi-wallet picker modal
