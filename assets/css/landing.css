@@ -155,9 +155,7 @@ code {
   box-shadow: 0 0 24px rgba(0, 245, 255, 0.2);
 }
 .ds-brand__mark img { width: 22px; height: 22px; }
-.ds-brand__text { font-kerning: normal; letter-spacing: -0.015em; }
 .ds-brand__accent {
-  margin-left: -0.04em;
   background: linear-gradient(90deg, var(--ds-cyan), var(--ds-purple));
   -webkit-background-clip: text; background-clip: text;
   color: transparent;
