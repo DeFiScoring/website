@@ -1,0 +1,33 @@
+You are an expert frontend developer working in this Jekyll static site repo (DeFiScoring/website). Completely rebrand and redesign the front page (index.html + any necessary _includes or _data updates).
+New brand name: DeFiScore
+New tagline: “Your on-chain credit score. Instant. Verifiable. Actionable.”
+Color scheme: Dark mode only — background #0a0a0a, accents #00f5ff (cyan), #a855f7 (purple), #facc15 (gold). Use modern glassmorphic cards with subtle backdrop-blur, neon glows, and scanline/grid accents. Keep or upgrade existing bg-* utility classes.
+Requirements:
+
+Keep Jekyll structure and Liquid syntax (use existing _includes/navigation.html, _layouts/default.html, _data/general_settings.yml, etc.).
+Update site title, description, and logos in _data if needed (assume light/dark logo paths exist — use placeholders if not).
+Full modern hero section with:
+Massive headline + subheadline
+Animated glowing “Connect Wallet” button (MetaMask/Rabby style)
+Fake live score meter (300-850) that animates on load
+Trust signals: “0 signups • 3 chains live • Free public API”
+
+Sections (in this exact order):
+Hero
+Trust bar (chains + “Used by top protocols”)
+Features (6 cards: Credit Score 300-850, Portfolio Heatmap, Real-time Alerts, Public API, What-if Simulator, Exportable Reports) — make them beautiful icon + glass cards
+How it works (4-step numbered timeline with icons)
+Supported chains (current + coming soon)
+Who it’s for (lenders, borrowers, protocols, RWAs)
+CTA banner: “See your score in one click — free in private beta” + button to /dashboard/
+Footer (keep legal links, update branding)
+
+
+Use Tailwind CSS via CDN (add the script tag) for rapid modern styling if the existing CSS doesn’t cover it, or extend the current bg-* classes. Add subtle hover animations, responsive mobile-first design, and dark futuristic feel.
+Output:
+
+The complete updated index.html body/content (with front-matter if needed)
+Any changes needed to _includes or _data files
+Instructions for me to run bundle exec jekyll serve and test
+
+Make it look premium, conversion-focused, and worthy of a top-tier DeFi product in 2026. Do not change functionality or dashboard link.
