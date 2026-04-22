@@ -20,6 +20,7 @@
   <main class="container" style="padding:80px 24px">
     {{ content }}
   </main>
+  {% include site-footer.html %}
   <script>window.DEFI_RISK_WORKER_URL = window.DEFI_RISK_WORKER_URL || "{{ site.defi.worker_url | default: 'https://defiscoring.guillaumelauzier.workers.dev' }}";</script>
 </body>
 </html>

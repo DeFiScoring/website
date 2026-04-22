@@ -1,0 +1,425 @@
+---
+layout: dashboard
+permalink: /dashboard/audits/
+title: Audit Directory – DeFi Scoring
+dashboard_section: audits
+dashboard_title: Audit Directory
+dashboard_subtitle: Curated index of reputable smart-contract auditors and recent audit reports for the protocols we score. Each entry links straight to the firm's published report archive.
+description: Browse the leading smart contract audit firms and their published reports for the DeFi and RWA protocols tracked by DeFi Scoring.
+---
+
+<style>
+  .audit-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+  }
+  .audit-firm {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 18px;
+  }
+  .audit-firm__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .audit-firm__name {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--defi-text);
+    margin: 0;
+  }
+  .audit-firm__tier {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 4px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--defi-border);
+    color: var(--defi-text-dim);
+    white-space: nowrap;
+  }
+  .audit-firm__tier--tier1 {
+    color: var(--defi-accent);
+    border-color: rgba(0, 245, 255, 0.4);
+    background: rgba(0, 245, 255, 0.06);
+  }
+  .audit-firm__desc {
+    margin: 0;
+    color: var(--defi-text-dim);
+    font-size: 13px;
+    line-height: 1.55;
+  }
+  .audit-firm__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: auto;
+    padding-top: 8px;
+    border-top: 1px dashed var(--defi-border);
+  }
+  .audit-firm__chip {
+    font-size: 11px;
+    color: var(--defi-text-dim);
+    padding: 3px 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 6px;
+  }
+  .audit-firm__cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--defi-accent);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .audit-firm__cta:hover { color: var(--defi-accent-2); }
+
+  .recent-audits {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .recent-audits th,
+  .recent-audits td {
+    text-align: left;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--defi-border);
+  }
+  .recent-audits th {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--defi-text-dim);
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.02);
+  }
+  .recent-audits tr:last-child td { border-bottom: 0; }
+  .recent-audits tbody tr:hover { background: rgba(0, 245, 255, 0.03); }
+  .recent-audits a { color: var(--defi-accent); text-decoration: none; font-weight: 600; }
+  .recent-audits a:hover { color: var(--defi-accent-2); }
+  .recent-audits__severity {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-weight: 700;
+  }
+  .sev-clean    { color: var(--defi-good);    background: rgba(43, 212, 164, 0.10); }
+  .sev-low      { color: var(--defi-accent);  background: rgba(0, 245, 255, 0.10); }
+  .sev-medium   { color: var(--defi-warn);    background: rgba(250, 204, 21, 0.12); }
+  .sev-high     { color: var(--defi-danger);  background: rgba(255, 93, 108, 0.10); }
+
+  .audit-help {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+  }
+  .audit-help__item h4 {
+    margin: 0 0 6px;
+    font-size: 13px;
+    color: var(--defi-text);
+    font-weight: 600;
+  }
+  .audit-help__item p {
+    margin: 0;
+    color: var(--defi-text-dim);
+    font-size: 13px;
+    line-height: 1.55;
+  }
+</style>
+
+<section class="defi-section" style="margin-bottom:18px">
+  <div class="defi-card">
+    <div class="defi-card__title">About this directory</div>
+    <p style="margin:8px 0 0;color:var(--defi-text-dim);font-size:14px;line-height:1.6">
+      Audit reports are one of the strongest off-chain signals we use when scoring a protocol's
+      <strong>Security</strong> factor. This page lists the firms whose reports we ingest, their
+      areas of expertise, and a sample of recent reports for protocols tracked by DeFi Scoring.
+      All links point to publicly available reports on the firm's own infrastructure — we don't
+      mirror them. If you spot a missing report, file it through
+      <a href="/dashboard/report-issue/" style="color:var(--defi-accent)">Report an Issue</a>.
+    </p>
+  </div>
+</section>
+
+<section class="defi-section" style="margin-bottom:18px">
+  <div class="defi-card__title" style="margin-bottom:12px">Audit firms</div>
+  <div class="audit-grid">
+
+    <div class="defi-card audit-firm">
+      <div class="audit-firm__head">
+        <h3 class="audit-firm__name">Trail of Bits</h3>
+        <span class="audit-firm__tier audit-firm__tier--tier1">Tier 1</span>
+      </div>
+      <p class="audit-firm__desc">
+        Independent security research firm covering smart contracts, cryptography, and protocol design.
+        Publishes detailed findings, threat models, and tooling on GitHub.
+      </p>
+      <div class="audit-firm__meta">
+        <span class="audit-firm__chip">EVM</span>
+        <span class="audit-firm__chip">Cryptography</span>
+        <span class="audit-firm__chip">Formal methods</span>
+      </div>
+      <a class="audit-firm__cta" href="https://github.com/trailofbits/publications" target="_blank" rel="noopener">View reports →</a>
+    </div>
+
+    <div class="defi-card audit-firm">
+      <div class="audit-firm__head">
+        <h3 class="audit-firm__name">OpenZeppelin</h3>
+        <span class="audit-firm__tier audit-firm__tier--tier1">Tier 1</span>
+      </div>
+      <p class="audit-firm__desc">
+        Authors of the OpenZeppelin contract library and Defender platform.
+        Long history of auditing major DeFi protocols and L2 bridges.
+      </p>
+      <div class="audit-firm__meta">
+        <span class="audit-firm__chip">EVM</span>
+        <span class="audit-firm__chip">DeFi</span>
+        <span class="audit-firm__chip">Bridges</span>
+      </div>
+      <a class="audit-firm__cta" href="https://blog.openzeppelin.com/security-audits" target="_blank" rel="noopener">View reports →</a>
+    </div>
+
+    <div class="defi-card audit-firm">
+      <div class="audit-firm__head">
+        <h3 class="audit-firm__name">ConsenSys Diligence</h3>
+        <span class="audit-firm__tier audit-firm__tier--tier1">Tier 1</span>
+      </div>
+      <p class="audit-firm__desc">
+        Audit arm of ConsenSys with deep Ethereum expertise. Maintains MythX
+        and Scribble alongside its consulting practice.
+      </p>
+      <div class="audit-firm__meta">
+        <span class="audit-firm__chip">EVM</span>
+        <span class="audit-firm__chip">DeFi</span>
+        <span class="audit-firm__chip">Tooling</span>
+      </div>
+      <a class="audit-firm__cta" href="https://consensys.io/diligence/audits/" target="_blank" rel="noopener">View reports →</a>
+    </div>
+
+    <div class="defi-card audit-firm">
+      <div class="audit-firm__head">
+        <h3 class="audit-firm__name">Spearbit</h3>
+        <span class="audit-firm__tier audit-firm__tier--tier1">Tier 1</span>
+      </div>
+      <p class="audit-firm__desc">
+        Decentralized network of senior security researchers. Engages multiple
+        auditors per project, often alongside competitive Cantina contests.
+      </p>
+      <div class="audit-firm__meta">
+        <span class="audit-firm__chip">EVM</span>
+        <span class="audit-firm__chip">DeFi</span>
+        <span class="audit-firm__chip">RWA</span>
+      </div>
+      <a class="audit-firm__cta" href="https://github.com/spearbit/portfolio" target="_blank" rel="noopener">View reports →</a>
+    </div>
+
+    <div class="defi-card audit-firm">
+      <div class="audit-firm__head">
+        <h3 class="audit-firm__name">Code4rena</h3>
+        <span class="audit-firm__tier">Contest</span>
+      </div>
+      <p class="audit-firm__desc">
+        Competitive audit platform where wardens compete to find vulnerabilities.
+        Reports are public and severity-ranked.
+      </p>
+      <div class="audit-firm__meta">
+        <span class="audit-firm__chip">EVM</span>
+        <span class="audit-firm__chip">Crowd-sourced</span>
+      </div>
+      <a class="audit-firm__cta" href="https://code4rena.com/reports" target="_blank" rel="noopener">View reports →</a>
+    </div>
+
+    <div class="defi-card audit-firm">
+      <div class="audit-firm__head">
+        <h3 class="audit-firm__name">Cantina</h3>
+        <span class="audit-firm__tier">Contest</span>
+      </div>
+      <p class="audit-firm__desc">
+        Spearbit's contest platform, used by major protocols for second-pass
+        coverage after a private audit. Public leaderboards and reports.
+      </p>
+      <div class="audit-firm__meta">
+        <span class="audit-firm__chip">EVM</span>
+        <span class="audit-firm__chip">RWA</span>
+      </div>
+      <a class="audit-firm__cta" href="https://cantina.xyz/portfolio" target="_blank" rel="noopener">View reports →</a>
+    </div>
+
+    <div class="defi-card audit-firm">
+      <div class="audit-firm__head">
+        <h3 class="audit-firm__name">Sherlock</h3>
+        <span class="audit-firm__tier">Contest + Coverage</span>
+      </div>
+      <p class="audit-firm__desc">
+        Audit contests bundled with on-chain exploit coverage. Useful signal
+        for protocols willing to put real capital behind their findings.
+      </p>
+      <div class="audit-firm__meta">
+        <span class="audit-firm__chip">EVM</span>
+        <span class="audit-firm__chip">Insurance</span>
+      </div>
+      <a class="audit-firm__cta" href="https://audits.sherlock.xyz/contests" target="_blank" rel="noopener">View reports →</a>
+    </div>
+
+    <div class="defi-card audit-firm">
+      <div class="audit-firm__head">
+        <h3 class="audit-firm__name">Certora</h3>
+        <span class="audit-firm__tier audit-firm__tier--tier1">Formal</span>
+      </div>
+      <p class="audit-firm__desc">
+        Formal verification specialists. Used by Aave, Compound, Lido and others
+        to prove invariants instead of testing for them.
+      </p>
+      <div class="audit-firm__meta">
+        <span class="audit-firm__chip">Formal verification</span>
+        <span class="audit-firm__chip">DeFi</span>
+      </div>
+      <a class="audit-firm__cta" href="https://www.certora.com/reports" target="_blank" rel="noopener">View reports →</a>
+    </div>
+
+    <div class="defi-card audit-firm">
+      <div class="audit-firm__head">
+        <h3 class="audit-firm__name">Quantstamp</h3>
+        <span class="audit-firm__tier">Tier 2</span>
+      </div>
+      <p class="audit-firm__desc">
+        Long-running audit firm covering EVM, Solana, and Move ecosystems.
+        Maintains a public certificate registry.
+      </p>
+      <div class="audit-firm__meta">
+        <span class="audit-firm__chip">EVM</span>
+        <span class="audit-firm__chip">Multi-chain</span>
+      </div>
+      <a class="audit-firm__cta" href="https://certificate.quantstamp.com/" target="_blank" rel="noopener">View reports →</a>
+    </div>
+
+  </div>
+</section>
+
+<section class="defi-section" style="margin-bottom:18px">
+  <div class="defi-card">
+    <div class="defi-card__title">Recent audits for tracked protocols</div>
+    <p style="margin:8px 0 16px;color:var(--defi-text-dim);font-size:13px">
+      A non-exhaustive sample. Severity reflects the highest-rated finding in the report at the time of publication; subsequent fixes may have addressed it.
+    </p>
+    <div style="overflow-x:auto">
+      <table class="recent-audits">
+        <thead>
+          <tr>
+            <th>Protocol</th>
+            <th>Auditor</th>
+            <th>Scope</th>
+            <th>Highest finding</th>
+            <th>Date</th>
+            <th>Report</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Aave v3</strong></td>
+            <td>Certora</td>
+            <td>Core lending pool</td>
+            <td><span class="recent-audits__severity sev-clean">Clean</span></td>
+            <td>2024</td>
+            <td><a href="https://github.com/aave-dao/aave-v3-origin/tree/main/audits" target="_blank" rel="noopener">View →</a></td>
+          </tr>
+          <tr>
+            <td><strong>Aave v3</strong></td>
+            <td>OpenZeppelin</td>
+            <td>Core protocol</td>
+            <td><span class="recent-audits__severity sev-low">Low</span></td>
+            <td>2023</td>
+            <td><a href="https://github.com/aave-dao/aave-v3-origin/tree/main/audits" target="_blank" rel="noopener">View →</a></td>
+          </tr>
+          <tr>
+            <td><strong>Uniswap v4</strong></td>
+            <td>Trail of Bits</td>
+            <td>Core + hooks</td>
+            <td><span class="recent-audits__severity sev-medium">Medium</span></td>
+            <td>2024</td>
+            <td><a href="https://github.com/Uniswap/v4-core/tree/main/audits" target="_blank" rel="noopener">View →</a></td>
+          </tr>
+          <tr>
+            <td><strong>Uniswap v4</strong></td>
+            <td>Spearbit</td>
+            <td>Periphery</td>
+            <td><span class="recent-audits__severity sev-low">Low</span></td>
+            <td>2024</td>
+            <td><a href="https://github.com/Uniswap/v4-core/tree/main/audits" target="_blank" rel="noopener">View →</a></td>
+          </tr>
+          <tr>
+            <td><strong>Compound v3</strong></td>
+            <td>OpenZeppelin</td>
+            <td>Comet markets</td>
+            <td><span class="recent-audits__severity sev-low">Low</span></td>
+            <td>2023</td>
+            <td><a href="https://github.com/compound-finance/comet/tree/main/audits" target="_blank" rel="noopener">View →</a></td>
+          </tr>
+          <tr>
+            <td><strong>BlackRock BUIDL</strong></td>
+            <td>Securitize / on-chain attestation</td>
+            <td>Issuance + transfer agent</td>
+            <td><span class="recent-audits__severity sev-clean">Clean</span></td>
+            <td>2024</td>
+            <td><a href="https://securitize.io/learn/press/buidl-fund-attestation" target="_blank" rel="noopener">View →</a></td>
+          </tr>
+          <tr>
+            <td><strong>Ondo OUSG</strong></td>
+            <td>Code4rena</td>
+            <td>Token + redemption</td>
+            <td><span class="recent-audits__severity sev-medium">Medium</span></td>
+            <td>2024</td>
+            <td><a href="https://code4rena.com/reports" target="_blank" rel="noopener">View →</a></td>
+          </tr>
+          <tr>
+            <td><strong>Maker / Sky USDS</strong></td>
+            <td>ChainSecurity</td>
+            <td>USDS + sUSDS</td>
+            <td><span class="recent-audits__severity sev-low">Low</span></td>
+            <td>2024</td>
+            <td><a href="https://github.com/makerdao/sky/tree/main/audits" target="_blank" rel="noopener">View →</a></td>
+          </tr>
+          <tr>
+            <td><strong>Lido stETH</strong></td>
+            <td>Certora + StateMind</td>
+            <td>Withdrawals queue</td>
+            <td><span class="recent-audits__severity sev-clean">Clean</span></td>
+            <td>2023</td>
+            <td><a href="https://github.com/lidofinance/audits" target="_blank" rel="noopener">View →</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="defi-section">
+  <div class="defi-card">
+    <div class="defi-card__title">How DeFi Scoring uses audits</div>
+    <div class="audit-help" style="margin-top:12px">
+      <div class="audit-help__item">
+        <h4>Tier weighting</h4>
+        <p>A Tier-1 firm audit contributes more to the Security score than an unverified or single-engineer review.</p>
+      </div>
+      <div class="audit-help__item">
+        <h4>Recency decay</h4>
+        <p>Reports older than 18 months are discounted; protocol surface area changes faster than that.</p>
+      </div>
+      <div class="audit-help__item">
+        <h4>Findings status</h4>
+        <p>Open critical or high findings cap the Security factor regardless of how many other audits exist.</p>
+      </div>
+      <div class="audit-help__item">
+        <h4>Diversity bonus</h4>
+        <p>Independent audits from two or more firms raise confidence and the floor of the Security factor.</p>
+      </div>
+    </div>
+  </div>
+</section>

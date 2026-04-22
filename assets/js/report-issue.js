@@ -132,6 +132,6 @@
   window.openReportIssue = function () {
     const t = document.getElementById("issue-title");
     if (t) { t.focus(); t.scrollIntoView({ behavior: "smooth", block: "center" }); return; }
-    window.location.href = "/dashboard/report/";
+    window.location.href = "/dashboard/report-issue/";
   };
 })();

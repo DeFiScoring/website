@@ -43,10 +43,10 @@ groups:
       - { id: rwa-chatbot,   label: AI RWA Advisor, path: /dashboard/rwa-chatbot/,   icon: sparkles,      match: rwa-chatbot }
       - { id: risk,          label: Risk Profiler,  path: /dashboard/risk-profiler/, icon: target,        match: risk }
       - { id: chatbot,       label: AI Risk Advisor, path: /dashboard/risk-chatbot/, icon: brain,         match: chatbot }
-      - { id: audits,        label: Audit Directory, path: /audits/,                 icon: book-open,     match: audits }
+      - { id: audits,        label: Audit Directory, path: /dashboard/audits/,       icon: book-open,     match: audits }
 
   - id: footer
     items:
       - { id: market, label: Live Market Data, path: /dashboard/market-intel/, icon: radio, match: market }
       - { id: alerts, label: Alerts,           path: /dashboard/alerts/,       icon: bell,  match: alerts }
-      - { id: report, label: Report Issue,     path: /dashboard/report/,       icon: flag,  match: report }
+      - { id: report, label: Report Issue,     path: /dashboard/report-issue/, icon: flag,  match: report }
