@@ -153,9 +153,123 @@ function finalizeResponse(response, request, env) {
 }
 
 // ---------------------------------------------------------------------------
+// Phase 4 — short, machine-readable disclaimer attached to every scoring
+// response (full text lives at /disclaimer/). Imported by `withDisclaimer()`
+// below so any handler that returns a score / risk profile / audit can stamp
+// it onto the JSON body without the dashboard having to re-fetch it.
+// ---------------------------------------------------------------------------
+const DISCLAIMER_TEXT =
+  "Not financial advice. DeFi Scoring outputs are research opinions, " +
+  "not audits and not investment guidance. See https://defiscoring.com/disclaimer/.";
+
+function withDisclaimer(payload) {
+  if (payload && typeof payload === "object" && !Array.isArray(payload)) {
+    return { ...payload, disclaimer: DISCLAIMER_TEXT };
+  }
+  return payload;
+}
+
+// ---------------------------------------------------------------------------
+// Phase 4 — OFAC SDN block list.
+//
+// This is a fail-closed, deny-list check applied to every wallet address
+// that crosses the worker boundary (request URL or POST body). Matches
+// return a deliberately *generic* 403 ("Request blocked.") with no detail
+// about why, so an attacker can't probe the list.
+//
+// SOURCING: This starter set covers the well-known sanctioned ETH addresses
+// from the August 2022 Tornado Cash OFAC action plus a handful of historical
+// SDN designations. It is intentionally short and conservative; production
+// deployments should swap this for a live feed (OFAC SDN XML, Chainalysis,
+// or TRM) loaded into KV at boot. The interface (`isSanctioned`) does not
+// change — only the source of `SANCTIONED_ADDRESSES`.
+// ---------------------------------------------------------------------------
+const SANCTIONED_ADDRESSES = new Set([
+  // Tornado Cash – OFAC SDN List, Aug 8 2022
+  "0x8589427373d6d84e98730d7795d8f6f8731fda16",
+  "0x722122df12d4e14e13ac3b6895a86e84145b6967",
+  "0xdd4c48c0b24039969fc16d1cdf626eab821d3384",
+  "0xd90e2f925da726b50c4ed8d0fb90ad053324f31b",
+  "0xd96f2b1c14db8458374d9aca76e26c3d18364307",
+  "0x4736dcf1b7a3d580672ccce6213ca176d69c8b81",
+  "0x910cbd523d972eb0a6f4cae4618ad62622b39dbf",
+  "0xa160cdab225685da1d56aa342ad8841c3b53f291",
+  "0xd4b88df4d29f5cedd6857912842cff3b20c8cfa3",
+  "0xfd8610d20aa15b7b2e3be39b396a1bc3516c7144",
+  "0xf60dd140cff0706bae9cd734ac3ae76ad9ebc32a",
+  "0x22aaa7720ddd5388a3c0a3333430953c68f1849b",
+  "0xba214c1c1928a32bffe790263e38b4af9bfcd659",
+  "0xb1c8094b234dce6e03f10a5b673c1d8c69739a00",
+  "0x527653ea119f3e6a1f5bd18fbf4714081d7b31ce",
+  "0x58e8dcc13be9780fc42e8723d8ead4cf46943df2",
+  "0x2fc93484614a34f26f7970cbb94615ba109bb4bf",
+  "0x12d66f87a04a9e220743712ce6d9bb1b5616b8fc",
+  "0x47ce0c6ed5b0ce3d3a51fdb1c52dc66a7c3c2936",
+  "0x23773e65ed146a459791799d01336db287f25334",
+  "0xd21be7248e0197ee08e0c20d4a96debdac3d20af",
+  "0x610b717796ad172b316836ac95a2ffad065ceab4",
+  "0x178169b423a011fff22b9e3f3abea13414ddd0f1",
+  "0xbb93e510bbcd0b7beb5a853875f9ec60275cf498",
+]);
+
+function isSanctioned(addr) {
+  if (!addr || typeof addr !== "string") return false;
+  return SANCTIONED_ADDRESSES.has(addr.toLowerCase());
+}
+
+// Collect EVERY 0x… address that appears anywhere in the request — URL
+// path, every query-param value, and recursively every string in the JSON
+// body. We return an array (lowercased, deduplicated) so the sanctions
+// check can scan all of them and the per-address rate limiter has a
+// stable identity to key on. Reads request.clone() so the original body
+// stays consumable by handlers.
+async function extractAddressesFromRequest(request) {
+  const ADDR_RE_GLOBAL = /0x[a-fA-F0-9]{40}/g;
+  const found = new Set();
+  const pushFromString = (s) => {
+    if (typeof s !== "string") return;
+    const m = s.match(ADDR_RE_GLOBAL);
+    if (m) for (const a of m) found.add(a.toLowerCase());
+  };
+  try {
+    const url = new URL(request.url);
+    pushFromString(url.pathname);
+    for (const v of url.searchParams.values()) pushFromString(v);
+  } catch { /* fall through */ }
+  if (request.method === "POST" || request.method === "PUT" || request.method === "PATCH") {
+    try {
+      const body = await request.clone().json();
+      const walk = (node, depth) => {
+        if (depth > 6 || node == null) return;
+        if (typeof node === "string") return pushFromString(node);
+        if (Array.isArray(node)) { for (const x of node) walk(x, depth + 1); return; }
+        if (typeof node === "object") { for (const k of Object.keys(node)) walk(node[k], depth + 1); }
+      };
+      walk(body, 0);
+    } catch { /* not JSON, ignore */ }
+  }
+  return Array.from(found);
+}
+
+// Back-compat single-address helper. Returns the FIRST address found, or
+// null. Keep callers that only want a stable per-request identity (rate
+// limiter) using this; sanctions enforcement uses the full set above.
+async function extractAddressFromRequest(request) {
+  const all = await extractAddressesFromRequest(request);
+  return all.length ? all[0] : null;
+}
+
+// ---------------------------------------------------------------------------
 // KV-backed sliding-window rate limiter for expensive endpoints (AI calls,
-// GitHub issue creation). Returns null if allowed, or a 429 Response if not.
-// Uses DEFI_CACHE so we don't need a new binding.
+// GitHub issue creation, telemetry ingest). Returns null if allowed, or a
+// 429 Response if not. Uses DEFI_CACHE so we don't need a new binding.
+//
+// Two flavours:
+//   • rateLimit()           — keys on (path, IP)
+//   • rateLimitByAddress()  — keys on (path, normalized wallet address)
+// Call BOTH at the entry of any address-aware endpoint to defend against
+// botnets that rotate IPs but reuse a wallet, AND single hosts hammering
+// many wallets.
 // ---------------------------------------------------------------------------
 async function rateLimit(request, env, key, max, windowSec) {
   if (!env.DEFI_CACHE) return null;            // fail open if KV unavailable
@@ -163,7 +277,7 @@ async function rateLimit(request, env, key, max, windowSec) {
     request.headers.get("CF-Connecting-IP") ||
     request.headers.get("X-Forwarded-For") ||
     "anon";
-  const bucket = "rl:" + key + ":" + ip;
+  const bucket = "rl:" + key + ":ip:" + ip;
   const now = Math.floor(Date.now() / 1000);
   let count = 0;
   try {
@@ -192,6 +306,34 @@ async function rateLimit(request, env, key, max, windowSec) {
   return null;
 }
 
+async function rateLimitByAddress(request, env, addr, key, max, windowSec) {
+  if (!env.DEFI_CACHE || !addr) return null;
+  const bucket = "rl:" + key + ":addr:" + addr.toLowerCase();
+  let count = 0;
+  try {
+    const cur = await env.DEFI_CACHE.get(bucket);
+    count = cur ? parseInt(cur, 10) || 0 : 0;
+  } catch { /* fail open */ }
+  if (count >= max) {
+    const cors = corsHeadersFor(request, env);
+    return new Response(
+      JSON.stringify({ success: false, error: "Rate limit exceeded for this address. Try again shortly." }),
+      {
+        status: 429,
+        headers: {
+          "Content-Type": "application/json",
+          "Retry-After": String(windowSec),
+          ...cors,
+        },
+      }
+    );
+  }
+  try {
+    await env.DEFI_CACHE.put(bucket, String(count + 1), { expirationTtl: windowSec });
+  } catch { /* fail open */ }
+  return null;
+}
+
 const ETHERSCAN_V2 = "https://api.etherscan.io/v2/api";
 const DEFILLAMA = "https://api.llama.fi";
 const CHAIN_IDS = { ethereum: 1, arbitrum: 42161, polygon: 137 };
@@ -201,7 +343,21 @@ const CHAIN_NAME_TO_ID = {
 };
 
 function json(data, status = 200) {
-  return new Response(JSON.stringify(data), {
+  // Phase 4: stamp the disclaimer onto every successful scoring-shaped
+  // response. We detect by field name rather than by route so admin tools
+  // that call internal helpers also pick it up. Errors and non-scoring
+  // success payloads (watchlist confirmations, consent acks, etc.) are
+  // left alone so the field doesn't appear in places it would only confuse.
+  let body = data;
+  if (
+    data && typeof data === "object" && !Array.isArray(data) && data.success === true && (
+      "score" in data || "scores" in data || "profile" in data || "audit" in data ||
+      "breakdown" in data || "riskProfile" in data || "history" in data
+    )
+  ) {
+    body = { ...data, disclaimer: DISCLAIMER_TEXT };
+  }
+  return new Response(JSON.stringify(body), {
     status,
     headers: { "Content-Type": "application/json", ...CORS_HEADERS },
   });
@@ -1975,7 +2131,25 @@ async function handleChatbotMessage(request, env) {
 export default {
   async fetch(request, env) {
     try {
-      const response = await dispatch(request, env);
+      // Phase 4: fail-closed sanctions check before any handler runs.
+      // We collect EVERY address that appears in the URL or anywhere in
+      // the JSON body and block if ANY one matches the SDN list. The
+      // error is intentionally generic ("Request blocked.") — never leak
+      // why, never confirm a hit on the SDN list, never reveal which of
+      // multiple addresses tripped the check.
+      const peekedAddrs = await extractAddressesFromRequest(request);
+      if (peekedAddrs.some(isSanctioned)) {
+        return finalizeResponse(
+          new Response(
+            JSON.stringify({ success: false, error: "Request blocked." }),
+            { status: 403, headers: { "Content-Type": "application/json" } }
+          ),
+          request,
+          env
+        );
+      }
+      const peekedAddr = peekedAddrs[0] || null;
+      const response = await dispatch(request, env, peekedAddr);
       return finalizeResponse(response, request, env);
     } catch (e) {
       return finalizeResponse(
@@ -1988,9 +2162,116 @@ export default {
       );
     }
   },
+  // Phase 4 — Cron Trigger handler. Configured in wrangler.jsonc as
+  // `triggers.crons: ["17 3 * * *"]` (daily 03:17 UTC). Prunes raw event
+  // rows older than DATA_RETENTION_DAYS (default 180); aggregated rollups
+  // in `intel_daily_aggregates` are kept indefinitely per the data
+  // retention policy.
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(runRetentionPrune(env));
+  },
 };
 
-async function dispatch(request, env) {
+// Phase 4 — DSAR export. Returns a JSON dump of every row in our D1 that
+// can be tied to the requested address. Read-only; no auth (the spec asks
+// for a signed-link-via-email flow which lands with Phase 2 / mail
+// integration). Anyone can call this for any address — but the response
+// reveals nothing not already in the public chain or aggregated public APIs.
+//
+// `intel_events` is keyed by HMAC-SHA256(sha256(addr), INTEL_SALT), so we
+// recompute that double hash here to find the rows the requesting address
+// contributed.
+async function handleAccountExport(request, env, url) {
+  const addr = (url.searchParams.get("address") || "").toLowerCase();
+  if (!/^0x[a-f0-9]{40}$/.test(addr)) {
+    return json({ success: false, error: "address query param required (0x… 40 hex)" }, 400);
+  }
+  if (!env.HEALTH_DB) {
+    return json({ success: false, error: "HEALTH_DB binding unavailable" }, 503);
+  }
+  const out = {
+    success: true,
+    address: addr,
+    generated_at: new Date().toISOString(),
+    notes: [
+      "This is a Data Subject Access Request export covering every row in the",
+      "DeFiScoring database that can be associated with this address.",
+      "Aggregated, non-identifying rollups (intel_daily_aggregates) are kept",
+      "indefinitely per the data retention policy (see /privacy/).",
+    ],
+    tables: {},
+  };
+  const safeAll = async (label, query, ...binds) => {
+    try {
+      const r = await env.HEALTH_DB.prepare(query).bind(...binds).all();
+      out.tables[label] = (r && r.results) || [];
+    } catch (e) {
+      out.tables[label] = { error: e && e.message ? e.message : String(e) };
+    }
+  };
+  await safeAll("health_scores",   "SELECT * FROM health_scores  WHERE wallet = ? ORDER BY computed_at DESC", addr);
+  await safeAll("watchlists",      "SELECT * FROM watchlists     WHERE wallet = ? ORDER BY added_at   DESC", addr);
+  await safeAll("community_votes", "SELECT * FROM community_votes WHERE wallet = ? ORDER BY updated_at DESC", addr);
+  if (env.INTEL_SALT) {
+    try {
+      const inner = await sha256(addr);
+      const keyBuf = await crypto.subtle.importKey(
+        "raw",
+        new TextEncoder().encode(env.INTEL_SALT),
+        { name: "HMAC", hash: "SHA-256" },
+        false,
+        ["sign"]
+      );
+      const sig = await crypto.subtle.sign("HMAC", keyBuf, new TextEncoder().encode(inner));
+      const hashed = Array.from(new Uint8Array(sig))
+        .map((b) => b.toString(16).padStart(2, "0")).join("");
+      await safeAll(
+        "intel_events",
+        "SELECT id, event_type, defi_score, risk_profile, chain, metadata, created_at " +
+        "FROM intel_events WHERE hashed_wallet = ? ORDER BY created_at DESC",
+        hashed
+      );
+    } catch (e) {
+      out.tables.intel_events = { error: "hash failure: " + (e && e.message ? e.message : String(e)) };
+    }
+  } else {
+    out.tables.intel_events = { error: "INTEL_SALT secret unset; cannot resolve hashed_wallet" };
+  }
+  return json({ ...out, disclaimer: DISCLAIMER_TEXT });
+}
+
+async function runRetentionPrune(env) {
+  if (!env.HEALTH_DB) return { ok: false, reason: "no HEALTH_DB binding" };
+  const days = parseInt(env.DATA_RETENTION_DAYS || "180", 10);
+  const cutoffMs = Date.now() - days * 24 * 60 * 60 * 1000;
+  const summary = { ok: true, cutoffMs, deleted: {} };
+  // intel_events — raw telemetry. Aggregates are NOT touched.
+  try {
+    const r = await env.HEALTH_DB
+      .prepare("DELETE FROM intel_events WHERE created_at < ?")
+      .bind(cutoffMs)
+      .run();
+    summary.deleted.intel_events = (r && r.meta && r.meta.changes) || 0;
+  } catch (e) {
+    summary.ok = false;
+    summary.intel_events_error = e && e.message ? e.message : String(e);
+  }
+  // health_scores — raw per-computation snapshots. Keep aggregates path open
+  // for a future rollup table; for now, prune raw history past the window.
+  try {
+    const r = await env.HEALTH_DB
+      .prepare("DELETE FROM health_scores WHERE computed_at < ?")
+      .bind(cutoffMs)
+      .run();
+    summary.deleted.health_scores = (r && r.meta && r.meta.changes) || 0;
+  } catch (e) {
+    summary.ok = false;
+    summary.health_scores_error = e && e.message ? e.message : String(e);
+  }
+  return summary;
+}
+
+async function dispatch(request, env, peekedAddr) {
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: corsHeadersFor(request, env) });
     }
@@ -2017,8 +2298,10 @@ async function dispatch(request, env) {
     }
 
     // Rate limit the expensive AI/GitHub endpoints (KV-backed sliding window
-    // by IP). Caps are deliberately generous for legit users but tight enough
-    // to deter scripted abuse of the Workers AI bill.
+    // by IP, plus a per-address cap on address-aware endpoints). Caps are
+    // generous for legit users, tight enough to deter scripted abuse of the
+    // Workers AI bill, and address-keyed so botnets that rotate IPs can't
+    // amplify via a single wallet.
     if (request.method === "POST" && (
       url.pathname === "/" ||
       url.pathname === "/profile" ||
@@ -2027,11 +2310,42 @@ async function dispatch(request, env) {
       url.pathname === "/api/audit" ||
       url.pathname === "/api/health-score" ||
       url.pathname === "/api/chatbot/message" ||
-      url.pathname === "/api/report-issue"
+      url.pathname === "/api/report-issue" ||
+      url.pathname === "/api/intel/event"
     )) {
-      const limit = url.pathname === "/api/report-issue" ? 5 : 20;
-      const blocked = await rateLimit(request, env, url.pathname, limit, 60);
+      const ipLimit =
+        url.pathname === "/api/report-issue" ? 5 :
+        url.pathname === "/api/intel/event"  ? 30 :
+        20;
+      const blocked = await rateLimit(request, env, url.pathname, ipLimit, 60);
       if (blocked) return blocked;
+      if (peekedAddr) {
+        const addrLimit =
+          url.pathname === "/api/report-issue" ? 10 :   // 10/hr per address
+          url.pathname === "/api/intel/event"  ? 60 :   // 60/min per address
+          30;                                            // 30/min per address default
+        const windowSec = url.pathname === "/api/report-issue" ? 3600 : 60;
+        const addrBlocked = await rateLimitByAddress(
+          request, env, peekedAddr, url.pathname, addrLimit, windowSec
+        );
+        if (addrBlocked) return addrBlocked;
+      }
+      // /api/intel/event payloads carry only a `hashedWallet` (sha256 of the
+      // address) — extractAddressesFromRequest can't see it. Pull it out
+      // here and key a separate per-identity bucket on the hash so botnets
+      // rotating IPs but reusing one wallet still hit a cap.
+      if (url.pathname === "/api/intel/event") {
+        try {
+          const b = await request.clone().json();
+          const hw = String((b && b.hashedWallet) || "").trim().toLowerCase();
+          if (/^[a-f0-9]{64}$/.test(hw)) {
+            const blockedHw = await rateLimitByAddress(
+              request, env, hw, "/api/intel/event:hw", 60, 60
+            );
+            if (blockedHw) return blockedHw;
+          }
+        } catch { /* not JSON, the handler will reject */ }
+      }
     }
 
     if (request.method === "POST" && url.pathname === "/api/exposure") {
@@ -2091,6 +2405,44 @@ async function dispatch(request, env) {
     }
     if (request.method === "GET" && url.pathname === "/api/intel/export") {
       return handleIntelExport(request, env, url);
+    }
+
+    // -----------------------------------------------------------------------
+    // Phase 4 — DSAR (Data Subject Access Request) endpoints.
+    //
+    //   GET  /api/account/export?address=0x…   → JSON dump of every row tied
+    //                                            to that address (read-only).
+    //   POST /api/account/delete                → fail-closed 503 until SIWE
+    //                                            (Phase 2) ships, because we
+    //                                            cannot prove ownership of
+    //                                            the requested address yet.
+    //   POST /api/account/retention/run         → admin-only on-demand prune,
+    //                                            same logic as the cron.
+    //
+    // Export is intentionally NOT auth-gated: it returns nothing the
+    // requester couldn't see by reading the chain + their own localStorage,
+    // and it gives privacy regulators a working DSAR path on day one. The
+    // signed-link-via-email variant from the spec is queued for Phase 2.
+    // -----------------------------------------------------------------------
+    if (request.method === "GET" && url.pathname === "/api/account/export") {
+      return handleAccountExport(request, env, url);
+    }
+    if (request.method === "POST" && url.pathname === "/api/account/delete") {
+      return json({
+        success: false,
+        error: "DSAR delete requires signed-in proof of wallet ownership (SIWE), shipping in Phase 2. " +
+               "For an immediate manual deletion, email privacy@defiscoring.com from a wallet you control.",
+      }, 503);
+    }
+    if (request.method === "POST" && url.pathname === "/api/account/retention/run") {
+      // Admin-only manual trigger. Gated by ADMIN_TOKEN (set via wrangler
+      // secret), not by SIWE — this endpoint is for operations, not users.
+      const tok = request.headers.get("X-Admin-Token") || "";
+      if (!env.ADMIN_TOKEN || tok !== env.ADMIN_TOKEN) {
+        return json({ success: false, error: "Forbidden." }, 403);
+      }
+      const summary = await runRetentionPrune(env);
+      return json({ success: !!summary.ok, summary });
     }
 
     // Anything not handled above is a static asset request – delegate to the

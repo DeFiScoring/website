@@ -1,0 +1,144 @@
+---
+layout: default
+title: Privacy Preferences
+permalink: /account/privacy/
+description: "Granular telemetry consent and data sharing toggles for your DeFiScoring usage."
+sitemap: false
+---
+
+<style>
+  .privacy-page { max-width: 760px; margin: 0 auto; }
+  .privacy-page h1 { font-size: clamp(28px, 3.4vw, 40px); margin: 0 0 8px; }
+  .privacy-page .meta { color: #6f7aa0; font-size: 13px; margin-bottom: 28px; }
+  .pref-row {
+    display: flex; gap: 18px; align-items: flex-start;
+    background: rgba(0,245,255,.04);
+    border: 1px solid rgba(0,245,255,.18);
+    border-radius: 12px; padding: 18px 20px; margin: 14px 0;
+  }
+  .pref-row__copy { flex: 1; }
+  .pref-row__copy h3 { margin: 0 0 4px; font-size: 16px; color: #fff; }
+  .pref-row__copy p { margin: 4px 0 0; color: #c8d2f5; font-size: 14px; line-height: 1.55; }
+  .pref-row__copy small { color: #6f7aa0; font-size: 12px; }
+  .switch { position: relative; width: 46px; height: 26px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch-slider {
+    position: absolute; cursor: pointer; inset: 0;
+    background: #2a2a3e; border-radius: 999px;
+    transition: background .2s ease;
+  }
+  .switch-slider::before {
+    content: ""; position: absolute; left: 3px; top: 3px;
+    width: 20px; height: 20px; background: #c8d2f5;
+    border-radius: 50%; transition: transform .2s ease, background .2s ease;
+  }
+  .switch input:checked + .switch-slider { background: #00f5ff; }
+  .switch input:checked + .switch-slider::before { transform: translateX(20px); background: #0a0a0a; }
+  .switch input:focus-visible + .switch-slider { outline: 2px solid #facc15; outline-offset: 2px; }
+  .pref-status {
+    display: inline-block; margin-left: 8px; padding: 2px 8px;
+    border-radius: 999px; font-size: 11px; font-weight: 600;
+  }
+  .pref-status[data-on="true"]  { background: rgba(0,245,255,.18);  color: #00f5ff; }
+  .pref-status[data-on="false"] { background: rgba(168,85,247,.15); color: #a855f7; }
+  .saved-flash {
+    color: #facc15; font-size: 12px; margin-left: 10px;
+    opacity: 0; transition: opacity .25s ease;
+  }
+  .saved-flash.show { opacity: 1; }
+  .legal-note {
+    background: rgba(255,181,71,.06);
+    border: 1px solid rgba(255,181,71,.25);
+    border-radius: 10px; padding: 14px 18px; color: #f5e4c5;
+    font-size: 14px; margin: 24px 0;
+  }
+</style>
+
+<div class="privacy-page">
+
+  <h1>Privacy preferences</h1>
+  <div class="meta">All settings persist in your browser's <code>localStorage</code> and apply immediately. Nothing is sent to our servers when you toggle them.</div>
+
+  <div class="pref-row">
+    <div class="pref-row__copy">
+      <h3>Anonymized usage telemetry
+        <span class="pref-status" id="status-intel" data-on="false">off</span>
+        <span class="saved-flash" id="flash-intel">saved</span>
+      </h3>
+      <p>Send anonymized event pings (score render, profiler run, approvals scan) so we can publish aggregate market-intel charts. Your wallet address is hashed (sha256 + HMAC) before it ever reaches our database.</p>
+      <small>Storage key: <code>defi:intel:consent</code></small>
+    </div>
+    <label class="switch">
+      <input type="checkbox" id="toggle-intel">
+      <span class="switch-slider"></span>
+    </label>
+  </div>
+
+  <div class="pref-row">
+    <div class="pref-row__copy">
+      <h3>Share anonymized wallet snapshots with research
+        <span class="pref-status" id="status-snapshots" data-on="false">off</span>
+        <span class="saved-flash" id="flash-snapshots">saved</span>
+      </h3>
+      <p>Optional: share periodic anonymized portfolio snapshots (token mix, position sizes — never the address) with the DeFiScoring research team. Default off. Revoking triggers a delete job that purges your snapshots within 24 hours.</p>
+      <small>Storage key: <code>defi:research:consent</code> · the snapshot table itself ships with the admin SPA in Phase 3 — toggle is wired now so consent is captured from day one.</small>
+    </div>
+    <label class="switch">
+      <input type="checkbox" id="toggle-snapshots">
+      <span class="switch-slider"></span>
+    </label>
+  </div>
+
+  <div class="legal-note">
+    <strong>Your rights:</strong> You can request a full export of any data tied to your wallet at any time via
+    <code>GET /api/account/export?address=0x…</code>, or by emailing
+    <a href="mailto:privacy@defiscoring.com">privacy@defiscoring.com</a>. Deletion requests are honored within 30 days; until SIWE wallet sign-in ships in Phase 2, deletion requests must be sent by email and signed.
+  </div>
+
+</div>
+
+<script>
+(function () {
+  var TOGGLES = [
+    { id: "intel",      key: "defi:intel:consent",    eventName: "defi:intel:consent-changed" },
+    { id: "snapshots",  key: "defi:research:consent", eventName: "defi:research:consent-changed" }
+  ];
+
+  function read(key) {
+    try { return localStorage.getItem(key) === "granted"; }
+    catch (_) { return false; }
+  }
+  function write(key, on) {
+    try { localStorage.setItem(key, on ? "granted" : "denied"); }
+    catch (_) { /* private mode etc. — silently ignore */ }
+  }
+  function paint(t) {
+    var input  = document.getElementById("toggle-" + t.id);
+    var status = document.getElementById("status-" + t.id);
+    var on = read(t.key);
+    if (input)  input.checked = on;
+    if (status) {
+      status.dataset.on = String(on);
+      status.textContent = on ? "on" : "off";
+    }
+  }
+  function flash(id) {
+    var el = document.getElementById("flash-" + id);
+    if (!el) return;
+    el.classList.add("show");
+    setTimeout(function () { el.classList.remove("show"); }, 1200);
+  }
+
+  TOGGLES.forEach(function (t) {
+    paint(t);
+    var input = document.getElementById("toggle-" + t.id);
+    if (!input) return;
+    input.addEventListener("change", function () {
+      write(t.key, input.checked);
+      paint(t);
+      flash(t.id);
+      try { window.dispatchEvent(new CustomEvent(t.eventName, { detail: { granted: input.checked } })); } catch (_) {}
+    });
+  });
+})();
+</script>

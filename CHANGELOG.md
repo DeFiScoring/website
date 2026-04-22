@@ -100,4 +100,91 @@ more focused commits on `main`. Phase 0 is read-only.
 
 ### Phase 2 — Read-only SIWE wallet auth (planned, not yet implemented)
 ### Phase 3 — Admin SPA at `/admin` with R&D data capture (planned)
-### Phase 4-6 — TBD per spec
+
+### Phase 4 — Compliance &amp; safety rails
+
+Phase 4 was scoped against the assumption that Phases 2 (SIWE auth) and 3
+(admin SPA + `wallet_snapshots` table) had already shipped. They have not, so
+this phase ships every safety rail that stands on its own and registers
+fail-closed routes for the items that genuinely need wallet-ownership proof.
+
+**Sanctions screening (OFAC SDN, fail-closed)**
+
+- `worker/index.js` ships an inline `SANCTIONED_ADDRESSES` set seeded with the
+  Aug 2022 OFAC Tornado Cash designation and runs `extractAddressFromRequest()`
+  on every incoming request before any handler. URLs and JSON bodies are both
+  checked; matches return a generic `403 { success:false, error:"Request
+  blocked." }` with no detail about why. The list is intentionally swappable
+  for a KV-backed live feed (Chainalysis / TRM / OFAC SDN XML) without
+  changing the `isSanctioned()` interface.
+
+**Per-address + per-IP rate limits**
+
+- New `rateLimitByAddress()` runs alongside the existing per-IP `rateLimit()`
+  so a botnet rotating IPs but reusing a wallet still hits the cap, and a
+  single host hammering many wallets still hits the per-IP cap.
+- Wired into the address-aware endpoints: `/api/intel/event` (≈ /api/track,
+  30/min/IP + 60/min/address), `/api/report-issue` (≈ /api/feedback,
+  5/min/IP + 10/hour/address), and the existing AI / score / profile /
+  audit / chatbot endpoints (20/min/IP + 30/min/address default).
+
+**Data retention &amp; nightly Cron Trigger**
+
+- `wrangler.jsonc` now declares `triggers.crons: ["17 3 * * *"]` and a
+  `DATA_RETENTION_DAYS=180` var. The new `scheduled()` handler in
+  `worker/index.js` calls `runRetentionPrune(env)` which deletes
+  `intel_events` and `health_scores` rows older than the cutoff. The
+  `intel_daily_aggregates` rollup table is intentionally untouched — those
+  aggregates are kept indefinitely per the data retention policy.
+- Operations can run the prune on demand via
+  `POST /api/account/retention/run` (gated by the existing `ADMIN_TOKEN`
+  secret).
+
+**DSAR endpoints**
+
+- `GET /api/account/export?address=0x…` returns a JSON dump of every row in
+  D1 that references the address (`health_scores`, `watchlists`,
+  `community_votes`, plus `intel_events` resolved by recomputing the
+  `HMAC-SHA256(sha256(addr), INTEL_SALT)` double-hash). Read-only; no auth.
+  Anyone can call this for any address — but the response reveals nothing
+  not already on the public chain. The signed-link-via-email variant from
+  the spec is queued behind Phase 2 (SIWE) + a mail integration.
+- `POST /api/account/delete` returns a fail-closed `503` with a message
+  pointing the user at `privacy@defiscoring.com` for manual deletion. Soft-
+  delete with a 30-day purge cannot ship safely without SIWE proof of
+  wallet ownership — otherwise anyone could delete anyone's data.
+
+**Disclaimer surfacing on every scoring output**
+
+- The `json()` helper now stamps `disclaimer: "Not financial advice. …"`
+  onto every successful response that contains a scoring-shaped field
+  (`score`, `scores`, `profile`, `audit`, `breakdown`, `riskProfile`,
+  `history`). The full text continues to live at `/disclaimer/`. The
+  footer disclaimer remains on every public page, and the dashboard's
+  "Not Financial Advice" callout is unchanged.
+
+**Account &amp; Privacy pages (`/account/`, `/account/privacy/`)**
+
+- New `account/index.html` — landing page that links to the privacy
+  preferences, the DSAR export endpoint, and the email-based deletion
+  flow, plus a plain-language data retention summary.
+- New `account/privacy.html` — granular consent UI with two toggles:
+  - Anonymized usage telemetry (`defi:intel:consent`, the existing
+    dashboard banner key).
+  - "Share anonymized wallet snapshots with DeFiScoring research"
+    (`defi:research:consent`, default off, revocable). The snapshot
+    table itself lands with the admin SPA in Phase 3; consent is captured
+    now so we have it on file from day one.
+
+**Deferred to a follow-up (called out so they aren't forgotten)**
+
+- _Account-bound DSAR delete with 30-day purge._ Needs SIWE.
+- _Email-delivered signed download link for DSAR export._ Needs a mail
+  integration (Resend / SES / Mailgun) and an account model.
+- _`wallet_snapshots` table + the 24-hour delete job triggered by revoking
+  the research consent._ Needs the table, which is a Phase 3 deliverable.
+- _Login-time SDN check that fails closed with a generic error._ Login
+  itself doesn't exist yet (Phase 2). The same `isSanctioned()` helper
+  will be reused at the SIWE handler when it ships.
+
+### Phase 5-6 — TBD per spec

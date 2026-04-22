@@ -1,0 +1,64 @@
+---
+layout: default
+title: Account & Privacy
+permalink: /account/
+description: "Manage your privacy preferences and exercise your data subject rights on DeFiScoring."
+sitemap: false
+---
+
+<style>
+  .account-page { max-width: 820px; margin: 0 auto; }
+  .account-page h1 { font-size: clamp(28px, 3.4vw, 40px); margin: 0 0 8px; }
+  .account-page .meta { color: #6f7aa0; font-size: 13px; margin-bottom: 32px; }
+  .account-page h2 { margin-top: 36px; font-size: 20px; }
+  .account-page p, .account-page li { color: #c8d2f5; font-size: 15px; line-height: 1.7; }
+  .account-card {
+    background: rgba(168, 85, 247, .06);
+    border: 1px solid rgba(168, 85, 247, .25);
+    border-radius: 12px; padding: 18px 22px; margin: 18px 0;
+  }
+  .account-card h3 { margin: 0 0 6px; font-size: 17px; color: #fff; }
+  .account-card a.btn-link {
+    color: #00f5ff; text-decoration: none; font-weight: 600;
+  }
+  .account-card a.btn-link:hover { text-decoration: underline; }
+  .pill {
+    display: inline-block; padding: 2px 10px; border-radius: 999px;
+    font-size: 12px; font-weight: 600; letter-spacing: .02em;
+  }
+  .pill-live  { background: rgba(0,245,255,.12);  color: #00f5ff; border: 1px solid rgba(0,245,255,.4); }
+  .pill-soon  { background: rgba(250,204,21,.12); color: #facc15; border: 1px solid rgba(250,204,21,.4); }
+</style>
+
+<div class="account-page">
+
+  <h1>Account &amp; Privacy</h1>
+  <div class="meta">DeFiScoring is a read-only analytics tool. There are no user accounts to log into — these controls operate on the wallet address you choose to give us.</div>
+
+  <div class="account-card">
+    <h3>Privacy preferences <span class="pill pill-live">Live</span></h3>
+    <p>Manage what telemetry is collected when you use the dashboard, and how long it's kept.</p>
+    <p><a class="btn-link" href="{{ '/account/privacy/' | relative_url }}">Open privacy preferences →</a></p>
+  </div>
+
+  <div class="account-card">
+    <h3>Export my data (DSAR) <span class="pill pill-live">Live</span></h3>
+    <p>Download every row in our database that references your wallet — health scores, watchlists, community votes, anonymized telemetry. The export is a JSON file you can save or share with a privacy regulator.</p>
+    <p>Connect your wallet on the <a class="btn-link" href="{{ '/dashboard/' | relative_url }}">dashboard</a>, then call:</p>
+    <p><code style="background:#1a1a2e;padding:4px 8px;border-radius:4px;color:#00f5ff;">GET /api/account/export?address=0xYourAddress</code></p>
+    <p>The signed-link-via-email variant ships once SIWE wallet sign-in lands.</p>
+  </div>
+
+  <div class="account-card">
+    <h3>Delete my data (DSAR) <span class="pill pill-soon">Phase 2</span></h3>
+    <p>Soft-delete with a 30-day purge window requires <strong>signed proof of wallet ownership</strong> (SIWE) — otherwise anyone could delete anyone else's data. Until that ships, we honor manual deletion requests by email:</p>
+    <p><a class="btn-link" href="mailto:privacy@defiscoring.com?subject=DSAR%20delete%20request">privacy@defiscoring.com</a> (please send from a wallet you control, or include a signed message)</p>
+  </div>
+
+  <div class="account-card">
+    <h3>Data retention</h3>
+    <p>Raw event rows are auto-pruned after <strong>180 days</strong> by a nightly job. Aggregated, non-identifying rollups are kept indefinitely so we can plot long-term trends without storing your activity.</p>
+    <p>See the full <a class="btn-link" href="{{ '/privacy/' | relative_url }}">privacy notice</a> and <a class="btn-link" href="{{ '/disclaimer/' | relative_url }}">financial disclaimer</a>.</p>
+  </div>
+
+</div>

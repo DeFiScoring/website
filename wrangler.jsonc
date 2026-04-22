@@ -52,12 +52,25 @@
     // `Access-Control-Allow-Credentials: true` cannot combine with "*".
     "ALLOWED_ORIGINS": "https://defiscoring.com,https://www.defiscoring.com,https://defiscoring.guillaumelauzier.workers.dev,http://localhost:5000",
     "GITHUB_REPO_OWNER": "DeFiScoring",
-    "GITHUB_REPO_NAME": "website"
+    "GITHUB_REPO_NAME": "website",
+    // Phase 4 — data retention. Raw event tables (intel_events, health_scores)
+    // are pruned by the daily cron below; aggregates in intel_daily_aggregates
+    // are kept indefinitely by design.
+    "DATA_RETENTION_DAYS": "180",
+    "DSAR_CONTACT_EMAIL": "privacy@defiscoring.com"
+  },
+  // Phase 4 — daily Cron Trigger that runs runRetentionPrune() in worker/index.js.
+  // 03:17 UTC chosen to land in a low-traffic window. Adjust per environment if
+  // the prune job ever takes long enough to want spreading across regions.
+  "triggers": {
+    "crons": ["17 3 * * *"]
   },
   // Secrets (NOT vars — set via `wrangler secret put NAME`):
   //   GITHUB_TOKEN  – classic PAT (`repo` scope) for /api/report-issue
-  //   ADMIN_TOKEN   – bearer token for /api/intel/{summary,export}
+  //   ADMIN_TOKEN   – bearer token for /api/intel/{summary,export} and
+  //                   /api/account/retention/run
   //   INTEL_SALT    – HMAC pepper for hashing wallets in /api/intel/event
+  //                   AND for resolving DSAR exports in /api/account/export
   //   ETHERSCAN_API_KEY, ARB_RPC_URL – on-chain enrichment
   "observability": {
     "enabled": true,
