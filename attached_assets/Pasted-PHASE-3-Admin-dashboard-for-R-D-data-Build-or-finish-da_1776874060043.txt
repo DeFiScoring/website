@@ -1,0 +1,35 @@
+PHASE 3 — Admin dashboard for R&D data
+Build (or finish) dashboard/ as a private, admin-only SPA mounted at /admin behind the SIWE session + a role check. Stack: React 18 + Vite + TypeScript + TanStack Query + Tailwind + shadcn/ui + Recharts. It talks only to the Cloudflare Worker API.
+Data model (D1 / Postgres migrations)
+Add migrations for:
+
+users(id, address_lowercase UNIQUE, ens_name, first_seen_at, last_seen_at, role, country_code_from_cf, is_banned)
+sessions(id, user_id, created_at, last_seen_at, ip_hash, ua_hash, revoked_at)
+events(id, user_id NULL, session_id NULL, name, props JSONB, page_path, referrer, ts) — for every pageview, button click, wallet connect, methodology scroll-depth, search query, audit-report view.
+wallet_snapshots(id, user_id, address, chain_id, taken_at, native_balance_wei, token_count, nft_count, tvl_interacted_protocols JSONB) — only populated after explicit opt-in consent.
+feedback(id, user_id NULL, kind, body, page_path, ts).
+scoring_runs(id, protocol_slug, chain, score, factor_breakdown JSONB, model_version, ts) — so R&D can replay historical scores.
+
+All PII-adjacent fields (IP, UA) are hashed with a rotating peppered HMAC stored in env. No raw IPs. Never.
+Ingestion
+
+Client SDK snippet included on every Jekyll page (_includes/analytics.html) that posts events to /api/track — sampled, batched, with consent gating and Do-Not-Track respected.
+Worker enriches each event with Cloudflare request data (cf-country, cf-asn, UA-family — no raw UA string stored).
+POST /api/feedback for the feedback widget.
+
+Admin views
+Role admin (set manually in DB) gets:
+
+Overview: DAU/WAU/MAU, wallet-connect conversion funnel, retention cohort grid, top pages, top referrers, geographic heatmap (country-level only).
+Users: searchable table by address / ENS. Drill-in shows event timeline, sessions, wallet-snapshot history (if opted in). Export CSV/JSON with a server-side audit log entry for every export.
+Protocols under review: list of items in _audits/ with published-vs-draft state, last scoring-run result, manual override field, re-run button that enqueues a job.
+Scoring R&D workbench: upload a CSV of (protocol, factor inputs) → runs current scoring model → diffs against prior model_version → lets you save a new model_version with notes. All runs persisted to scoring_runs.
+Feedback inbox: triage feedback, tag, mark resolved.
+Audit log: every admin action (view user detail, export, role change) is recorded and shown here — append-only, readable, never editable from the UI.
+
+Admin auth
+
+Route /admin/* on the worker checks: valid SIWE session AND users.role IN ('admin','analyst').
+Add WebAuthn (passkey) step-up required for sensitive actions: bulk export, role changes, re-running scoring in production. Use @simplewebauthn/server in the worker and @simplewebauthn/browser client-side. Store credentials in a webauthn_credentials table.
+IP allowlist optional via env (ADMIN_IP_ALLOWLIST); if set, enforce at the worker edge.
+Admin cookie is separate from public session cookie and shorter-lived (4h, no sliding).

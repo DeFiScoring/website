@@ -1,0 +1,21 @@
+PHASE 2 — Secure wallet connection (read-only, EIP-4361 "Sign-In with Ethereum")
+Implement wallet connect on the public site as a login mechanism only. The flow:
+
+Client: use RainbowKit + wagmi + viem (pin to latest stable). Support MetaMask, WalletConnect v2 (your own WC Cloud projectId in env), Coinbase Wallet, and Rabby. No injected-only fallback that silently connects.
+Auth protocol: SIWE (EIP-4361). On "Connect":
+
+Worker issues a single-use nonce (GET /api/auth/nonce) stored in D1 or KV with 5-min TTL, bound to IP + UA hash.
+Client builds an EIP-4361 message including domain=defiscoring.com, uri, chainId, nonce, issuedAt, expirationTime (now + 10 min).
+User signs with personal_sign.
+Worker verifies via viem.verifyMessage, checks nonce is unused + unexpired + domain matches, then issues a httpOnly, Secure, SameSite=Lax, __Host- prefixed session cookie (opaque random ID, 7-day sliding expiry). Sessions stored in D1 sessions table with revoked_at.
+GET /api/auth/me returns { address, chainId, connectedAt, role }.
+POST /api/auth/logout revokes the session.
+
+
+Chain safety: request zero chain permissions beyond reading the address. Never prompt wallet_switchEthereumChain unless the user explicitly initiates it. Never call eth_requestAccounts on page load — only on button click.
+Rate limits: Cloudflare Turnstile on nonce issuance + per-IP rate limiting via Workers KV (10 nonces / 10 min).
+Phishing guardrails: before signing, show the user the exact EIP-4361 message preview with a "What am I signing?" tooltip linking to an explainer page.
+Revocation: /account/sessions page lists active sessions (last IP masked, UA, created/last-seen) with per-session revoke + revoke-all.
+ENS / avatar: resolve primary ENS name + avatar for display only (via a public read-only RPC you control, e.g., a Cloudflare-proxied endpoint — never expose an API key client-side).
+
+Write an integration test suite (Vitest) that mints a test wallet with viem, runs the full SIWE handshake against the worker in wrangler dev, and asserts: nonce replay fails, domain mismatch fails, expired nonce fails, tampered signature fails, happy path sets a cookie.
