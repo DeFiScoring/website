@@ -46,7 +46,11 @@
     "HEALTH_CACHE_TTL_SECONDS": "1800",
     "ETH_RPC_URL": "https://ethereum-rpc.publicnode.com",
     "SNAPSHOT_API_URL": "https://hub.snapshot.org/graphql",
-    "ALLOWED_ORIGINS": "*",
+    // Comma- or whitespace-separated CORS allowlist. Override per-environment.
+    // Wildcard ("*") is still accepted for transitional/dev use, but as soon as
+    // Phase 2 ships a session cookie, this MUST be a real allowlist because
+    // `Access-Control-Allow-Credentials: true` cannot combine with "*".
+    "ALLOWED_ORIGINS": "https://defiscoring.com,https://www.defiscoring.com,https://defiscoring.guillaumelauzier.workers.dev,http://localhost:5000",
     "GITHUB_REPO_OWNER": "DeFiScoring",
     "GITHUB_REPO_NAME": "website"
   },

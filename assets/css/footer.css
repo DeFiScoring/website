@@ -149,3 +149,46 @@
   .df-footer__disclaimer a { display: inline-block; margin-left: 0; margin-top: 4px; }
   .df-footer__meta { flex-direction: column; gap: 6px; }
 }
+
+/* ---------------------------------------------------------------------------
+ * Accessibility baseline (Phase 1)
+ * - Skip-to-content link visible only on keyboard focus.
+ * - Restore visible focus ring everywhere (the various component CSS files
+ *   reset outline:none on buttons/links — :focus-visible re-applies a clear
+ *   2px ring for keyboard users without spamming mouse users).
+ * ---------------------------------------------------------------------------*/
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 8px;
+  z-index: 10000;
+  padding: 10px 14px;
+  background: #00f5ff;
+  color: #0a0a0a;
+  font-weight: 700;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: top 0.15s ease-out;
+}
+.skip-link:focus,
+.skip-link:focus-visible {
+  top: 8px;
+  outline: 2px solid #facc15;
+  outline-offset: 2px;
+}
+
+:focus-visible {
+  outline: 2px solid #00f5ff;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #00f5ff;
+  outline-offset: 2px;
+}

@@ -24,12 +24,173 @@
  *   env.ETHERSCAN_API_KEY        – secret
  */
 
+// ---------------------------------------------------------------------------
+// CORS — origin allowlist driven by env.ALLOWED_ORIGINS (comma-separated).
+// "*" is still supported for transitional/dev use, but as soon as a session
+// cookie ships (Phase 2), the deploy must set an explicit allowlist because
+// `Access-Control-Allow-Credentials: true` is incompatible with a wildcard
+// origin.
+//
+// We always echo the matched origin (not "*") and add `Vary: Origin` so any
+// cache layer keys responses correctly.
+// ---------------------------------------------------------------------------
+const BASE_CORS = {
+  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Max-Age": "86400",
+  "Vary": "Origin",
+};
+function parseAllowedOrigins(env) {
+  const raw = String(env && env.ALLOWED_ORIGINS || "").trim();
+  if (!raw || raw === "*") return ["*"];
+  return raw.split(/[,\s]+/).map((s) => s.trim()).filter(Boolean);
+}
+function corsHeadersFor(request, env) {
+  const allowed = parseAllowedOrigins(env);
+  const origin = request.headers.get("Origin") || "";
+  const out = { ...BASE_CORS };
+  if (allowed.includes("*")) {
+    out["Access-Control-Allow-Origin"] = "*";
+  } else if (origin && allowed.includes(origin)) {
+    out["Access-Control-Allow-Origin"] = origin;
+  } else {
+    // Unknown origin: still safe to omit the header (browser blocks the read).
+    // Same-origin requests (no Origin header) are unaffected.
+    if (!origin) out["Access-Control-Allow-Origin"] = allowed[0] || "*";
+  }
+  return out;
+}
+// Legacy export kept for the few code paths that don't have request/env yet.
+// All new handlers should go through corsHeadersFor(request, env).
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-  "Access-Control-Max-Age": "86400",
+  ...BASE_CORS,
 };
+
+// ---------------------------------------------------------------------------
+// Security headers applied to every response (HTML and API).
+//
+// CSP allows the specific external origins the dashboard actually uses
+// (jsdelivr + unpkg for chart.js / jspdf / lucide, Google Fonts) and the
+// upstream APIs called from the browser. `'unsafe-inline'` is still required
+// for the inline JSON-LD blocks and small inline bootstrap scripts; a
+// nonce-based hardening pass is queued as a follow-up to Phase 1.
+// ---------------------------------------------------------------------------
+// connect-src must list every origin the dashboard JS can fetch directly:
+//   - the worker itself (API)
+//   - Etherscan v2 + DeFiLlama + Snapshot (some calls go direct from browser)
+//   - CoinGecko (assets/js/defi-onchain.js, assets/js/market-strip.js)
+//   - Public RPC endpoints used as fallbacks (assets/js/defi-onchain.js)
+//   - LiveReload websocket (dev only) — covered by 'self' on localhost
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' data: https://fonts.gstatic.com",
+  "img-src 'self' data: blob: https:",
+  "connect-src 'self' " +
+    "https://defiscoring.guillaumelauzier.workers.dev " +
+    "https://api.etherscan.io " +
+    "https://api.llama.fi " +
+    "https://hub.snapshot.org " +
+    "https://api.coingecko.com " +
+    "https://ethereum-rpc.publicnode.com " +
+    "https://eth.llamarpc.com " +
+    "https://arb1.arbitrum.io " +
+    "https://polygon-rpc.com " +
+    "wss:",
+  "frame-ancestors 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "object-src 'none'",
+  "upgrade-insecure-requests",
+].join("; ");
+
+const SECURITY_HEADERS = {
+  "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Permissions-Policy":
+    "geolocation=(), microphone=(), camera=(), payment=(), usb=(), interest-cohort=()",
+  "Cross-Origin-Opener-Policy": "same-origin",
+  "Cross-Origin-Resource-Policy": "same-site",
+  "Content-Security-Policy": CSP,
+};
+
+function applySecurityHeaders(response) {
+  // Workers Response headers are immutable on the original; clone if needed.
+  const h = new Headers(response.headers);
+  for (const [k, v] of Object.entries(SECURITY_HEADERS)) {
+    if (!h.has(k)) h.set(k, v);
+  }
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: h,
+  });
+}
+
+// Final outgoing response middleware. Applied to *every* response by the
+// fetch() entrypoint so we don't have to plumb (request, env) into every
+// handler / json() helper. Order matters: CORS overrides must run AFTER
+// handlers (which may have set the legacy wildcard via the json() helper)
+// so the request-aware allowlist wins.
+function finalizeResponse(response, request, env) {
+  const cors = corsHeadersFor(request, env);
+  const h = new Headers(response.headers);
+  // Override any legacy wildcard CORS the handler may have stamped on.
+  for (const [k, v] of Object.entries(cors)) h.set(k, v);
+  // Add security headers (HSTS, CSP, XFO, etc.) where missing.
+  for (const [k, v] of Object.entries(SECURITY_HEADERS)) {
+    if (!h.has(k)) h.set(k, v);
+  }
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: h,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// KV-backed sliding-window rate limiter for expensive endpoints (AI calls,
+// GitHub issue creation). Returns null if allowed, or a 429 Response if not.
+// Uses DEFI_CACHE so we don't need a new binding.
+// ---------------------------------------------------------------------------
+async function rateLimit(request, env, key, max, windowSec) {
+  if (!env.DEFI_CACHE) return null;            // fail open if KV unavailable
+  const ip =
+    request.headers.get("CF-Connecting-IP") ||
+    request.headers.get("X-Forwarded-For") ||
+    "anon";
+  const bucket = "rl:" + key + ":" + ip;
+  const now = Math.floor(Date.now() / 1000);
+  let count = 0;
+  try {
+    const cur = await env.DEFI_CACHE.get(bucket);
+    count = cur ? parseInt(cur, 10) || 0 : 0;
+  } catch { /* fail open */ }
+  if (count >= max) {
+    const cors = corsHeadersFor(request, env);
+    return new Response(
+      JSON.stringify({ success: false, error: "Rate limit exceeded. Try again shortly." }),
+      {
+        status: 429,
+        headers: {
+          "Content-Type": "application/json",
+          "Retry-After": String(windowSec),
+          ...cors,
+        },
+      }
+    );
+  }
+  // Best-effort increment; KV is eventually-consistent so this isn't atomic
+  // but it's good enough for spam mitigation.
+  try {
+    await env.DEFI_CACHE.put(bucket, String(count + 1), { expirationTtl: windowSec });
+  } catch { /* fail open */ }
+  return null;
+}
 
 const ETHERSCAN_V2 = "https://api.etherscan.io/v2/api";
 const DEFILLAMA = "https://api.llama.fi";
@@ -1813,8 +1974,25 @@ async function handleChatbotMessage(request, env) {
 
 export default {
   async fetch(request, env) {
+    try {
+      const response = await dispatch(request, env);
+      return finalizeResponse(response, request, env);
+    } catch (e) {
+      return finalizeResponse(
+        new Response(
+          JSON.stringify({ success: false, error: "Internal error: " + (e && e.message ? e.message : String(e)) }),
+          { status: 500, headers: { "Content-Type": "application/json" } }
+        ),
+        request,
+        env
+      );
+    }
+  },
+};
+
+async function dispatch(request, env) {
     if (request.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers: CORS_HEADERS });
+      return new Response(null, { status: 204, headers: corsHeadersFor(request, env) });
     }
     const url = new URL(request.url);
 
@@ -1836,6 +2014,24 @@ export default {
 
     if (request.method === "GET" && url.pathname.startsWith("/api/score/")) {
       return handleProtocolScore(url.pathname.slice("/api/score/".length), env);
+    }
+
+    // Rate limit the expensive AI/GitHub endpoints (KV-backed sliding window
+    // by IP). Caps are deliberately generous for legit users but tight enough
+    // to deter scripted abuse of the Workers AI bill.
+    if (request.method === "POST" && (
+      url.pathname === "/" ||
+      url.pathname === "/profile" ||
+      url.pathname === "/api/profile" ||
+      url.pathname === "/api/exposure" ||
+      url.pathname === "/api/audit" ||
+      url.pathname === "/api/health-score" ||
+      url.pathname === "/api/chatbot/message" ||
+      url.pathname === "/api/report-issue"
+    )) {
+      const limit = url.pathname === "/api/report-issue" ? 5 : 20;
+      const blocked = await rateLimit(request, env, url.pathname, limit, 60);
+      if (blocked) return blocked;
     }
 
     if (request.method === "POST" && url.pathname === "/api/exposure") {
@@ -1901,9 +2097,17 @@ export default {
     // attached Pages-style assets binding so the Jekyll site is served from
     // the same Worker.
     if (env.ASSETS) {
-      try { return await env.ASSETS.fetch(request); }
-      catch (e) { return new Response("Asset error: " + (e && e.message ? e.message : String(e)), { status: 500 }); }
+      try {
+        const r = await env.ASSETS.fetch(request);
+        // Layer security headers (HSTS, CSP, X-Frame-Options, Permissions-
+        // Policy, COOP, CORP, Referrer-Policy, X-Content-Type-Options) on
+        // every static response. Workers config (`wrangler.jsonc`) does NOT
+        // pick up `cloudflare.toml` headers, so the Worker is the source of
+        // truth here.
+        return applySecurityHeaders(r);
+      } catch (e) {
+        return new Response("Asset error: " + (e && e.message ? e.message : String(e)), { status: 500 });
+      }
     }
-    return new Response("Not found", { status: 404, headers: CORS_HEADERS });
-  },
-};
+    return new Response("Not found", { status: 404, headers: corsHeadersFor(request, env) });
+}

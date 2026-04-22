@@ -6,6 +6,7 @@
   <link rel="stylesheet" href="{{ '/assets/css/footer.css' | relative_url }}?v={{ site.time | date: '%s' }}">
 </head>
 <body>
+  <a class="skip-link" href="#main">Skip to content</a>
   <header class="nav">
     <div class="nav-inner">
       <a class="brand" href="/">
@@ -17,10 +18,11 @@
       </nav>
     </div>
   </header>
-  <main class="container" style="padding:80px 24px">
+  <main id="main" class="container" style="padding:80px 24px">
     {{ content }}
   </main>
   {% include site-footer.html %}
+  {% include dashboard/intel-consent.html %}
   <script>window.DEFI_RISK_WORKER_URL = window.DEFI_RISK_WORKER_URL || "{{ site.defi.worker_url | default: 'https://defiscoring.guillaumelauzier.workers.dev' }}";</script>
 </body>
 </html>

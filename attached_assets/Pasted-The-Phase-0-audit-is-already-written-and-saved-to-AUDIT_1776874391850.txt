@@ -1,0 +1,15 @@
+The Phase 0 audit is already written and saved to /AUDIT.md (last response). The instruction is "Print the audit and wait for my go-ahead before Phase 1," so I'm holding here.
+
+A few things worth your eyes before you green-light Phase 1, since the prompt says to ask if I'm uncertain:
+
+The new deliverables list mentions an ADMIN_BOOTSTRAP_ADDRESS flow ("become admin via ADMIN_BOOTSTRAP_ADDRESS"). That implies admin auth is SIWE + role check, with a bootstrap wallet address, not GitHub OAuth as you answered earlier. I'll go with SIWE + ADMIN_BOOTSTRAP_ADDRESS unless you say otherwise — please confirm.
+
+Storage for the new tables (users, sessions, events, wallet_snapshots, feedback, scoring_runs, webauthn_credentials, admin_audit_log): you already said Cloudflare D1. Good — I'll keep it on D1 and not introduce Postgres. Per the prompt, I'm flagging this is a deliberate choice.
+
+Jekyll vs Astro/Eleventy: the prompt says default is "keep Jekyll." I'll keep Jekyll for the public site and add the React/Vite/TS admin SPA only under /admin/. Confirming I will not migrate the public site.
+
+No new paid services planned. The full set of phases needs: Cloudflare Turnstile (free tier), WalletConnect Cloud (free tier, you provide the projectId), Cloudflare Workers + D1 + KV + Workers AI (already in use). No new paid services. Flagging because the prompt told me to ask before any.
+
+One thing I do need from you before Phase 2: a WalletConnect Cloud projectId for the SIWE/RainbowKit integration, set as a Replit/Cloudflare secret (WALLETCONNECT_PROJECT_ID). Free at https://cloud.reown.com — takes ~2 minutes. Not blocking Phase 1, but I'll need it for Phase 2.
+
+Standing by for your go-ahead. When you say "go," I'll open Phase 1 (security headers from the Worker, SRI/pinning of CDN scripts, CORS allowlist, AI rate limiting, Ruby pin to 3.3.5, kill the dead ALLOWED_ORIGINS var, OG image swap, optional htmlproofer in CI) as a single self-contained change with its own commit, then come back to you before starting Phase 2.

@@ -69,6 +69,7 @@ changefreq: "weekly"
   </script>
 </head>
 <body class="ds-body">
+<a class="skip-link" href="#main">Skip to content</a>
 
 <!-- Animated grid + glow backdrop -->
 <div class="ds-bg" aria-hidden="true">
@@ -101,6 +102,7 @@ changefreq: "weekly"
 </header>
 
 <!-- Hero -->
+<main id="main">
 <section class="ds-hero">
   <div class="ds-container ds-hero__inner">
     <div class="ds-hero__copy">
@@ -380,7 +382,10 @@ changefreq: "weekly"
   </div>
 </section>
 
+</main>
+
 {% include site-footer.html %}
+{% include dashboard/intel-consent.html %}
 
 <script src="{{ '/assets/js/landing.js' | relative_url }}?v={{ site.time | date: '%s' }}" defer></script>
 

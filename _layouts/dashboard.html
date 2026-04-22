@@ -19,6 +19,7 @@
   <meta http-equiv="Expires" content="0">
 </head>
 <body class="defi-body">
+  <a class="skip-link" href="#defi-main">Skip to content</a>
   <header class="defi-mobile-header" role="banner">
     <a href="/dashboard/" class="defi-mobile-header__brand">
       <img src="{{ '/assets/defiscoring-logo-white-100x100.png' | relative_url }}" alt="" width="28" height="28">
@@ -30,7 +31,7 @@
   </header>
   <div class="defi-shell">
     {% include dashboard/sidebar.html %}
-    <main class="defi-main">
+    <main id="defi-main" class="defi-main">
       {% include dashboard/wallet-bar.html %}
       <div class="defi-content">
         {{ content }}
@@ -73,9 +74,15 @@
       polygon:  "{{ site.defi.rpc.polygon }}"
     };
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"
+          integrity="sha384-9nhczxUqK87bcKHh20fSQcTGD4qq5GhayNYSYWqwBkINBhOfQLg/P5HG5lF1urn4"
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"
+          integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk"
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"
+          integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3"
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="{{ '/assets/js/market-data-logger.js' | relative_url }}"></script>
   <script src="{{ '/assets/js/wallet-connect.js' | relative_url }}"></script>
   <script src="{{ '/assets/js/wallet-modal.js' | relative_url }}"></script>
@@ -93,7 +100,9 @@
   <script src="{{ '/assets/js/chain-selector.js' | relative_url }}" defer></script>
   <script src="{{ '/assets/js/tabs.js' | relative_url }}" defer></script>
   <script src="{{ '/assets/js/market-strip.js' | relative_url }}" defer></script>
-  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
+  <script src="https://unpkg.com/lucide@0.474.0/dist/umd/lucide.min.js"
+          integrity="sha384-wkxmY9HYHJVzx0oZ7k8stpLQ7g7ogSqBha75ozCZmxFadwtaIw5dzXKVWWfi9I36"
+          crossorigin="anonymous" referrerpolicy="no-referrer" defer></script>
   <script>
     (function () {
       function paint() { if (window.lucide && lucide.createIcons) lucide.createIcons(); }
