@@ -26,24 +26,28 @@
       rdns: "io.metamask",
       name: "MetaMask",
       install: "https://metamask.io/download/",
-      icon: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><path fill="%23E17726" d="M28.6 3 17.5 11.3l2-4.9z"/><path fill="%23E27625" d="m3.4 3 11 8.4-1.9-5zM24.4 22.3l-3 4.6 6.4 1.8 1.8-6.3zm-22 0L4.2 28.7l6.4-1.8-3-4.6z"/><path fill="%23E27625" d="M10.3 14.6 8.6 17l6.3.3-.2-6.8zm11.4 0-4.5-4.2-.1 6.9 6.3-.3zM10.6 26.9l3.8-1.9-3.3-2.6zm6.9-1.9 3.8 1.9-.5-4.5z"/><path fill="%23D5BFB2" d="m21.3 26.9-3.8-1.9.3 2.5v1.1zm-10.7 0 3.5 1.7v-1.1l.3-2.5z"/><path fill="%23233447" d="m14.2 21.1-3.2-.9 2.3-1zm3.6 0 1-2 2.3 1z"/><path fill="%23CC6228" d="m10.6 26.9.6-4.6-3.6.1zm10.2-4.6.5 4.6 3-4.5zm3-7.4-6.3.3.6 3.3 1-2 2.3 1zM11 19.7l2.3-1 1 2 .6-3.3-6.3-.3z"/><path fill="%23E27525" d="m8.6 17 2.6 5.2-.1-2.5zm12.7 2.7-.1 2.5 2.6-5.2zm-6.4-2.4-.6 3.3.7 4 .2-5.2zm2.2 0-.4 2 .2 5.2.7-4z"/><path fill="%23F5841F" d="m17.8 21.1-.7 4 .5.4 3.3-2.6.1-2.5zm-6.8-.7.1 2.5 3.3 2.6.5-.4-.7-4z"/><path fill="%23C0AC9D" d="m17.9 28.6-.1-1.1-.3-.3h-3.1l-.3.3v1.1l-3.5-1.7 1.2 1 2.5 1.7h3.4l2.5-1.7 1.2-1z"/><path fill="%23161616" d="m17.5 25.1-.5-.4h-2l-.5.4-.3 2.5.3-.3h3.1l.3.3z"/><path fill="%23763E1A" d="M29.1 11.8 30 7.5 28.6 3l-11 8.1 4.2 3.6 6 1.8 1.4-1.5-.6-.4 1-.9-.7-.6 1-.7zM2 7.5l1 4.3-.6.5 1 .7-.7.6 1 .9-.6.4 1.4 1.5 6-1.8 4.2-3.6L4.4 3z"/><path fill="%23F5841F" d="m28.4 16.5-6-1.8 1.8 2.7-2.7 5.2 3.6-.1h5.4zm-17.4-1.8-6 1.8-2 6h5.4l3.6.1-2.7-5.2zM15 17.3l.4-6.6 1.7-4.7h-7.6l1.7 4.7.4 6.6.1 2.1v5.2h2v-5.2z"/></svg>'
+      mobile: function (host, path) { return "https://metamask.app.link/dapp/" + host + path; },
+      icon: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 318.6 318.6"><polygon fill="%23E2761B" stroke="%23E2761B" stroke-linecap="round" stroke-linejoin="round" points="274.1,35.5 174.6,109.4 193,65.8"/><polygon fill="%23E4761B" stroke="%23E4761B" stroke-linecap="round" stroke-linejoin="round" points="44.4,35.5 143.1,110.1 125.6,65.8"/><polygon fill="%23E4761B" stroke="%23E4761B" stroke-linecap="round" stroke-linejoin="round" points="238.3,206.8 211.8,247.4 268.5,263 284.8,207.7"/><polygon fill="%23E4761B" stroke="%23E4761B" stroke-linecap="round" stroke-linejoin="round" points="33.9,207.7 50.1,263 106.8,247.4 80.3,206.8"/><polygon fill="%23E4761B" stroke="%23E4761B" stroke-linecap="round" stroke-linejoin="round" points="103.6,138.2 87.8,162.1 144.1,164.6 142.1,104.1"/><polygon fill="%23E4761B" stroke="%23E4761B" stroke-linecap="round" stroke-linejoin="round" points="214.9,138.2 175.9,103.4 174.6,164.6 230.8,162.1"/><polygon fill="%23E4761B" stroke="%23E4761B" stroke-linecap="round" stroke-linejoin="round" points="106.8,247.4 140.6,230.9 111.4,208.1"/><polygon fill="%23E4761B" stroke="%23E4761B" stroke-linecap="round" stroke-linejoin="round" points="177.9,230.9 211.8,247.4 207.1,208.1"/><polygon fill="%23D7C1B3" stroke="%23D7C1B3" stroke-linecap="round" stroke-linejoin="round" points="211.8,247.4 177.9,230.9 180.6,253 180.3,262.3"/><polygon fill="%23D7C1B3" stroke="%23D7C1B3" stroke-linecap="round" stroke-linejoin="round" points="106.8,247.4 138.3,262.3 138.1,253 140.6,230.9"/><polygon fill="%23233447" stroke="%23233447" stroke-linecap="round" stroke-linejoin="round" points="138.8,193.5 110.6,185.2 130.5,176.1"/><polygon fill="%23233447" stroke="%23233447" stroke-linecap="round" stroke-linejoin="round" points="179.7,193.5 188,176.1 208,185.2"/><polygon fill="%23CD6116" stroke="%23CD6116" stroke-linecap="round" stroke-linejoin="round" points="106.8,247.4 111.6,206.8 80.3,207.7"/><polygon fill="%23CD6116" stroke="%23CD6116" stroke-linecap="round" stroke-linejoin="round" points="207,206.8 211.8,247.4 238.3,207.7"/><polygon fill="%23CD6116" stroke="%23CD6116" stroke-linecap="round" stroke-linejoin="round" points="230.8,162.1 174.6,164.6 179.8,193.5 188.1,176.1 208.1,185.2"/><polygon fill="%23CD6116" stroke="%23CD6116" stroke-linecap="round" stroke-linejoin="round" points="110.6,185.2 130.6,176.1 138.8,193.5 144.1,164.6 87.8,162.1"/><polygon fill="%23E4751F" stroke="%23E4751F" stroke-linecap="round" stroke-linejoin="round" points="87.8,162.1 111.4,208.1 110.6,185.2"/><polygon fill="%23E4751F" stroke="%23E4751F" stroke-linecap="round" stroke-linejoin="round" points="208.1,185.2 207.1,208.1 230.8,162.1"/><polygon fill="%23E4751F" stroke="%23E4751F" stroke-linecap="round" stroke-linejoin="round" points="144.1,164.6 138.8,193.5 145.4,227.6 146.9,182.7"/><polygon fill="%23E4751F" stroke="%23E4751F" stroke-linecap="round" stroke-linejoin="round" points="174.6,164.6 171.9,182.6 173.1,227.6 179.8,193.5"/><polygon fill="%23F6851B" stroke="%23F6851B" stroke-linecap="round" stroke-linejoin="round" points="179.8,193.5 173.1,227.6 177.9,230.9 207.1,208.1 208.1,185.2"/><polygon fill="%23F6851B" stroke="%23F6851B" stroke-linecap="round" stroke-linejoin="round" points="110.6,185.2 111.4,208.1 140.6,230.9 145.4,227.6 138.8,193.5"/><polygon fill="%23C0AD9E" stroke="%23C0AD9E" stroke-linecap="round" stroke-linejoin="round" points="180.3,262.3 180.6,253 178.1,250.8 140.4,250.8 138.1,253 138.3,262.3 106.8,247.4 117.8,256.4 140.1,271.9 178.4,271.9 200.8,256.4 211.8,247.4"/><polygon fill="%23161616" stroke="%23161616" stroke-linecap="round" stroke-linejoin="round" points="177.9,230.9 173.1,227.6 145.4,227.6 140.6,230.9 138.1,253 140.4,250.8 178.1,250.8 180.6,253"/><polygon fill="%23763D16" stroke="%23763D16" stroke-linecap="round" stroke-linejoin="round" points="278.3,114.2 286.8,73.4 274.1,35.5 177.9,106.9 214.9,138.2 267.2,153.5 278.8,140 273.8,136.4 281.8,129.1 275.6,124.3 283.6,118.2"/><polygon fill="%23763D16" stroke="%23763D16" stroke-linecap="round" stroke-linejoin="round" points="31.8,73.4 40.3,114.2 34.9,118.2 42.9,124.3 36.8,129.1 44.8,136.4 39.8,140 51.3,153.5 103.6,138.2 140.6,106.9 44.4,35.5"/><polygon fill="%23F6851B" stroke="%23F6851B" stroke-linecap="round" stroke-linejoin="round" points="267.2,153.5 214.9,138.2 230.8,162.1 207.1,208.1 238.3,207.7 284.8,207.7"/><polygon fill="%23F6851B" stroke="%23F6851B" stroke-linecap="round" stroke-linejoin="round" points="103.6,138.2 51.3,153.5 33.9,207.7 80.3,207.7 111.4,208.1 87.8,162.1"/><polygon fill="%23F6851B" stroke="%23F6851B" stroke-linecap="round" stroke-linejoin="round" points="174.6,164.6 177.9,106.9 193.1,65.8 125.6,65.8 140.6,106.9 144.1,164.6 145.3,182.8 145.4,227.6 173.1,227.6 173.3,182.8"/></svg>'
     },
     {
       rdns: "com.coinbase.wallet",
       name: "Coinbase Wallet",
       install: "https://www.coinbase.com/wallet",
+      mobile: function (host, path) { return "https://go.cb-w.com/dapp?cb_url=" + encodeURIComponent("https://" + host + path); },
       icon: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="%230052FF"/><path fill="%23fff" d="M16 6.5a9.5 9.5 0 1 0 0 19 9.5 9.5 0 0 0 0-19Zm-3 12.2a.6.6 0 0 1-.6-.6v-4.2c0-.3.3-.6.6-.6h6c.3 0 .6.3.6.6v4.2c0 .3-.3.6-.6.6h-6Z"/></svg>'
     },
     {
       rdns: "com.trustwallet.app",
       name: "Trust Wallet",
       install: "https://trustwallet.com/download",
+      mobile: function (host, path) { return "https://link.trustwallet.com/open_url?coin_id=60&url=" + encodeURIComponent("https://" + host + path); },
       icon: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="%230500FF"/><path fill="%23fff" d="M16 6.5c-2 1.6-4.6 2.5-7.4 2.5v6.7c0 4.6 3 8.7 7.4 10.3 4.4-1.6 7.4-5.7 7.4-10.3V9c-2.8 0-5.4-.9-7.4-2.5Zm0 14.6V9.5c1.5 1 3.4 1.5 5.4 1.5v4.7c0 3.4-2 6.4-5.4 7.7v-2.3Z"/></svg>'
     },
     {
       rdns: "app.phantom",
       name: "Phantom",
       install: "https://phantom.app/download",
+      mobile: function (host, path) { return "https://phantom.app/ul/browse/" + encodeURIComponent("https://" + host + path) + "?ref=" + encodeURIComponent("https://" + host); },
       icon: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><defs><linearGradient id="p" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="%23534BB1"/><stop offset="1" stop-color="%23551BF9"/></linearGradient></defs><rect width="32" height="32" rx="8" fill="url(%23p)"/><path fill="%23fff" d="M27 16.4c0 6.1-5 11-11.1 11h-.6c-5.7-.3-10.2-5-10.4-10.6V16C5.2 10 10.1 5 16.2 5c6 0 10.8 4.9 10.8 10.9v.5Zm-7.2-2.7c-.6 0-1.1.5-1.1 1.2 0 .6.5 1.1 1.1 1.1.6 0 1.1-.5 1.1-1.1 0-.7-.5-1.2-1.1-1.2Zm-4.3 0c-.6 0-1.1.5-1.1 1.2 0 .6.5 1.1 1.1 1.1.6 0 1.1-.5 1.1-1.1 0-.7-.5-1.2-1.1-1.2Zm-5.4 7.1c1.6 2.4 4.5 4 7.7 4 1.7 0 3.3-.4 4.7-1.2-1.6.9-3.4 1.4-5.3 1.4-3 0-5.8-1.3-7.5-3.5l.4-.7Z"/></svg>'
     },
     {
@@ -53,6 +57,15 @@
       icon: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="%231F2033"/><path fill="%23fff" d="m16 4 11 6.4v11.2L16 28 5 21.6V10.4L16 4Zm0 4.2-7.2 4.2v7.2l7.2 4.2 7.2-4.2v-7.2L16 8.2Zm-3.4 5.4 6.8 4-6.8 4v-8Z"/></svg>'
     }
   ];
+
+  // True for iOS / Android browsers where injected providers usually aren't
+  // available. We use this to deeplink into the wallet's in-app dApp browser
+  // instead of sending the user to a desktop install page.
+  const IS_MOBILE = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || "");
+
+  function dappTarget() {
+    return { host: location.host, path: location.pathname + location.search };
+  }
   const CSS = `
     .defi-wm__overlay{position:fixed;inset:0;background:rgba(7,11,28,.72);backdrop-filter:blur(4px);z-index:9998;display:none;align-items:center;justify-content:center;padding:20px;animation:defi-wm-fade .15s ease-out}
     .defi-wm__overlay--open{display:flex}
@@ -141,11 +154,13 @@
     ordered.forEach((wallet) => {
       const detected = detectedByRdns[wallet.rdns];
       const isRemembered = wallet.rdns === remembered;
+      const canDeeplink = IS_MOBILE && typeof wallet.mobile === "function";
       const iconSrc = (detected && detected.info && detected.info.icon) || wallet.icon;
       const li = document.createElement("li");
       let pill = "";
       if (isRemembered) pill = '<span class="defi-wm__pill">Last used</span>';
       else if (detected) pill = '<span class="defi-wm__pill defi-wm__pill--ok">Detected</span>';
+      else if (canDeeplink) pill = '<span class="defi-wm__pill">Open in app</span>';
       else pill = '<span class="defi-wm__pill defi-wm__pill--muted">Install</span>';
       li.innerHTML = `
         <button class="defi-wm__btn" type="button">
@@ -156,6 +171,12 @@
       li.querySelector("button").addEventListener("click", async () => {
         if (detected) {
           await connectAndClose(detected);
+        } else if (canDeeplink) {
+          // On mobile, open the wallet's in-app dApp browser pointed at this
+          // page. The wallet then injects window.ethereum and the user can
+          // hit Connect again from inside the in-app browser.
+          const t = dappTarget();
+          window.location.href = wallet.mobile(t.host, t.path);
         } else {
           window.open(wallet.install, "_blank", "noopener");
         }
