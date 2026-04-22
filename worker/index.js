@@ -457,6 +457,62 @@ async function etherscanCall(env, chainId, params) {
   return data.result;
 }
 
+// CoinGecko platform IDs for the chains in CHAIN_IDS — used to batch-price
+// ERC-20 tokens by contract address. Keys must match the CHAIN_IDS values.
+const COINGECKO_PLATFORM = { 1: "ethereum", 42161: "arbitrum-one", 137: "polygon-pos" };
+
+// ERC-20 balanceOf(address) selector. Used with Etherscan's proxy/eth_call to
+// read current token balances without needing a separate RPC binding.
+const ERC20_BALANCE_OF_SELECTOR = "0x70a08231";
+function pad32Hex(addr) {
+  return addr.toLowerCase().replace(/^0x/, "").padStart(64, "0");
+}
+function hexToBigIntSafe(hex) {
+  if (typeof hex !== "string" || !/^0x[0-9a-fA-F]*$/.test(hex)) return 0n;
+  return hex === "0x" || hex === "0x0" ? 0n : BigInt(hex);
+}
+
+// Read balanceOf(wallet) for a list of token contracts on a single chain.
+// Sequential to stay under Etherscan's free-tier 5 calls/sec limit; for the
+// typical EOA this is < 20 tokens. Failures on individual tokens are swallowed
+// so one bad contract doesn't blank the whole portfolio.
+async function getErc20BalancesViaEtherscan(env, chainId, wallet, tokens) {
+  const out = [];
+  const data = ERC20_BALANCE_OF_SELECTOR + pad32Hex(wallet);
+  for (const t of tokens) {
+    try {
+      const hex = await etherscanCall(env, chainId, {
+        module: "proxy", action: "eth_call",
+        to: t.contract, data, tag: "latest",
+      });
+      const raw = hexToBigIntSafe(hex);
+      if (raw === 0n) continue;
+      const decimals = Math.max(0, Math.min(36, Number(t.decimals) || 18));
+      const amount = Number(raw) / Math.pow(10, decimals);
+      if (!Number.isFinite(amount) || amount === 0) continue;
+      out.push({ ...t, balance_raw: raw.toString(), balance: amount });
+    } catch (_e) { /* skip unreadable token */ }
+  }
+  return out;
+}
+
+// Best-effort CoinGecko price fetch — returns { contract: priceUsd }. Free
+// tier is rate-limited; failures degrade to no-price, the dashboard still
+// shows the token + amount.
+async function getTokenPricesByContract(platform, contracts) {
+  if (!platform || !contracts.length) return {};
+  try {
+    const url = "https://api.coingecko.com/api/v3/simple/token_price/" + platform +
+      "?contract_addresses=" + contracts.join(",") + "&vs_currencies=usd";
+    const res = await fetch(url, { headers: { "Accept": "application/json" } });
+    if (!res.ok) return {};
+    const j = await res.json();
+    const map = {};
+    Object.keys(j || {}).forEach((k) => { if (j[k] && typeof j[k].usd === "number") map[k.toLowerCase()] = j[k].usd; });
+    return map;
+  } catch (_e) { return {}; }
+}
+
 async function handleOnchain(wallet, env) {
   if (!/^0x[a-fA-F0-9]{40}$/.test(wallet)) {
     return json({ success: false, error: "Invalid wallet address" }, 400);
@@ -466,14 +522,41 @@ async function handleOnchain(wallet, env) {
     try {
       const [txs, tokenTxs] = await Promise.all([
         etherscanCall(env, chainId, { module: "account", action: "txlist", address: wallet, page: 1, offset: 100, sort: "desc" }),
-        etherscanCall(env, chainId, { module: "account", action: "tokentx", address: wallet, page: 1, offset: 100, sort: "desc" }),
+        // Bumped from 100 -> 1000 so token discovery covers wallets with
+        // moderate ERC-20 history. Etherscan caps a single page at 10000.
+        etherscanCall(env, chainId, { module: "account", action: "tokentx", address: wallet, page: 1, offset: 1000, sort: "desc" }),
       ]);
       const txsArr = Array.isArray(txs) ? txs : [];
       const tokArr = Array.isArray(tokenTxs) ? tokenTxs : [];
       const uniqueContracts = new Set(txsArr.filter((t) => t.to).map((t) => t.to.toLowerCase()));
-      const uniqueTokens = new Set(tokArr.map((t) => (t.contractAddress || "").toLowerCase()));
+      const uniqueTokens = new Set(tokArr.map((t) => (t.contractAddress || "").toLowerCase()).filter(Boolean));
       const firstTx = txsArr.length ? Number(txsArr[txsArr.length - 1].timeStamp) * 1000 : null;
       const lastTx = txsArr.length ? Number(txsArr[0].timeStamp) * 1000 : null;
+
+      // Build a deduped token catalog from tokentx (which conveniently carries
+      // tokenName/tokenSymbol/tokenDecimal alongside contractAddress), then
+      // read live balances for each. Drop tokens whose current balance is 0
+      // so the heatmap isn't polluted by historical-only positions.
+      const catalog = new Map();
+      for (const t of tokArr) {
+        const c = (t.contractAddress || "").toLowerCase();
+        if (!c || catalog.has(c)) continue;
+        catalog.set(c, {
+          contract: c,
+          symbol: t.tokenSymbol || "",
+          name:   t.tokenName   || "",
+          decimals: Number(t.tokenDecimal) || 18,
+        });
+      }
+      const balances = await getErc20BalancesViaEtherscan(env, chainId, wallet, Array.from(catalog.values()));
+      // Price lookup is best-effort; tokens without a price still surface
+      // (with value_usd = 0) so the user sees them in the heatmap.
+      const prices = await getTokenPricesByContract(COINGECKO_PLATFORM[chainId], balances.map((b) => b.contract));
+      const tokens = balances.map((b) => {
+        const price = prices[b.contract] || 0;
+        return { ...b, price_usd: price, value_usd: b.balance * price };
+      });
+
       out.chains[name] = {
         chain_id: chainId,
         tx_count: txsArr.length,
@@ -483,6 +566,7 @@ async function handleOnchain(wallet, env) {
         first_tx_at: firstTx,
         last_tx_at: lastTx,
         wallet_age_days: firstTx ? Math.floor((Date.now() - firstTx) / 86400000) : 0,
+        tokens, // current ERC-20 holdings with amount + USD value (best-effort)
       };
     } catch (e) {
       out.chains[name] = { chain_id: chainId, error: e.message };

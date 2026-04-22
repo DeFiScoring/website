@@ -101,10 +101,14 @@
           s.walletAgeDays = h.wallet_age_days;
           s.firstTxAt = h.first_tx_at;
           s.lastTxAt = h.last_tx_at;
+          s.tokens = Array.isArray(h.tokens) ? h.tokens : [];
         }
       });
     }
-    const positions = snapshots
+    // Native-coin positions (ETH on Ethereum/Arbitrum, MATIC/POL on Polygon).
+    // We surface dust balances too (any > 0) so users see "we did look here";
+    // the heatmap sorts by USD value so dust naturally sinks to the bottom.
+    const nativePositions = snapshots
       .filter((s) => !s.error && s.nativeAmount > 0)
       .map((s) => {
         const cfg = CHAINS.find((c) => c.id === s.chain);
@@ -121,6 +125,26 @@
           source: "rpc",
         };
       });
+    // ERC-20 positions discovered server-side via Etherscan tokentx + eth_call.
+    // Without these, multi-chain wallets that only hold ERC-20s (RENDER, GRT,
+    // USDC, MATIC-as-ERC20, POL, etc.) appear empty in the dashboard.
+    const tokenPositions = [];
+    snapshots.forEach((s) => {
+      (s.tokens || []).forEach((t) => {
+        tokenPositions.push({
+          name: (t.symbol || t.name || "Token"),
+          chain: s.chainName,
+          chainId: s.chain,
+          amount: t.balance,
+          symbol: t.symbol || "",
+          price_usd: t.price_usd || 0,
+          value_usd: t.value_usd || 0,
+          contract: t.contract,
+          source: "etherscan",
+        });
+      });
+    });
+    const positions = nativePositions.concat(tokenPositions);
     const totalUsd = positions.reduce((a, p) => a + p.value_usd, 0);
     const totalTx = snapshots.reduce((a, s) => a + (s.txCount || 0), 0);
     const totalUniqueContracts = snapshots.reduce((a, s) => a + (s.uniqueContracts || 0), 0);
