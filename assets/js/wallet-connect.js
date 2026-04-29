@@ -60,20 +60,16 @@
     }
     if (state.providers.length === 1) return state.providers[0].provider;
     if (state.providers.length > 1) {
-      // Multiple wallets: present a minimal prompt. Order: MetaMask, Rabby, Coinbase, others.
-      const priority = ["io.metamask", "io.rabby", "com.coinbase.wallet"];
+      // Multiple wallets and no modal available — pick by priority instead of
+      // popping a window.prompt (which is hostile UX and can be silently
+      // blocked by some browsers). MetaMask wins, then Rabby, Coinbase, etc.
+      const priority = ["io.metamask", "io.rabby", "com.coinbase.wallet", "com.trustwallet.app", "app.phantom", "com.exodus"];
       const sorted = [...state.providers].sort((a, b) => {
         const ai = priority.indexOf(a.info.rdns);
         const bi = priority.indexOf(b.info.rdns);
         return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
       });
-      const choice = window.prompt(
-        "Multiple wallets detected. Type the number to connect:\n" +
-          sorted.map((p, i) => (i + 1) + ". " + p.info.name).join("\n"),
-        "1"
-      );
-      const idx = Math.max(1, Math.min(sorted.length, parseInt(choice || "1", 10))) - 1;
-      const picked = sorted[idx];
+      const picked = sorted[0];
       if (picked) {
         localStorage.setItem(PROVIDER_KEY, picked.info.rdns);
         return picked.provider;
@@ -94,7 +90,7 @@
 
   async function connectWith(provider) {
     if (!provider) {
-      alert("No EVM wallet detected. Install MetaMask, Rabby, or another EIP-6963 wallet.");
+      alert("No browser wallet detected.\n\nInstall MetaMask, Coinbase Wallet, Trust, Rabby, Phantom, or Exodus, then refresh this page.");
       return null;
     }
     try {
@@ -114,6 +110,18 @@
     if (!state.providers.length) {
       window.dispatchEvent(new Event("eip6963:requestProvider"));
       await new Promise((r) => setTimeout(r, 80));
+    }
+    // Prefer the modal if it's loaded — gives the user the auto-detect button
+    // plus the curated wallet picker rather than a silent or prompt-based
+    // selection. Falls through to direct connect if the modal isn't on the
+    // page (e.g. embedded contexts that only load wallet-connect.js).
+    if (window.DefiWalletModal && typeof window.DefiWalletModal.open === "function") {
+      try {
+        const addr = await window.DefiWalletModal.open();
+        return addr || null;
+      } catch (e) {
+        console.warn("[wallet-connect] modal failed, falling back:", e);
+      }
     }
     return connectWith(pickProvider());
   }

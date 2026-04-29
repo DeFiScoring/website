@@ -1,0 +1,51 @@
+Now I understand the system. The issues are:
+
+1. **Wallets that use legacy `window.ethereum` injection (not EIP-6963) only get an "Install" pill** even when actually installed (e.g., MetaMask, Coinbase, Trust often inject without announcing via EIP-6963 in some browsers).
+2. **No auto-detect option** for new users — they only see "Install" buttons.
+3. **`DefiWallet.connect()` uses an ugly `window.prompt`** when multiple wallets are detected, and it shows an alert instead of opening the modal.
+
+Let me fix these.
+
+Now update the `renderList` function to honor legacy detection and prepend an Auto-detect entry.
+
+Now update `wallet-connect.js` to open the modal instead of using a `window.prompt` for multi-wallet, and improve the no-wallet messaging.
+
+Now let me verify the final files look right.
+
+Let me run a JS syntax check to make sure both files parse cleanly.
+
+Both files parse cleanly. Let me commit and push.
+
+Direct git push is rejected with a 403. Let me push via the GitHub MCP tool instead.
+
+Let me try the push via the GitHub MCP `push_files` tool. I'll pass both file contents.
+
+I've made all the code changes and committed them locally on `claude/fix-wallet-connect-options-YXKBF`, but the push is being rejected with 403 by both git and the GitHub MCP `push_files`/`create_branch` (both return "Resource not accessible by integration"). This integration appears not to have write permission to `defiscoring/website`.
+
+## Local commit ready (not yet pushed)
+
+`75868a6 Add auto-detect option and fix legacy wallet connections`
+
+### What was changed
+
+**`assets/js/wallet-modal.js`**
+- Added an **"Auto-detect wallet"** entry at the top of the picker. It re-polls EIP-6963, picks the highest-priority injected provider (with last-used and priority ordering), falls back to legacy detectors and finally to `window.ethereum`. New users always see a tappable option, not just Install links.
+- Added per-wallet `legacy()` detectors for MetaMask, Coinbase Wallet, Trust, Phantom, Exodus that check `window.coinbaseWalletExtension`, `window.trustwallet.ethereum`, `window.phantom.ethereum`, `window.ethereum.providers`, and the `isXxx` flags. Wallets that inject only via legacy `window.ethereum` (not EIP-6963) now show "Detected" and connect on click instead of being mis-labelled "Install".
+- The fallback "Browser wallet" entry is suppressed when a curated wallet has already resolved via legacy, to avoid duplicates.
+
+**`assets/js/wallet-connect.js`**
+- `DefiWallet.connect()` now opens `DefiWalletModal` when available, so users with multiple wallets see the picker (and the new auto-detect button) instead of being routed silently.
+- Replaced the `window.prompt` multi-wallet picker with priority-ordered selection as a non-modal fallback.
+- Improved the no-wallet alert message.
+
+### Action needed
+The push needs to be performed by someone with write access to `defiscoring/website`, or the integration's token needs `contents: write` permission for this repo. Want me to leave the commit on this branch locally so you can push it manually, or try a different push path?
+
+The push is still being rejected. Both routes return 403:
+
+- **`git push`** via the local proxy (`http://127.0.0.1:43107`) → `Permission to DeFiScoring/website.git denied to guillaumelauzier`
+- **GitHub MCP** (`push_files`, `create_branch`) → `403 Resource not accessible by integration`
+
+The commit `75868a6` is sitting on `claude/fix-wallet-connect-options-YXKBF` locally and is clean — but neither identity available to me has write access to `defiscoring/website`. This is a permissions issue I can't resolve from inside the session; the GitHub App token / proxy credentials need write (`contents: write`) on this repo before the push will go through.
+
+Once permissions are granted, a single `git push -u origin claude/fix-wallet-connect-options-YXKBF` will deliver the commit unchanged.
