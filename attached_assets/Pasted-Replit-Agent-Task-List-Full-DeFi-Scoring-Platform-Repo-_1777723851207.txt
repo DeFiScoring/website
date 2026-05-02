@@ -1,0 +1,2755 @@
+Replit Agent Task List — Full DeFi Scoring Platform
+Repo: DeFiScoring/website Domain: defiscoring.com Stack: Cloudflare Worker + Jekyll site + dashboard SPA
+Paste these tasks into Replit's AI Agent one at a time, in order. Each task is self-contained, has acceptance criteria, and lists the exact files to touch. Do NOT skip ahead — later tasks assume earlier ones merged cleanly.
+
+⚙️ Task 0 — Environment & Secrets Setup
+Goal: Make sure the workspace can build and deploy before we touch code.
+Do:
+In Replit → Tools → Secrets, add the following keys (get them now, before writing code):
+ALCHEMY_KEY — free at alchemy.com (one key works for every EVM chain)
+COINGECKO_KEY — pro key recommended; free tier works but rate-limits
+ETHERSCAN_KEY — free at etherscan.io/apis (multichain V2 API)
+DEFILLAMA_KEY — optional, free at defillama.com
+MORALIS_KEY — fallback NFT/token provider
+OPENSEA_KEY — for NFT floor prices
+COVALENT_KEY — fallback multi-chain reader
+Confirm wrangler is installed: run npx wrangler --version. If missing, run npm install -D wrangler.
+Run npx wrangler whoami. If not logged in, run npx wrangler login.
+Verify the existing site builds: bundle install && bundle exec jekyll build. Report any errors before continuing.
+Acceptance: All 7 secrets visible in Replit Secrets panel. wrangler --version prints. Jekyll builds without errors.
+
+🧱 Task 1 — Repo Restructure for the New API
+Goal: Clean folder structure that separates concerns. The current worker/ is one blob; we need modules.
+Do:
+Inside the repo root, create the following directory tree (do NOT delete existing files yet):
+  worker/
+     index.js              # entry point, router
+     lib/
+       chains.js           # chain registry
+       providers.js        # Alchemy/Moralis/Covalent abstraction
+       prices.js           # CoinGecko + DefiLlama price layer
+       cache.js            # KV cache helpers
+     handlers/
+       portfolio.js
+       defi-positions.js
+       nfts.js
+       score.js
+       recommendations.js
+       protocols.js
+       alerts.js
+       history.js
+     scoring/
+       factors.js
+       weights.js
+       grades.js
+   dashboard/
+     app.js
+     components/
+       portfolio-card.js
+       chain-breakdown.js
+       defi-positions.js
+       nft-grid.js
+       score-gauge.js
+       recommendations.js
+       alerts.js
+     styles/
+       dashboard.css
+Move the existing worker/*.js files into worker/_legacy/ (don't delete — we'll reference them).
+Create empty stub files for every path above so imports don't break during dev.
+Acceptance: Directory tree matches above. Old worker files preserved in _legacy/. git status shows new structure.
+
+🌐 Task 2 — Build the Chain Registry
+Goal: Single source of truth for every chain we support. Adding a chain later = one entry.
+Do:
+Create worker/lib/chains.js with this exact content:
+javascript
+// worker/lib/chains.js
+// One row per chain. ALL chain-specific logic should read from here.
+
+export const CHAINS = [
+  {
+    id: 'ethereum',
+    name: 'Ethereum',
+    chainId: 1,
+    alchemy: 'eth-mainnet',
+    moralis: 'eth',
+    covalent: 1,
+    coingecko: 'ethereum',
+    defillama: 'ethereum',
+    nativeSymbol: 'ETH',
+    nativeCoingeckoId: 'ethereum',
+    explorer: 'https://etherscan.io',
+    explorerApi: 'https://api.etherscan.io/v2/api',
+    tier: 1,
+  },
+  {
+    id: 'optimism',
+    name: 'Optimism',
+    chainId: 10,
+    alchemy: 'opt-mainnet',
+    moralis: 'optimism',
+    covalent: 10,
+    coingecko: 'optimistic-ethereum',
+    defillama: 'optimism',
+    nativeSymbol: 'ETH',
+    nativeCoingeckoId: 'ethereum',
+    explorer: 'https://optimistic.etherscan.io',
+    explorerApi: 'https://api.etherscan.io/v2/api',
+    tier: 1,
+  },
+  {
+    id: 'arbitrum',
+    name: 'Arbitrum One',
+    chainId: 42161,
+    alchemy: 'arb-mainnet',
+    moralis: 'arbitrum',
+    covalent: 42161,
+    coingecko: 'arbitrum-one',
+    defillama: 'arbitrum',
+    nativeSymbol: 'ETH',
+    nativeCoingeckoId: 'ethereum',
+    explorer: 'https://arbiscan.io',
+    explorerApi: 'https://api.etherscan.io/v2/api',
+    tier: 1,
+  },
+  {
+    id: 'base',
+    name: 'Base',
+    chainId: 8453,
+    alchemy: 'base-mainnet',
+    moralis: 'base',
+    covalent: 8453,
+    coingecko: 'base',
+    defillama: 'base',
+    nativeSymbol: 'ETH',
+    nativeCoingeckoId: 'ethereum',
+    explorer: 'https://basescan.org',
+    explorerApi: 'https://api.etherscan.io/v2/api',
+    tier: 1,
+  },
+  {
+    id: 'polygon',
+    name: 'Polygon',
+    chainId: 137,
+    alchemy: 'polygon-mainnet',
+    moralis: 'polygon',
+    covalent: 137,
+    coingecko: 'polygon-pos',
+    defillama: 'polygon',
+    nativeSymbol: 'POL',
+    nativeCoingeckoId: 'polygon-ecosystem-token',
+    explorer: 'https://polygonscan.com',
+    explorerApi: 'https://api.etherscan.io/v2/api',
+    tier: 1,
+  },
+  {
+    id: 'bnb',
+    name: 'BNB Chain',
+    chainId: 56,
+    alchemy: 'bnb-mainnet',
+    moralis: 'bsc',
+    covalent: 56,
+    coingecko: 'binance-smart-chain',
+    defillama: 'bsc',
+    nativeSymbol: 'BNB',
+    nativeCoingeckoId: 'binancecoin',
+    explorer: 'https://bscscan.com',
+    explorerApi: 'https://api.etherscan.io/v2/api',
+    tier: 2,
+  },
+  {
+    id: 'avalanche',
+    name: 'Avalanche',
+    chainId: 43114,
+    alchemy: 'avax-mainnet',
+    moralis: 'avalanche',
+    covalent: 43114,
+    coingecko: 'avalanche',
+    defillama: 'avalanche',
+    nativeSymbol: 'AVAX',
+    nativeCoingeckoId: 'avalanche-2',
+    explorer: 'https://snowtrace.io',
+    explorerApi: 'https://api.etherscan.io/v2/api',
+    tier: 2,
+  },
+  {
+    id: 'gnosis',
+    name: 'Gnosis',
+    chainId: 100,
+    alchemy: null,
+    moralis: 'gnosis',
+    covalent: 100,
+    coingecko: 'xdai',
+    defillama: 'xdai',
+    nativeSymbol: 'xDAI',
+    nativeCoingeckoId: 'xdai',
+    explorer: 'https://gnosisscan.io',
+    explorerApi: 'https://api.etherscan.io/v2/api',
+    tier: 2,
+  },
+  {
+    id: 'linea',
+    name: 'Linea',
+    chainId: 59144,
+    alchemy: 'linea-mainnet',
+    moralis: 'linea',
+    covalent: 59144,
+    coingecko: 'linea',
+    defillama: 'linea',
+    nativeSymbol: 'ETH',
+    nativeCoingeckoId: 'ethereum',
+    explorer: 'https://lineascan.build',
+    explorerApi: 'https://api.etherscan.io/v2/api',
+    tier: 2,
+  },
+  {
+    id: 'scroll',
+    name: 'Scroll',
+    chainId: 534352,
+    alchemy: 'scroll-mainnet',
+    moralis: 'scroll',
+    covalent: 534352,
+    coingecko: 'scroll',
+    defillama: 'scroll',
+    nativeSymbol: 'ETH',
+    nativeCoingeckoId: 'ethereum',
+    explorer: 'https://scrollscan.com',
+    explorerApi: 'https://api.etherscan.io/v2/api',
+    tier: 2,
+  },
+  {
+    id: 'zksync',
+    name: 'zkSync Era',
+    chainId: 324,
+    alchemy: 'zksync-mainnet',
+    moralis: 'zksync',
+    covalent: 324,
+    coingecko: 'zksync',
+    defillama: 'era',
+    nativeSymbol: 'ETH',
+    nativeCoingeckoId: 'ethereum',
+    explorer: 'https://explorer.zksync.io',
+    explorerApi: 'https://api.etherscan.io/v2/api',
+    tier: 2,
+  },
+];
+
+export const CHAINS_BY_ID = Object.fromEntries(CHAINS.map((c) => [c.id, c]));
+export const CHAIN_IDS_TIER1 = CHAINS.filter((c) => c.tier === 1).map((c) => c.id);
+export const ALL_CHAIN_IDS = CHAINS.map((c) => c.id);
+Acceptance: File compiles. import { CHAINS } from './lib/chains.js' works. Running node -e "import('./worker/lib/chains.js').then(m => console.log(m.CHAINS.length))" prints 11.
+
+🔌 Task 3 — Provider Abstraction Layer
+Goal: Wrap Alchemy + Moralis + Covalent behind one interface so we can swap or fall back without touching handlers.
+Do:
+Create worker/lib/providers.js:
+javascript
+// worker/lib/providers.js
+// Unified read interface across Alchemy / Moralis / Covalent.
+// Each function takes (chain, env, ...) and returns normalized data.
+
+import { CHAINS_BY_ID } from './chains.js';
+
+// ----- Alchemy ------------------------------------------------------------
+async function alchemyRpc(chain, env, method, params) {
+  if (!chain.alchemy) throw new Error(`no alchemy for ${chain.id}`);
+  const url = `https://${chain.alchemy}.g.alchemy.com/v2/${env.ALCHEMY_KEY}`;
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+  });
+  const j = await r.json();
+  if (j.error) throw new Error(`alchemy:${method}:${j.error.message}`);
+  return j.result;
+}
+
+export async function getNativeBalance(chain, env, address) {
+  if (chain.alchemy) {
+    const hex = await alchemyRpc(chain, env, 'eth_getBalance', [address, 'latest']);
+    return Number(BigInt(hex)) / 1e18;
+  }
+  // Moralis fallback
+  return moralisNativeBalance(chain, env, address);
+}
+
+export async function getErc20Balances(chain, env, address) {
+  if (chain.alchemy) {
+    const res = await alchemyRpc(chain, env, 'alchemy_getTokenBalances', [address, 'erc20']);
+    const filtered = (res.tokenBalances || []).filter((t) => t.tokenBalance && t.tokenBalance !== '0x0');
+    const enriched = await Promise.all(filtered.map(async (t) => {
+      const meta = await alchemyRpc(chain, env, 'alchemy_getTokenMetadata', [t.contractAddress]).catch(() => ({}));
+      const decimals = meta.decimals ?? 18;
+      const amount = Number(BigInt(t.tokenBalance)) / Math.pow(10, decimals);
+      return {
+        contract: t.contractAddress.toLowerCase(),
+        symbol: meta.symbol || 'UNKNOWN',
+        name: meta.name || 'Unknown',
+        logo: meta.logo || null,
+        decimals,
+        amount,
+      };
+    }));
+    return enriched.filter((t) => t.amount > 0);
+  }
+  return moralisErc20Balances(chain, env, address);
+}
+
+export async function getNfts(chain, env, address) {
+  if (chain.alchemy) {
+    const url = `https://${chain.alchemy}.g.alchemy.com/nft/v3/${env.ALCHEMY_KEY}/getNFTsForOwner?owner=${address}&pageSize=100&withMetadata=true`;
+    const r = await fetch(url);
+    if (!r.ok) return [];
+    const j = await r.json();
+    return (j.ownedNfts || []).map((n) => ({
+      chain: chain.id,
+      contract: n.contract?.address?.toLowerCase(),
+      collection: n.contract?.name || n.contract?.openSeaMetadata?.collectionName || 'Unknown',
+      tokenId: n.tokenId,
+      title: n.name || `#${n.tokenId}`,
+      image: n.image?.cachedUrl || n.image?.thumbnailUrl || n.image?.originalUrl || null,
+      floorEth: n.contract?.openSeaMetadata?.floorPrice ?? null,
+      tokenStandard: n.tokenType,
+    }));
+  }
+  return moralisNfts(chain, env, address);
+}
+
+export async function getTransactionCount(chain, env, address) {
+  if (chain.alchemy) {
+    const hex = await alchemyRpc(chain, env, 'eth_getTransactionCount', [address, 'latest']);
+    return Number(BigInt(hex));
+  }
+  return 0;
+}
+
+// ----- Moralis fallback ---------------------------------------------------
+async function moralisNativeBalance(chain, env, address) {
+  if (!env.MORALIS_KEY) return 0;
+  const url = `https://deep-index.moralis.io/api/v2.2/${address}/balance?chain=${chain.moralis}`;
+  const r = await fetch(url, { headers: { 'X-API-Key': env.MORALIS_KEY } });
+  if (!r.ok) return 0;
+  const j = await r.json();
+  return Number(j.balance || 0) / 1e18;
+}
+
+async function moralisErc20Balances(chain, env, address) {
+  if (!env.MORALIS_KEY) return [];
+  const url = `https://deep-index.moralis.io/api/v2.2/${address}/erc20?chain=${chain.moralis}`;
+  const r = await fetch(url, { headers: { 'X-API-Key': env.MORALIS_KEY } });
+  if (!r.ok) return [];
+  const j = await r.json();
+  return (j || []).map((t) => ({
+    contract: t.token_address?.toLowerCase(),
+    symbol: t.symbol || 'UNKNOWN',
+    name: t.name || 'Unknown',
+    logo: t.logo || null,
+    decimals: Number(t.decimals || 18),
+    amount: Number(t.balance) / Math.pow(10, Number(t.decimals || 18)),
+  })).filter((t) => t.amount > 0);
+}
+
+async function moralisNfts(chain, env, address) {
+  if (!env.MORALIS_KEY) return [];
+  const url = `https://deep-index.moralis.io/api/v2.2/${address}/nft?chain=${chain.moralis}&format=decimal&limit=100`;
+  const r = await fetch(url, { headers: { 'X-API-Key': env.MORALIS_KEY } });
+  if (!r.ok) return [];
+  const j = await r.json();
+  return (j.result || []).map((n) => ({
+    chain: chain.id,
+    contract: n.token_address?.toLowerCase(),
+    collection: n.name || 'Unknown',
+    tokenId: n.token_id,
+    title: n.metadata ? (JSON.parse(n.metadata).name || `#${n.token_id}`) : `#${n.token_id}`,
+    image: null,
+    floorEth: null,
+    tokenStandard: n.contract_type,
+  }));
+}
+
+// ----- Etherscan V2 (multichain via single API) ---------------------------
+export async function getFirstTxTimestamp(chain, env, address) {
+  if (!env.ETHERSCAN_KEY) return null;
+  const url = `${chain.explorerApi}?chainid=${chain.chainId}&module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&page=1&offset=1&sort=asc&apikey=${env.ETHERSCAN_KEY}`;
+  const r = await fetch(url);
+  if (!r.ok) return null;
+  const j = await r.json();
+  if (j.status !== '1' || !j.result?.length) return null;
+  return Number(j.result[0].timeStamp) * 1000;
+}
+Acceptance: File imports cleanly. A test call getNativeBalance(CHAINS_BY_ID.ethereum, env, '0x...') returns a number.
+
+💰 Task 4 — Price Layer with Caching
+Goal: Batch price fetching for tokens + native assets, with KV cache to stay under free-tier limits.
+Do:
+Create worker/lib/cache.js:
+javascript
+// worker/lib/cache.js
+// Thin wrapper over Cloudflare KV. Falls back to in-memory Map in dev.
+
+const memoryCache = new Map();
+
+export async function cacheGet(env, key) {
+  if (env.CACHE) {
+    const v = await env.CACHE.get(key);
+    return v ? JSON.parse(v) : null;
+  }
+  const entry = memoryCache.get(key);
+  if (!entry) return null;
+  if (entry.expires < Date.now()) { memoryCache.delete(key); return null; }
+  return entry.value;
+}
+
+export async function cacheSet(env, key, value, ttlSeconds = 60) {
+  if (env.CACHE) {
+    await env.CACHE.put(key, JSON.stringify(value), { expirationTtl: ttlSeconds });
+    return;
+  }
+  memoryCache.set(key, { value, expires: Date.now() + ttlSeconds * 1000 });
+}
+Create worker/lib/prices.js:
+javascript
+// worker/lib/prices.js
+import { cacheGet, cacheSet } from './cache.js';
+
+const CG_FREE = 'https://api.coingecko.com/api/v3';
+const CG_PRO = 'https://pro-api.coingecko.com/api/v3';
+
+function cgBase(env) { return env.COINGECKO_KEY ? CG_PRO : CG_FREE; }
+function cgHeaders(env) { return env.COINGECKO_KEY ? { 'x-cg-pro-api-key': env.COINGECKO_KEY } : {}; }
+
+export async function priceTokens(chain, env, contracts, fiat) {
+  if (!contracts.length) return {};
+  const fiatLow = fiat.toLowerCase();
+  const cacheKey = `px:${chain.id}:${fiatLow}:${contracts.sort().join(',')}`;
+  const cached = await cacheGet(env, cacheKey);
+  if (cached) return cached;
+
+  const url = `${cgBase(env)}/simple/token_price/${chain.coingecko}?contract_addresses=${contracts.join(',')}&vs_currencies=${fiatLow}`;
+  const r = await fetch(url, { headers: cgHeaders(env) });
+  if (!r.ok) return {};
+  const j = await r.json();
+  await cacheSet(env, cacheKey, j, 60);
+  return j;
+}
+
+export async function priceNative(chain, env, fiat) {
+  const fiatLow = fiat.toLowerCase();
+  const cacheKey = `px:native:${chain.nativeCoingeckoId}:${fiatLow}`;
+  const cached = await cacheGet(env, cacheKey);
+  if (cached !== null) return cached;
+
+  const url = `${cgBase(env)}/simple/price?ids=${chain.nativeCoingeckoId}&vs_currencies=${fiatLow}`;
+  const r = await fetch(url, { headers: cgHeaders(env) });
+  if (!r.ok) return 0;
+  const j = await r.json();
+  const price = j[chain.nativeCoingeckoId]?.[fiatLow] ?? 0;
+  await cacheSet(env, cacheKey, price, 60);
+  return price;
+}
+
+export async function priceMultipleNatives(env, fiat) {
+  const fiatLow = fiat.toLowerCase();
+  const ids = ['ethereum', 'polygon-ecosystem-token', 'binancecoin', 'avalanche-2', 'xdai'];
+  const cacheKey = `px:natives:${fiatLow}`;
+  const cached = await cacheGet(env, cacheKey);
+  if (cached) return cached;
+
+  const url = `${cgBase(env)}/simple/price?ids=${ids.join(',')}&vs_currencies=${fiatLow}`;
+  const r = await fetch(url, { headers: cgHeaders(env) });
+  if (!r.ok) return {};
+  const j = await r.json();
+  await cacheSet(env, cacheKey, j, 60);
+  return j;
+}
+Acceptance: priceNative(CHAINS_BY_ID.ethereum, env, 'USD') returns a number > 0. Second call within 60s returns instantly (cached).
+
+📊 Task 5 — Portfolio Handler (THE WALLET FIX)
+Goal: Fix the $0 across Phase 1 chains bug. Scan every chain in the registry, return real values.
+Do:
+Create worker/handlers/portfolio.js:
+javascript
+// worker/handlers/portfolio.js
+import { CHAINS, CHAINS_BY_ID } from '../lib/chains.js';
+import { getNativeBalance, getErc20Balances } from '../lib/providers.js';
+import { priceTokens, priceNative } from '../lib/prices.js';
+
+const isAddress = (a) => /^0x[a-fA-F0-9]{40}$/.test(a || '');
+
+async function scanChain(chain, env, address, fiat) {
+  const [native, tokens] = await Promise.all([
+    getNativeBalance(chain, env, address).catch(() => 0),
+    getErc20Balances(chain, env, address).catch(() => []),
+  ]);
+
+  const [nativePx, tokenPxs] = await Promise.all([
+    priceNative(chain, env, fiat).catch(() => 0),
+    priceTokens(chain, env, tokens.map((t) => t.contract), fiat).catch(() => ({})),
+  ]);
+
+  const tokenRows = tokens.map((t) => {
+    const px = tokenPxs[t.contract.toLowerCase()]?.[fiat.toLowerCase()] ?? 0;
+    return { ...t, chain: chain.id, priceFiat: px, valueFiat: px * t.amount };
+  });
+
+  const nativeRow = native > 0 ? [{
+    contract: 'native',
+    symbol: chain.nativeSymbol,
+    name: `${chain.name} native`,
+    chain: chain.id,
+    decimals: 18,
+    amount: native,
+    priceFiat: nativePx,
+    valueFiat: nativePx * native,
+    logo: null,
+  }] : [];
+
+  const allTokens = [...nativeRow, ...tokenRows];
+  return {
+    chain: chain.id,
+    chainName: chain.name,
+    chainId: chain.chainId,
+    tier: chain.tier,
+    tokens: allTokens.sort((a, b) => b.valueFiat - a.valueFiat),
+    totalFiat: allTokens.reduce((s, t) => s + (t.valueFiat || 0), 0),
+  };
+}
+
+export async function handlePortfolio(request, env) {
+  const url = new URL(request.url);
+  const address = (url.searchParams.get('address') || '').toLowerCase();
+  const fiat = (url.searchParams.get('fiat') || 'USD').toUpperCase();
+  const chainFilter = url.searchParams.get('chains'); // optional CSV
+
+  if (!isAddress(address)) {
+    return json({ error: 'invalid address' }, 400);
+  }
+
+  const chainsToScan = chainFilter
+    ? CHAINS.filter((c) => chainFilter.split(',').includes(c.id))
+    : CHAINS;
+
+  const perChain = await Promise.all(chainsToScan.map((c) =>
+    scanChain(c, env, address, fiat).catch((err) => ({
+      chain: c.id, chainName: c.name, chainId: c.chainId, tier: c.tier,
+      tokens: [], totalFiat: 0, error: String(err),
+    }))
+  ));
+
+  const portfolioFiat = perChain.reduce((s, c) => s + c.totalFiat, 0);
+  const activeChains = perChain.filter((c) => c.totalFiat > 0).length;
+  const totalTokens = perChain.reduce((s, c) => s + c.tokens.length, 0);
+
+  return json({
+    address,
+    fiat,
+    portfolioFiat,
+    activeChains,
+    totalTokens,
+    chains: perChain,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+function json(data, status = 200) {
+  return new Response(JSON.stringify(data, null, 2), {
+    status,
+    headers: {
+      'content-type': 'application/json',
+      'cache-control': 'public, max-age=30',
+      'access-control-allow-origin': '*',
+    },
+  });
+}
+Acceptance: Hit /api/portfolio?address=0x1003...17b0&fiat=CHF and confirm:
+portfolioFiat > 0
+activeChains >= 4 (you have tokens on Ethereum, Optimism, Arbitrum, Polygon)
+The chains array contains entries for optimism (with USDC.E), polygon (with POL/MATIC), ethereum (with RENDER), etc.
+
+🏦 Task 6 — DeFi Positions Handler
+Goal: Detect lending, staking, LP, and farming positions across major protocols. This is what "Open Positions" should actually count.
+Do:
+Create worker/handlers/defi-positions.js:
+javascript
+// worker/handlers/defi-positions.js
+// Reads DeFi positions across protocols using DefiLlama + direct contract calls.
+
+import { CHAINS, CHAINS_BY_ID } from '../lib/chains.js';
+
+const isAddress = (a) => /^0x[a-fA-F0-9]{40}$/.test(a || '');
+
+// DefiLlama tracks positions for many protocols via their /pools and /yields endpoints.
+// For lending positions specifically we read Aave/Compound user data on-chain.
+
+const AAVE_V3_POOL = {
+  ethereum: '0x87870bca3f3fd6335c3f4ce8392d69350b4fa4e2',
+  optimism: '0x794a61358d6845594f94dc1db02a252b5b4814ad',
+  arbitrum: '0x794a61358d6845594f94dc1db02a252b5b4814ad',
+  base:     '0xa238dd80c259a72e81d7e4664a9801593f98d1c5',
+  polygon:  '0x794a61358d6845594f94dc1db02a252b5b4814ad',
+  avalanche:'0x794a61358d6845594f94dc1db02a252b5b4814ad',
+};
+
+// getUserAccountData(address) returns:
+//   totalCollateralBase, totalDebtBase, availableBorrowsBase,
+//   currentLiquidationThreshold, ltv, healthFactor
+const GET_USER_ACCOUNT_DATA = '0xbf92857c'; // function selector
+
+async function readAaveV3(chain, env, address) {
+  const pool = AAVE_V3_POOL[chain.id];
+  if (!pool || !chain.alchemy) return null;
+  const url = `https://${chain.alchemy}.g.alchemy.com/v2/${env.ALCHEMY_KEY}`;
+  const data = GET_USER_ACCOUNT_DATA + address.replace(/^0x/, '').padStart(64, '0');
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0', id: 1, method: 'eth_call',
+      params: [{ to: pool, data }, 'latest'],
+    }),
+  });
+  const j = await r.json();
+  if (!j.result || j.result === '0x') return null;
+  const hex = j.result.replace(/^0x/, '');
+  if (hex.length < 64 * 6) return null;
+  const parse = (i) => BigInt('0x' + hex.slice(i * 64, (i + 1) * 64));
+  const totalCollateral = Number(parse(0)) / 1e8; // USD with 8 decimals
+  const totalDebt = Number(parse(1)) / 1e8;
+  const ltv = Number(parse(3)) / 10000;
+  const healthFactor = Number(parse(5)) / 1e18;
+  if (totalCollateral === 0 && totalDebt === 0) return null;
+  return {
+    protocol: 'Aave v3',
+    chain: chain.id,
+    type: 'lending',
+    suppliedUsd: totalCollateral,
+    borrowedUsd: totalDebt,
+    netUsd: totalCollateral - totalDebt,
+    ltv,
+    healthFactor: healthFactor > 1e18 ? null : healthFactor,
+    liquidationRisk: healthFactor < 1.5 ? 'high' : healthFactor < 2 ? 'medium' : 'low',
+  };
+}
+
+// DefiLlama's /api/v1/positions/{address} returns yield positions tracked by them
+async function readDefiLlamaPositions(env, address) {
+  const url = `https://yields.llama.fi/poolsByAddress/${address}`;
+  const r = await fetch(url);
+  if (!r.ok) return [];
+  const j = await r.json();
+  return (j.data || []).map((p) => ({
+    protocol: p.project,
+    chain: p.chain?.toLowerCase(),
+    type: 'yield',
+    poolName: p.symbol,
+    apy: p.apy,
+    suppliedUsd: p.tvlUsd || 0,
+    borrowedUsd: 0,
+    netUsd: p.tvlUsd || 0,
+  }));
+}
+
+export async function handleDefiPositions(request, env) {
+  const url = new URL(request.url);
+  const address = (url.searchParams.get('address') || '').toLowerCase();
+  if (!isAddress(address)) {
+    return new Response(JSON.stringify({ error: 'invalid address' }), {
+      status: 400, headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  const aaveResults = await Promise.all(
+    CHAINS.filter((c) => AAVE_V3_POOL[c.id])
+          .map((c) => readAaveV3(c, env, address).catch(() => null))
+  );
+  const llamaResults = await readDefiLlamaPositions(env, address).catch(() => []);
+
+  const positions = [...aaveResults.filter(Boolean), ...llamaResults];
+  const totalSupplied = positions.reduce((s, p) => s + (p.suppliedUsd || 0), 0);
+  const totalBorrowed = positions.reduce((s, p) => s + (p.borrowedUsd || 0), 0);
+  const atRisk = positions.filter((p) => p.liquidationRisk === 'high').length;
+
+  return new Response(JSON.stringify({
+    address,
+    positions,
+    totalSupplied,
+    totalBorrowed,
+    netDefiValue: totalSupplied - totalBorrowed,
+    positionCount: positions.length,
+    atRiskCount: atRisk,
+    updatedAt: new Date().toISOString(),
+  }, null, 2), {
+    headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*' },
+  });
+}
+Acceptance: /api/defi-positions?address=0x... returns a JSON array. For wallets with no DeFi activity, returns positions: []. For wallets with Aave positions, returns health factor.
+
+🖼 Task 7 — NFT Handler with Floor Prices
+Goal: List NFTs across all chains, enriched with collection floor price (so we can value them).
+Do:
+Create worker/handlers/nfts.js:
+javascript
+// worker/handlers/nfts.js
+import { CHAINS } from '../lib/chains.js';
+import { getNfts } from '../lib/providers.js';
+import { priceNative } from '../lib/prices.js';
+
+const isAddress = (a) => /^0x[a-fA-F0-9]{40}$/.test(a || '');
+
+async function getOpenSeaFloor(contract, env) {
+  if (!env.OPENSEA_KEY) return null;
+  const url = `https://api.opensea.io/api/v2/collections/${contract}/stats`;
+  const r = await fetch(url, { headers: { 'X-API-KEY': env.OPENSEA_KEY } });
+  if (!r.ok) return null;
+  const j = await r.json();
+  return j.total?.floor_price || null;
+}
+
+export async function handleNfts(request, env) {
+  const url = new URL(request.url);
+  const address = (url.searchParams.get('address') || '').toLowerCase();
+  const fiat = (url.searchParams.get('fiat') || 'USD').toUpperCase();
+  if (!isAddress(address)) {
+    return new Response(JSON.stringify({ error: 'invalid address' }), {
+      status: 400, headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  const perChainNfts = await Promise.all(
+    CHAINS.map((c) => getNfts(c, env, address).catch(() => []))
+  );
+  const allNfts = perChainNfts.flat();
+
+  // Group by collection so we only look up floor once
+  const byCollection = new Map();
+  for (const n of allNfts) {
+    const k = `${n.chain}:${n.contract}`;
+    if (!byCollection.has(k)) byCollection.set(k, { ...n, items: [] });
+    byCollection.get(k).items.push({ tokenId: n.tokenId, title: n.title, image: n.image });
+  }
+
+  const ethPrice = await priceNative(CHAINS[0], env, fiat).catch(() => 0);
+
+  const collections = await Promise.all([...byCollection.values()].map(async (c) => {
+    const floorEth = c.floorEth ?? null;
+    const floorFiat = floorEth ? floorEth * ethPrice : null;
+    return {
+      chain: c.chain,
+      contract: c.contract,
+      collection: c.collection,
+      itemCount: c.items.length,
+      floorEth,
+      floorFiat,
+      estimatedValueFiat: floorFiat ? floorFiat * c.items.length : null,
+      items: c.items.slice(0, 10),
+    };
+  }));
+
+  const totalEstimatedValue = collections.reduce((s, c) => s + (c.estimatedValueFiat || 0), 0);
+
+  return new Response(JSON.stringify({
+    address,
+    fiat,
+    totalNfts: allNfts.length,
+    totalCollections: collections.length,
+    totalEstimatedValueFiat: totalEstimatedValue,
+    collections: collections.sort((a, b) => (b.estimatedValueFiat || 0) - (a.estimatedValueFiat || 0)),
+    updatedAt: new Date().toISOString(),
+  }, null, 2), {
+    headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*' },
+  });
+}
+Acceptance: /api/nfts?address=0x1003...17b0 returns at least 2 NFTs (matches your screenshots showing the shark + whale collectibles). Each collection has a floorFiat if available.
+
+🧮 Task 8 — Score Engine (Real Weights)
+Goal: Replace the placeholder score with one that actually uses portfolio + DeFi positions + NFTs + on-chain history. Map to your published methodology.
+Do:
+Create worker/scoring/factors.js:
+javascript
+// worker/scoring/factors.js
+// Each factor returns 0..maxWeight. Sum is mapped to FICO-style band.
+
+export function onChainActivityFactor(portfolio) {
+  const tokenCount = portfolio.totalTokens || 0;
+  return Math.min(20, tokenCount * 1.2);
+}
+
+export function multiChainDiversityFactor(portfolio) {
+  const active = portfolio.activeChains || 0;
+  return Math.min(15, active * 3);
+}
+
+export function nativeLiquidityFactor(portfolio) {
+  const v = portfolio.portfolioFiat || 0;
+  if (v >= 10000) return 20;
+  if (v >= 1000) return 15;
+  if (v >= 100) return 8;
+  if (v >= 10) return 3;
+  return 1;
+}
+
+export function walletAgeFactor(firstTxTimestamp) {
+  if (!firstTxTimestamp) return 5;
+  const days = (Date.now() - firstTxTimestamp) / (1000 * 60 * 60 * 24);
+  if (days >= 1095) return 15; // 3+ years
+  if (days >= 365) return 12;
+  if (days >= 180) return 8;
+  if (days >= 30) return 4;
+  return 1;
+}
+
+export function contractDiversityFactor(portfolio) {
+  const contracts = new Set();
+  for (const c of portfolio.chains || []) {
+    for (const t of c.tokens || []) {
+      if (t.contract !== 'native') contracts.add(t.contract);
+    }
+  }
+  return Math.min(15, contracts.size * 0.8);
+}
+
+export function tokenDiversityFactor(portfolio) {
+  const symbols = new Set();
+  for (const c of portfolio.chains || []) {
+    for (const t of c.tokens || []) symbols.add(t.symbol);
+  }
+  return Math.min(10, symbols.size * 0.7);
+}
+
+export function defiEngagementFactor(positions) {
+  const count = positions.positionCount || 0;
+  const atRisk = positions.atRiskCount || 0;
+  const base = Math.min(10, count * 2);
+  return Math.max(0, base - atRisk * 3);
+}
+
+export function nftHoldingsFactor(nftData) {
+  const v = nftData.totalEstimatedValueFiat || 0;
+  if (v >= 50000) return 5;
+  if (v >= 5000) return 4;
+  if (v >= 500) return 3;
+  if (v >= 50) return 2;
+  if ((nftData.totalNfts || 0) > 0) return 1;
+  return 0;
+}
+Create worker/scoring/weights.js:
+javascript
+// worker/scoring/weights.js
+// Weight allocation totals 100. Edit here to tune.
+export const WEIGHTS = {
+  onChainActivity: 20,
+  multiChainDiversity: 15,
+  nativeLiquidity: 20,
+  walletAge: 15,
+  contractDiversity: 15,
+  tokenDiversity: 10,
+  defiEngagement: 10,
+  nftHoldings: 5,
+};
+
+// Sum is 110 — leaves headroom; capped at 100.
+Create worker/scoring/grades.js:
+javascript
+// worker/scoring/grades.js
+// Map raw 0..100 to FICO-style 300..850 + band labels.
+export function toFicoScore(raw) {
+  const clamped = Math.max(0, Math.min(100, raw));
+  return Math.round(300 + (clamped / 100) * 550);
+}
+
+export function bandFor(score) {
+  if (score >= 800) return { band: 'Excellent', color: '#10b981' };
+  if (score >= 740) return { band: 'Very Good', color: '#22c55e' };
+  if (score >= 670) return { band: 'Good', color: '#84cc16' };
+  if (score >= 580) return { band: 'Fair', color: '#f59e0b' };
+  return { band: 'Poor', color: '#ef4444' };
+}
+Create worker/handlers/score.js:
+javascript
+// worker/handlers/score.js
+import { handlePortfolio } from './portfolio.js';
+import { handleDefiPositions } from './defi-positions.js';
+import { handleNfts } from './nfts.js';
+import { CHAINS_BY_ID } from '../lib/chains.js';
+import { getFirstTxTimestamp } from '../lib/providers.js';
+import * as F from '../scoring/factors.js';
+import { WEIGHTS } from '../scoring/weights.js';
+import { toFicoScore, bandFor } from '../scoring/grades.js';
+
+const isAddress = (a) => /^0x[a-fA-F0-9]{40}$/.test(a || '');
+
+export async function handleScore(request, env) {
+  const url = new URL(request.url);
+  const address = (url.searchParams.get('address') || '').toLowerCase();
+  const fiat = (url.searchParams.get('fiat') || 'USD').toUpperCase();
+
+  if (!isAddress(address)) {
+    return new Response(JSON.stringify({ error: 'invalid address' }), {
+      status: 400, headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  // Fan out three subrequests in parallel.
+  const baseUrl = `${url.origin}`;
+  const [portRes, posRes, nftRes] = await Promise.all([
+    handlePortfolio(new Request(`${baseUrl}/api/portfolio?address=${address}&fiat=${fiat}`), env),
+    handleDefiPositions(new Request(`${baseUrl}/api/defi-positions?address=${address}`), env),
+    handleNfts(new Request(`${baseUrl}/api/nfts?address=${address}&fiat=${fiat}`), env),
+  ]);
+  const [portfolio, positions, nftData] = await Promise.all([portRes.json(), posRes.json(), nftRes.json()]);
+
+  const firstTx = await getFirstTxTimestamp(CHAINS_BY_ID.ethereum, env, address).catch(() => null);
+
+  const factors = {
+    onChainActivity:     F.onChainActivityFactor(portfolio),
+    multiChainDiversity: F.multiChainDiversityFactor(portfolio),
+    nativeLiquidity:     F.nativeLiquidityFactor(portfolio),
+    walletAge:           F.walletAgeFactor(firstTx),
+    contractDiversity:   F.contractDiversityFactor(portfolio),
+    tokenDiversity:      F.tokenDiversityFactor(portfolio),
+    defiEngagement:      F.defiEngagementFactor(positions),
+    nftHoldings:         F.nftHoldingsFactor(nftData),
+  };
+
+  // Each factor is already capped at its weight; sum directly.
+  const raw = Object.values(factors).reduce((s, v) => s + v, 0);
+  const score = toFicoScore(raw);
+  const { band, color } = bandFor(score);
+
+  return new Response(JSON.stringify({
+    address,
+    score,
+    band,
+    color,
+    raw,
+    factors,
+    weights: WEIGHTS,
+    walletAgeDays: firstTx ? Math.floor((Date.now() - firstTx) / 86400000) : null,
+    portfolioFiat: portfolio.portfolioFiat,
+    netDefiValue: positions.netDefiValue || 0,
+    nftValueFiat: nftData.totalEstimatedValueFiat || 0,
+    totalValueFiat: (portfolio.portfolioFiat || 0) + (positions.netDefiValue || 0) + (nftData.totalEstimatedValueFiat || 0),
+    updatedAt: new Date().toISOString(),
+  }, null, 2), {
+    headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*' },
+  });
+}
+Acceptance: /api/score?address=0x1003...17b0&fiat=CHF returns a score that:
+Is no longer 432 (your wallet should now show diversity across 4 chains).
+Has all 8 factor values populated and non-zero.
+Returns totalValueFiat matching what you see in your wallet app.
+
+🎯 Task 9 — Recommendations Engine
+Goal: Match the wallet's risk profile to specific protocols, tokens, and NFTs.
+Do: Use the recommendations file from the previous bundle (worker/recommendations.js from the earlier patch). Update its imports to use the new structure: import { handleScore } from './score.js'. Have it call /api/score to get the user's actual band, then filter the catalog by minScore. Return separate sections for: protocols, stablecoins, blue-chip tokens, growth tokens, NFT collections, and yield strategies.
+Acceptance: /api/recommendations?address=0x...&risk=balanced returns 4+ protocols, 6+ tokens, 3+ NFT collections, all gated by the wallet's actual score.
+
+🚨 Task 10 — Alerts Handler
+Goal: Detect risk events the user should know about: low health factor, position size changes, suspicious tokens, drained balances.
+Do:
+Create worker/handlers/alerts.js:
+javascript
+// worker/handlers/alerts.js
+// Generates real-time alerts. For now, computes from current state;
+// in Task 14 we wire this to a Durable Object for historical tracking.
+
+import { handlePortfolio } from './portfolio.js';
+import { handleDefiPositions } from './defi-positions.js';
+
+const isAddress = (a) => /^0x[a-fA-F0-9]{40}$/.test(a || '');
+
+const DUST_THRESHOLD_USD = 0.01;
+
+// Hardcoded suspicious-token denylist; in production, sync from a public list.
+const SUSPICIOUS_PATTERNS = [
+  /visit.*claim/i,
+  /\.com$/i,
+  /\.io$/i,
+  /airdrop/i,
+  /reward/i,
+];
+
+export async function handleAlerts(request, env) {
+  const url = new URL(request.url);
+  const address = (url.searchParams.get('address') || '').toLowerCase();
+  if (!isAddress(address)) {
+    return new Response(JSON.stringify({ error: 'invalid address' }), {
+      status: 400, headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  const baseUrl = url.origin;
+  const [portRes, posRes] = await Promise.all([
+    handlePortfolio(new Request(`${baseUrl}/api/portfolio?address=${address}&fiat=USD`), env),
+    handleDefiPositions(new Request(`${baseUrl}/api/defi-positions?address=${address}`), env),
+  ]);
+  const [portfolio, positions] = await Promise.all([portRes.json(), posRes.json()]);
+
+  const alerts = [];
+
+  // 1. Health-factor alerts
+  for (const p of (positions.positions || [])) {
+    if (p.healthFactor != null && p.healthFactor < 1.2) {
+      alerts.push({
+        severity: 'critical',
+        type: 'liquidation_risk',
+        title: `${p.protocol} position near liquidation`,
+        message: `Health factor: ${p.healthFactor.toFixed(2)} on ${p.chain}. Add collateral or repay.`,
+        actionUrl: `https://app.aave.com`,
+      });
+    } else if (p.healthFactor != null && p.healthFactor < 1.5) {
+      alerts.push({
+        severity: 'warning',
+        type: 'low_health',
+        title: `${p.protocol} health factor low`,
+        message: `Health factor: ${p.healthFactor.toFixed(2)} on ${p.chain}.`,
+      });
+    }
+  }
+
+  // 2. Suspicious tokens (likely scam airdrops)
+  for (const c of (portfolio.chains || [])) {
+    for (const t of (c.tokens || [])) {
+      const looksScam = SUSPICIOUS_PATTERNS.some((re) => re.test(t.name || '') || re.test(t.symbol || ''));
+      if (looksScam) {
+        alerts.push({
+          severity: 'warning',
+          type: 'suspicious_token',
+          title: `Suspicious token detected: ${t.symbol}`,
+          message: `On ${c.chainName}. Do NOT interact — likely scam airdrop. Hide or revoke approvals.`,
+          tokenContract: t.contract,
+          chain: c.chain,
+        });
+      }
+    }
+  }
+
+  // 3. Dust (informational)
+  let dustCount = 0;
+  for (const c of (portfolio.chains || [])) {
+    for (const t of (c.tokens || [])) {
+      if (t.valueFiat > 0 && t.valueFiat < DUST_THRESHOLD_USD) dustCount++;
+    }
+  }
+  if (dustCount >= 5) {
+    alerts.push({
+      severity: 'info',
+      type: 'dust',
+      title: `${dustCount} dust tokens detected`,
+      message: 'Consider sweeping to consolidate.',
+    });
+  }
+
+  // 4. Single-chain concentration
+  const sorted = (portfolio.chains || []).slice().sort((a, b) => b.totalFiat - a.totalFiat);
+  if (sorted[0]?.totalFiat > 0 && sorted[0].totalFiat / portfolio.portfolioFiat > 0.9) {
+    alerts.push({
+      severity: 'info',
+      type: 'concentration',
+      title: 'Portfolio concentrated on one chain',
+      message: `${(sorted[0].totalFiat / portfolio.portfolioFiat * 100).toFixed(0)}% on ${sorted[0].chainName}.`,
+    });
+  }
+
+  return new Response(JSON.stringify({
+    address,
+    alertCount: alerts.length,
+    criticalCount: alerts.filter((a) => a.severity === 'critical').length,
+    alerts,
+    updatedAt: new Date().toISOString(),
+  }, null, 2), {
+    headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*' },
+  });
+}
+Acceptance: /api/alerts?address=0x... returns alerts. For wallets with scam airdrops (most wallets have these), at least one suspicious_token alert appears.
+
+📈 Task 11 — Protocols Catalog Endpoint
+Goal: Public catalog of protocols you score, used by the Recommendations engine and a future "Browse Protocols" page.
+Do:
+Create worker/handlers/protocols.js:
+javascript
+// worker/handlers/protocols.js
+// Returns the full DeFi Safety Rating catalog.
+// Source = static curated JSON + DefiLlama TVL enrichment.
+
+const CATALOG = [
+  // Lending
+  { slug: 'aave-v3',     name: 'Aave v3',     category: 'Lending', chains: ['ethereum','optimism','arbitrum','base','polygon','avalanche'], safetyScore: 92, llamaSlug: 'aave-v3' },
+  { slug: 'compound-v3', name: 'Compound v3', category: 'Lending', chains: ['ethereum','arbitrum','base','polygon'], safetyScore: 88, llamaSlug: 'compound-v3' },
+  { slug: 'morpho',      name: 'Morpho',      category: 'Lending', chains: ['ethereum','base'], safetyScore: 80, llamaSlug: 'morpho-blue' },
+  { slug: 'spark',       name: 'Spark',       category: 'Lending', chains: ['ethereum','gnosis'], safetyScore: 82, llamaSlug: 'spark' },
+  // DEXes
+  { slug: 'uniswap-v3',  name: 'Uniswap v3',  category: 'DEX', chains: ['ethereum','optimism','arbitrum','base','polygon'], safetyScore: 95, llamaSlug: 'uniswap-v3' },
+  { slug: 'curve',       name: 'Curve',       category: 'Stable DEX', chains: ['ethereum','optimism','arbitrum','polygon'], safetyScore: 84, llamaSlug: 'curve-dex' },
+  { slug: 'balancer',    name: 'Balancer',    category: 'DEX', chains: ['ethereum','arbitrum','polygon'], safetyScore: 80, llamaSlug: 'balancer-v2' },
+  { slug: 'aerodrome',   name: 'Aerodrome',   category: 'DEX', chains: ['base'], safetyScore: 70, llamaSlug: 'aerodrome-v1' },
+  { slug: 'velodrome',   name: 'Velodrome',   category: 'DEX', chains: ['optimism'], safetyScore: 72, llamaSlug: 'velodrome-v2' },
+  // Staking / LSTs
+  { slug: 'lido',        name: 'Lido',        category: 'Liquid Staking', chains: ['ethereum'], safetyScore: 90, llamaSlug: 'lido' },
+  { slug: 'rocketpool',  name: 'Rocket Pool', category: 'Liquid Staking', chains: ['ethereum'], safetyScore: 88, llamaSlug: 'rocket-pool' },
+  // Yield
+  { slug: 'pendle',      name: 'Pendle',      category: 'Yield Trading', chains: ['ethereum','arbitrum'], safetyScore: 75, llamaSlug: 'pendle' },
+  { slug: 'yearn-v3',    name: 'Yearn v3',    category: 'Yield Aggregator', chains: ['ethereum','arbitrum','optimism'], safetyScore: 78, llamaSlug: 'yearn-finance' },
+  // Perps
+  { slug: 'gmx',         name: 'GMX',         category: 'Perpetuals', chains: ['arbitrum','avalanche'], safetyScore: 70, llamaSlug: 'gmx-v2' },
+  { slug: 'dydx-v4',     name: 'dYdX v4',     category: 'Perpetuals', chains: ['ethereum'], safetyScore: 72, llamaSlug: 'dydx-v4' },
+  { slug: 'hyperliquid', name: 'Hyperliquid', category: 'Perpetuals', chains: ['ethereum'], safetyScore: 65, llamaSlug: 'hyperliquid' },
+  // Bridges
+  { slug: 'across',      name: 'Across',      category: 'Bridge', chains: ['ethereum','optimism','arbitrum','base','polygon'], safetyScore: 78, llamaSlug: 'across' },
+  { slug: 'stargate',    name: 'Stargate',    category: 'Bridge', chains: ['ethereum','optimism','arbitrum','base','polygon','bnb','avalanche'], safetyScore: 70, llamaSlug: 'stargate' },
+];
+
+export async function handleProtocols(request, env) {
+  const url = new URL(request.url);
+  const category = url.searchParams.get('category');
+  const chain = url.searchParams.get('chain');
+  const minScore = Number(url.searchParams.get('minScore') || 0);
+
+  // Enrich with TVL from DefiLlama (cached in real deploy)
+  let tvls = {};
+  try {
+    const r = await fetch('https://api.llama.fi/protocols');
+    if (r.ok) {
+      const list = await r.json();
+      tvls = Object.fromEntries(list.map((p) => [p.slug, p.tvl]));
+    }
+  } catch {}
+
+  let results = CATALOG.map((p) => ({ ...p, tvlUsd: tvls[p.llamaSlug] || null }));
+  if (category) results = results.filter((p) => p.category === category);
+  if (chain) results = results.filter((p) => p.chains.includes(chain));
+  if (minScore) results = results.filter((p) => p.safetyScore >= minScore);
+
+  return new Response(JSON.stringify({
+    count: results.length,
+    protocols: results.sort((a, b) => b.safetyScore - a.safetyScore),
+    categories: [...new Set(CATALOG.map((p) => p.category))],
+    updatedAt: new Date().toISOString(),
+  }, null, 2), {
+    headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*' },
+  });
+}
+Acceptance: /api/protocols returns 18 protocols with TVL. /api/protocols?category=Lending&minScore=80 filters correctly.
+
+🔌 Task 12 — Wire Up the Worker Router
+Do:
+Create worker/index.js:
+javascript
+import { handlePortfolio } from './handlers/portfolio.js';
+import { handleDefiPositions } from './handlers/defi-positions.js';
+import { handleNfts } from './handlers/nfts.js';
+import { handleScore } from './handlers/score.js';
+import { handleRecommendations } from './handlers/recommendations.js';
+import { handleAlerts } from './handlers/alerts.js';
+import { handleProtocols } from './handlers/protocols.js';
+
+const ROUTES = {
+  '/api/portfolio':       handlePortfolio,
+  '/api/defi-positions':  handleDefiPositions,
+  '/api/nfts':            handleNfts,
+  '/api/score':           handleScore,
+  '/api/recommendations': handleRecommendations,
+  '/api/alerts':          handleAlerts,
+  '/api/protocols':       handleProtocols,
+  '/api/health':          () => new Response(JSON.stringify({ ok: true, time: new Date().toISOString() }), {
+    headers: { 'content-type': 'application/json' },
+  }),
+};
+
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+
+    if (request.method === 'OPTIONS') {
+      return new Response(null, {
+        headers: {
+          'access-control-allow-origin': '*',
+          'access-control-allow-methods': 'GET,POST,OPTIONS',
+          'access-control-allow-headers': 'content-type, authorization',
+          'access-control-max-age': '86400',
+        },
+      });
+    }
+
+    const handler = ROUTES[url.pathname];
+    if (handler) {
+      try {
+        return await handler(request, env);
+      } catch (err) {
+        return new Response(JSON.stringify({ error: String(err.message || err) }), {
+          status: 500,
+          headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*' },
+        });
+      }
+    }
+
+    return new Response('Not Found', { status: 404 });
+  },
+};
+Update wrangler.jsonc:
+jsonc
+{
+  "name": "defiscoring-api",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-04-30",
+  "workers_dev": true,
+  "routes": [
+    { "pattern": "defiscoring.com/api/*", "zone_name": "defiscoring.com" }
+  ],
+  "kv_namespaces": [
+    { "binding": "CACHE", "id": "TODO_RUN_WRANGLER_KV_CREATE" }
+  ]
+}
+Run npx wrangler kv:namespace create CACHE and paste the returned ID into wrangler.jsonc where it says TODO.
+Acceptance: npx wrangler dev starts. /api/health returns {ok: true}. All 7 endpoints respond without 500 errors.
+
+💻 Task 13 — Dashboard SPA Rewrite
+Goal: Replace the existing dashboard with a multi-tab interface that shows everything the API returns.
+Do:
+Replace dashboard/index.html with a new layout that has these tabs/sections:
+┌─────────────────────────────────────────────────────────┐
+│ DeFi Scoring        [0x1003...17b0]    [Disconnect]    │
+├─────────────────────────────────────────────────────────┤
+│  TOTAL VALUE: CHF 1,234.56                              │
+│  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐                   │
+│  │Score │ │Wallet│ │ DeFi │ │ NFTs │                   │
+│  │ 612  │ │ 2yr  │ │ $0   │ │ 2    │                   │
+│  └──────┘ └──────┘ └──────┘ └──────┘                   │
+├─────────────────────────────────────────────────────────┤
+│ [Overview] [Tokens] [DeFi] [NFTs] [Recommendations] [Alerts] [Protocols] │
+├─────────────────────────────────────────────────────────┤
+│  (active tab content)                                   │
+└─────────────────────────────────────────────────────────┘
+Build each tab as a function in dashboard/app.js that:
+Fetches the relevant /api/* endpoint.
+Renders into a single <main id="content"> container.
+Caches results for 30s to avoid hammering the API on tab switches.
+The detailed implementation of dashboard/app.js should:
+Read wallet address from window.ethereum (MetaMask) or query string.
+Persist the chosen fiat (localStorage.setItem('fiat', ...)).
+Show skeleton loaders during fetch.
+Show per-chain breakdown sorted by total value descending.
+For NFTs, show grid of cards with image + collection + estimated floor.
+For Recommendations, show three columns: Protocols / Tokens / NFTs.
+For Alerts, show stacked cards colored by severity (red / amber / blue).
+For Protocols, show a filterable table with TVL, safety score, chains.
+Use the dashboard/app.js from the previous bundle as the starting point — extend it for the new endpoints.
+Acceptance: The dashboard loads, shows your real CHF total (NOT $0), all tabs render real data, and switching between tabs is instant after the first fetch.
+
+📅 Task 14 — Historical Tracking (Optional, Recommended)
+Goal: Store daily snapshots of wallet value and score so users can see trends.
+Do:
+Add a new KV namespace called HISTORY with wrangler kv:namespace create HISTORY.
+Create a Cloudflare Cron Trigger in wrangler.jsonc:
+jsonc
+  "triggers": { "crons": ["0 0 * * *"] }
+Add a scheduled handler in worker/index.js that, for every wallet in a "tracked" list, snapshots {address, score, portfolioFiat, timestamp} into KV under key hist:{address}:{YYYY-MM-DD}.
+Add /api/history?address=0x...&days=30 returning the last N daily snapshots.
+Add a History tab to the dashboard with a Chart.js line chart of value + score over time.
+Acceptance: After running for 2+ days, the History tab shows a chart with at least 2 data points.
+
+🔐 Task 15 — Wallet Connect Flow
+Goal: Replace the manual address entry with a real wallet connection. Show the connected address, allow disconnect, and persist via localStorage.
+Do:
+In dashboard/app.js, add a connectWallet() function using window.ethereum.request({ method: 'eth_requestAccounts' }).
+After connect, call all 7 endpoints with the address.
+Handle network changes via window.ethereum.on('accountsChanged', ...).
+Show a "Connect Wallet" button when no address; show "Disconnect" + truncated address when connected.
+Add WalletConnect v2 support (via @walletconnect/ethereum-provider) for non-MetaMask users.
+Acceptance: Connecting MetaMask reads the active address and triggers a full dashboard load. Disconnecting clears the UI.
+
+🛡 Task 16 — Token Approval Scanner
+Goal: Show users which contracts have unlimited spending approvals on their tokens — this is the #1 actual security risk.
+Do:
+Create worker/handlers/approvals.js.
+For each chain × each token in the portfolio, call eth_getLogs for the Approval event topic, filtered to the user's address.
+Aggregate into { token, spender, allowance, lastBlock } rows.
+Flag any allowance > 1e30 as unlimited.
+Add an "Approvals" tab to the dashboard with a table + revoke link to revoke.cash.
+Acceptance: /api/approvals?address=0x... returns approval rows. Dashboard shows them in a table sortable by risk.
+
+📤 Task 17 — Export & Share
+Goal: Let users export their full report as PDF and share a public read-only link.
+Do:
+Add a "Download Report" button that compiles all 7 endpoints into a single PDF (use html2pdf.js client-side).
+Add a "Share" button that generates a URL like defiscoring.com/wallet/0x1003...17b0 — a public read-only view of the wallet's score (no recommendations/alerts).
+Add OG meta tags to that public page so links unfurl on Twitter/Telegram.
+Acceptance: Clicking Download produces a multi-page PDF. Clicking Share copies a URL that, when opened, shows score + chains + portfolio total (no PII).
+
+🧪 Task 18 — Testing
+Goal: Make sure regressions don't reintroduce the $0 across Phase 1 chains bug.
+Do:
+Create worker/__tests__/portfolio.test.js. Use Vitest.
+Mock fetch and assert that:
+Calling /api/portfolio for an address returns ALL 11 chains in the response.
+Tokens on Optimism, Polygon, Arbitrum are NOT filtered out.
+portfolioFiat equals the sum of all chain totals.
+Add a CI workflow in .github/workflows/test.yml that runs npm test on every PR.
+Acceptance: npm test passes. CI runs green.
+
+🚀 Task 19 — Deploy
+Do:
+npx wrangler deploy — pushes the Worker to production.
+Update Jekyll's dashboard/index.html to point its API calls at the deployed worker URL (or leave it as /api/* if the route in wrangler.jsonc is matched).
+Run bundle exec jekyll build && wrangler pages deploy _site (or whatever your current deploy flow is).
+Hit https://defiscoring.com/api/health to confirm deployment.
+Hit https://defiscoring.com/dashboard/?address=0x1003...17b0 and confirm:
+Total value > 0
+All 4+ chains visible
+NFTs visible
+Score updated from 432 to a realistic number
+Acceptance: Production site shows the actual portfolio. The bug from your screenshots is gone.
+
+📋 Task 20 — Documentation Update
+Do:
+Update methodology.md to document the 8 factors actually used (not just the 4 pillars), with the new weights from worker/scoring/weights.js.
+Update api.md with the 7 new endpoints, request params, and example responses.
+Add a CHANGELOG.md documenting the rewrite.
+Update README.md with quickstart instructions for contributors.
+Acceptance: All four docs are current. A new contributor could clone the repo and have it running in under 10 minutes.
+
+✅ Final Verification Checklist
+Before marking the project done, run through this manually:
+ Connect wallet 0x1003...17b0 (or any test wallet)
+ Total value matches what you see in Trust Wallet
+ Optimism USDC.E shows up in the Tokens tab
+ Polygon POL shows up
+ Both NFT collectibles appear in the NFTs tab
+ Score is no longer 432 — it reflects actual diversity
+ Recommendations tab shows 4+ protocols
+ Alerts tab flags any scam airdrops in the wallet
+ Protocols tab loads with TVL data
+ PDF export works
+ Share link works
+ Mobile view on iOS Safari renders correctly (your screenshots show iOS — test there)
+Replit Agent Task List — Full DeFi Scoring Platform
+Repo: DeFiScoring/website Domain: defiscoring.com Stack: Cloudflare Worker + Jekyll site + dashboard SPA
+Paste these tasks into Replit's AI Agent one at a time, in order. Each task is self-contained, has acceptance criteria, and lists the exact files to touch. Do NOT skip ahead — later tasks assume earlier ones merged cleanly.
+
+⚙️ Task 0 — Environment & Secrets Setup
+Goal: Make sure the workspace can build and deploy before we touch code.
+Do:
+In Replit → Tools → Secrets, add the following keys (get them now, before writing code):
+ALCHEMY_KEY — free at alchemy.com (one key works for every EVM chain)
+COINGECKO_KEY — pro key recommended; free tier works but rate-limits
+ETHERSCAN_KEY — free at etherscan.io/apis (multichain V2 API)
+DEFILLAMA_KEY — optional, free at defillama.com
+MORALIS_KEY — fallback NFT/token provider
+OPENSEA_KEY — for NFT floor prices
+COVALENT_KEY — fallback multi-chain reader
+Confirm wrangler is installed: run npx wrangler --version. If missing, run npm install -D wrangler.
+Run npx wrangler whoami. If not logged in, run npx wrangler login.
+Verify the existing site builds: bundle install && bundle exec jekyll build. Report any errors before continuing.
+Acceptance: All 7 secrets visible in Replit Secrets panel. wrangler --version prints. Jekyll builds without errors.
+
+🧱 Task 1 — Repo Restructure for the New API
+Goal: Clean folder structure that separates concerns. The current worker/ is one blob; we need modules.
+Do:
+Inside the repo root, create the following directory tree (do NOT delete existing files yet):
+worker/  index.js              # entry point, router  lib/    chains.js           # chain registry    providers.js        # Alchemy/Moralis/Covalent abstraction    prices.js           # CoinGecko + DefiLlama price layer    cache.js            # KV cache helpers  handlers/    portfolio.js    defi-positions.js    nfts.js    score.js    recommendations.js    protocols.js    alerts.js    history.js  scoring/    factors.js    weights.js    grades.jsdashboard/  app.js  components/    portfolio-card.js    chain-breakdown.js    defi-positions.js    nft-grid.js    score-gauge.js    recommendations.js    alerts.js  styles/    dashboard.css
+
+
+Move the existing worker/*.js files into worker/_legacy/ (don't delete — we'll reference them).
+Create empty stub files for every path above so imports don't break during dev.
+Acceptance: Directory tree matches above. Old worker files preserved in _legacy/. git status shows new structure.
+
+🌐 Task 2 — Build the Chain Registry
+Goal: Single source of truth for every chain we support. Adding a chain later = one entry.
+Do:
+Create worker/lib/chains.js with this exact content:
+// worker/lib/chains.js
+// One row per chain. ALL chain-specific logic should read from here.
+
+export const CHAINS = [
+  {
+    id: 'ethereum',
+    name: 'Ethereum',
+    chainId: 1,
+    alchemy: 'eth-mainnet',
+    moralis: 'eth',
+    covalent: 1,
+    coingecko: 'ethereum',
+    defillama: 'ethereum',
+    nativeSymbol: 'ETH',
+    nativeCoingeckoId: 'ethereum',
+    explorer: 'https://etherscan.io',
+    explorerApi: 'https://api.etherscan.io/v2/api',
+    tier: 1,
+  },
+  {
+    id: 'optimism',
+    name: 'Optimism',
+    chainId: 10,
+    alchemy: 'opt-mainnet',
+    moralis: 'optimism',
+    covalent: 10,
+    coingecko: 'optimistic-ethereum',
+    defillama: 'optimism',
+    nativeSymbol: 'ETH',
+    nativeCoingeckoId: 'ethereum',
+    explorer: 'https://optimistic.etherscan.io',
+    explorerApi: 'https://api.etherscan.io/v2/api',
+    tier: 1,
+  },
+  {
+    id: 'arbitrum',
+    name: 'Arbitrum One',
+    chainId: 42161,
+    alchemy: 'arb-mainnet',
+    moralis: 'arbitrum',
+    covalent: 42161,
+    coingecko: 'arbitrum-one',
+    defillama: 'arbitrum',
+    nativeSymbol: 'ETH',
+    nativeCoingeckoId: 'ethereum',
+    explorer: 'https://arbiscan.io',
+    explorerApi: 'https://api.etherscan.io/v2/api',
+    tier: 1,
+  },
+  {
+    id: 'base',
+    name: 'Base',
+    chainId: 8453,
+    alchemy: 'base-mainnet',
+    moralis: 'base',
+    covalent: 8453,
+    coingecko: 'base',
+    defillama: 'base',
+    nativeSymbol: 'ETH',
+    nativeCoingeckoId: 'ethereum',
+    explorer: 'https://basescan.org',
+    explorerApi: 'https://api.etherscan.io/v2/api',
+    tier: 1,
+  },
+  {
+    id: 'polygon',
+    name: 'Polygon',
+    chainId: 137,
+    alchemy: 'polygon-mainnet',
+    moralis: 'polygon',
+    covalent: 137,
+    coingecko: 'polygon-pos',
+    defillama: 'polygon',
+    nativeSymbol: 'POL',
+    nativeCoingeckoId: 'polygon-ecosystem-token',
+    explorer: 'https://polygonscan.com',
+    explorerApi: 'https://api.etherscan.io/v2/api',
+    tier: 1,
+  },
+  {
+    id: 'bnb',
+    name: 'BNB Chain',
+    chainId: 56,
+    alchemy: 'bnb-mainnet',
+    moralis: 'bsc',
+    covalent: 56,
+    coingecko: 'binance-smart-chain',
+    defillama: 'bsc',
+    nativeSymbol: 'BNB',
+    nativeCoingeckoId: 'binancecoin',
+    explorer: 'https://bscscan.com',
+    explorerApi: 'https://api.etherscan.io/v2/api',
+    tier: 2,
+  },
+  {
+    id: 'avalanche',
+    name: 'Avalanche',
+    chainId: 43114,
+    alchemy: 'avax-mainnet',
+    moralis: 'avalanche',
+    covalent: 43114,
+    coingecko: 'avalanche',
+    defillama: 'avalanche',
+    nativeSymbol: 'AVAX',
+    nativeCoingeckoId: 'avalanche-2',
+    explorer: 'https://snowtrace.io',
+    explorerApi: 'https://api.etherscan.io/v2/api',
+    tier: 2,
+  },
+  {
+    id: 'gnosis',
+    name: 'Gnosis',
+    chainId: 100,
+    alchemy: null,
+    moralis: 'gnosis',
+    covalent: 100,
+    coingecko: 'xdai',
+    defillama: 'xdai',
+    nativeSymbol: 'xDAI',
+    nativeCoingeckoId: 'xdai',
+    explorer: 'https://gnosisscan.io',
+    explorerApi: 'https://api.etherscan.io/v2/api',
+    tier: 2,
+  },
+  {
+    id: 'linea',
+    name: 'Linea',
+    chainId: 59144,
+    alchemy: 'linea-mainnet',
+    moralis: 'linea',
+    covalent: 59144,
+    coingecko: 'linea',
+    defillama: 'linea',
+    nativeSymbol: 'ETH',
+    nativeCoingeckoId: 'ethereum',
+    explorer: 'https://lineascan.build',
+    explorerApi: 'https://api.etherscan.io/v2/api',
+    tier: 2,
+  },
+  {
+    id: 'scroll',
+    name: 'Scroll',
+    chainId: 534352,
+    alchemy: 'scroll-mainnet',
+    moralis: 'scroll',
+    covalent: 534352,
+    coingecko: 'scroll',
+    defillama: 'scroll',
+    nativeSymbol: 'ETH',
+    nativeCoingeckoId: 'ethereum',
+    explorer: 'https://scrollscan.com',
+    explorerApi: 'https://api.etherscan.io/v2/api',
+    tier: 2,
+  },
+  {
+    id: 'zksync',
+    name: 'zkSync Era',
+    chainId: 324,
+    alchemy: 'zksync-mainnet',
+    moralis: 'zksync',
+    covalent: 324,
+    coingecko: 'zksync',
+    defillama: 'era',
+    nativeSymbol: 'ETH',
+    nativeCoingeckoId: 'ethereum',
+    explorer: 'https://explorer.zksync.io',
+    explorerApi: 'https://api.etherscan.io/v2/api',
+    tier: 2,
+  },
+];
+
+export const CHAINS_BY_ID = Object.fromEntries(CHAINS.map((c) => [c.id, c]));
+export const CHAIN_IDS_TIER1 = CHAINS.filter((c) => c.tier === 1).map((c) => c.id);
+export const ALL_CHAIN_IDS = CHAINS.map((c) => c.id);
+
+Acceptance: File compiles. import { CHAINS } from './lib/chains.js' works. Running node -e "import('./worker/lib/chains.js').then(m => console.log(m.CHAINS.length))" prints 11.
+
+🔌 Task 3 — Provider Abstraction Layer
+Goal: Wrap Alchemy + Moralis + Covalent behind one interface so we can swap or fall back without touching handlers.
+Do:
+Create worker/lib/providers.js:
+// worker/lib/providers.js
+// Unified read interface across Alchemy / Moralis / Covalent.
+// Each function takes (chain, env, ...) and returns normalized data.
+
+import { CHAINS_BY_ID } from './chains.js';
+
+// ----- Alchemy ------------------------------------------------------------
+async function alchemyRpc(chain, env, method, params) {
+  if (!chain.alchemy) throw new Error(`no alchemy for ${chain.id}`);
+  const url = `https://${chain.alchemy}.g.alchemy.com/v2/${env.ALCHEMY_KEY}`;
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+  });
+  const j = await r.json();
+  if (j.error) throw new Error(`alchemy:${method}:${j.error.message}`);
+  return j.result;
+}
+
+export async function getNativeBalance(chain, env, address) {
+  if (chain.alchemy) {
+    const hex = await alchemyRpc(chain, env, 'eth_getBalance', [address, 'latest']);
+    return Number(BigInt(hex)) / 1e18;
+  }
+  // Moralis fallback
+  return moralisNativeBalance(chain, env, address);
+}
+
+export async function getErc20Balances(chain, env, address) {
+  if (chain.alchemy) {
+    const res = await alchemyRpc(chain, env, 'alchemy_getTokenBalances', [address, 'erc20']);
+    const filtered = (res.tokenBalances || []).filter((t) => t.tokenBalance && t.tokenBalance !== '0x0');
+    const enriched = await Promise.all(filtered.map(async (t) => {
+      const meta = await alchemyRpc(chain, env, 'alchemy_getTokenMetadata', [t.contractAddress]).catch(() => ({}));
+      const decimals = meta.decimals ?? 18;
+      const amount = Number(BigInt(t.tokenBalance)) / Math.pow(10, decimals);
+      return {
+        contract: t.contractAddress.toLowerCase(),
+        symbol: meta.symbol || 'UNKNOWN',
+        name: meta.name || 'Unknown',
+        logo: meta.logo || null,
+        decimals,
+        amount,
+      };
+    }));
+    return enriched.filter((t) => t.amount > 0);
+  }
+  return moralisErc20Balances(chain, env, address);
+}
+
+export async function getNfts(chain, env, address) {
+  if (chain.alchemy) {
+    const url = `https://${chain.alchemy}.g.alchemy.com/nft/v3/${env.ALCHEMY_KEY}/getNFTsForOwner?owner=${address}&pageSize=100&withMetadata=true`;
+    const r = await fetch(url);
+    if (!r.ok) return [];
+    const j = await r.json();
+    return (j.ownedNfts || []).map((n) => ({
+      chain: chain.id,
+      contract: n.contract?.address?.toLowerCase(),
+      collection: n.contract?.name || n.contract?.openSeaMetadata?.collectionName || 'Unknown',
+      tokenId: n.tokenId,
+      title: n.name || `#${n.tokenId}`,
+      image: n.image?.cachedUrl || n.image?.thumbnailUrl || n.image?.originalUrl || null,
+      floorEth: n.contract?.openSeaMetadata?.floorPrice ?? null,
+      tokenStandard: n.tokenType,
+    }));
+  }
+  return moralisNfts(chain, env, address);
+}
+
+export async function getTransactionCount(chain, env, address) {
+  if (chain.alchemy) {
+    const hex = await alchemyRpc(chain, env, 'eth_getTransactionCount', [address, 'latest']);
+    return Number(BigInt(hex));
+  }
+  return 0;
+}
+
+// ----- Moralis fallback ---------------------------------------------------
+async function moralisNativeBalance(chain, env, address) {
+  if (!env.MORALIS_KEY) return 0;
+  const url = `https://deep-index.moralis.io/api/v2.2/${address}/balance?chain=${chain.moralis}`;
+  const r = await fetch(url, { headers: { 'X-API-Key': env.MORALIS_KEY } });
+  if (!r.ok) return 0;
+  const j = await r.json();
+  return Number(j.balance || 0) / 1e18;
+}
+
+async function moralisErc20Balances(chain, env, address) {
+  if (!env.MORALIS_KEY) return [];
+  const url = `https://deep-index.moralis.io/api/v2.2/${address}/erc20?chain=${chain.moralis}`;
+  const r = await fetch(url, { headers: { 'X-API-Key': env.MORALIS_KEY } });
+  if (!r.ok) return [];
+  const j = await r.json();
+  return (j || []).map((t) => ({
+    contract: t.token_address?.toLowerCase(),
+    symbol: t.symbol || 'UNKNOWN',
+    name: t.name || 'Unknown',
+    logo: t.logo || null,
+    decimals: Number(t.decimals || 18),
+    amount: Number(t.balance) / Math.pow(10, Number(t.decimals || 18)),
+  })).filter((t) => t.amount > 0);
+}
+
+async function moralisNfts(chain, env, address) {
+  if (!env.MORALIS_KEY) return [];
+  const url = `https://deep-index.moralis.io/api/v2.2/${address}/nft?chain=${chain.moralis}&format=decimal&limit=100`;
+  const r = await fetch(url, { headers: { 'X-API-Key': env.MORALIS_KEY } });
+  if (!r.ok) return [];
+  const j = await r.json();
+  return (j.result || []).map((n) => ({
+    chain: chain.id,
+    contract: n.token_address?.toLowerCase(),
+    collection: n.name || 'Unknown',
+    tokenId: n.token_id,
+    title: n.metadata ? (JSON.parse(n.metadata).name || `#${n.token_id}`) : `#${n.token_id}`,
+    image: null,
+    floorEth: null,
+    tokenStandard: n.contract_type,
+  }));
+}
+
+// ----- Etherscan V2 (multichain via single API) ---------------------------
+export async function getFirstTxTimestamp(chain, env, address) {
+  if (!env.ETHERSCAN_KEY) return null;
+  const url = `${chain.explorerApi}?chainid=${chain.chainId}&module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&page=1&offset=1&sort=asc&apikey=${env.ETHERSCAN_KEY}`;
+  const r = await fetch(url);
+  if (!r.ok) return null;
+  const j = await r.json();
+  if (j.status !== '1' || !j.result?.length) return null;
+  return Number(j.result[0].timeStamp) * 1000;
+}
+
+Acceptance: File imports cleanly. A test call getNativeBalance(CHAINS_BY_ID.ethereum, env, '0x...') returns a number.
+
+💰 Task 4 — Price Layer with Caching
+Goal: Batch price fetching for tokens + native assets, with KV cache to stay under free-tier limits.
+Do:
+Create worker/lib/cache.js:
+// worker/lib/cache.js
+// Thin wrapper over Cloudflare KV. Falls back to in-memory Map in dev.
+
+const memoryCache = new Map();
+
+export async function cacheGet(env, key) {
+  if (env.CACHE) {
+    const v = await env.CACHE.get(key);
+    return v ? JSON.parse(v) : null;
+  }
+  const entry = memoryCache.get(key);
+  if (!entry) return null;
+  if (entry.expires < Date.now()) { memoryCache.delete(key); return null; }
+  return entry.value;
+}
+
+export async function cacheSet(env, key, value, ttlSeconds = 60) {
+  if (env.CACHE) {
+    await env.CACHE.put(key, JSON.stringify(value), { expirationTtl: ttlSeconds });
+    return;
+  }
+  memoryCache.set(key, { value, expires: Date.now() + ttlSeconds * 1000 });
+}
+
+Create worker/lib/prices.js:
+// worker/lib/prices.js
+import { cacheGet, cacheSet } from './cache.js';
+
+const CG_FREE = 'https://api.coingecko.com/api/v3';
+const CG_PRO = 'https://pro-api.coingecko.com/api/v3';
+
+function cgBase(env) { return env.COINGECKO_KEY ? CG_PRO : CG_FREE; }
+function cgHeaders(env) { return env.COINGECKO_KEY ? { 'x-cg-pro-api-key': env.COINGECKO_KEY } : {}; }
+
+export async function priceTokens(chain, env, contracts, fiat) {
+  if (!contracts.length) return {};
+  const fiatLow = fiat.toLowerCase();
+  const cacheKey = `px:${chain.id}:${fiatLow}:${contracts.sort().join(',')}`;
+  const cached = await cacheGet(env, cacheKey);
+  if (cached) return cached;
+
+  const url = `${cgBase(env)}/simple/token_price/${chain.coingecko}?contract_addresses=${contracts.join(',')}&vs_currencies=${fiatLow}`;
+  const r = await fetch(url, { headers: cgHeaders(env) });
+  if (!r.ok) return {};
+  const j = await r.json();
+  await cacheSet(env, cacheKey, j, 60);
+  return j;
+}
+
+export async function priceNative(chain, env, fiat) {
+  const fiatLow = fiat.toLowerCase();
+  const cacheKey = `px:native:${chain.nativeCoingeckoId}:${fiatLow}`;
+  const cached = await cacheGet(env, cacheKey);
+  if (cached !== null) return cached;
+
+  const url = `${cgBase(env)}/simple/price?ids=${chain.nativeCoingeckoId}&vs_currencies=${fiatLow}`;
+  const r = await fetch(url, { headers: cgHeaders(env) });
+  if (!r.ok) return 0;
+  const j = await r.json();
+  const price = j[chain.nativeCoingeckoId]?.[fiatLow] ?? 0;
+  await cacheSet(env, cacheKey, price, 60);
+  return price;
+}
+
+export async function priceMultipleNatives(env, fiat) {
+  const fiatLow = fiat.toLowerCase();
+  const ids = ['ethereum', 'polygon-ecosystem-token', 'binancecoin', 'avalanche-2', 'xdai'];
+  const cacheKey = `px:natives:${fiatLow}`;
+  const cached = await cacheGet(env, cacheKey);
+  if (cached) return cached;
+
+  const url = `${cgBase(env)}/simple/price?ids=${ids.join(',')}&vs_currencies=${fiatLow}`;
+  const r = await fetch(url, { headers: cgHeaders(env) });
+  if (!r.ok) return {};
+  const j = await r.json();
+  await cacheSet(env, cacheKey, j, 60);
+  return j;
+}
+
+Acceptance: priceNative(CHAINS_BY_ID.ethereum, env, 'USD') returns a number > 0. Second call within 60s returns instantly (cached).
+
+📊 Task 5 — Portfolio Handler (THE WALLET FIX)
+Goal: Fix the $0 across Phase 1 chains bug. Scan every chain in the registry, return real values.
+Do:
+Create worker/handlers/portfolio.js:
+// worker/handlers/portfolio.js
+import { CHAINS, CHAINS_BY_ID } from '../lib/chains.js';
+import { getNativeBalance, getErc20Balances } from '../lib/providers.js';
+import { priceTokens, priceNative } from '../lib/prices.js';
+
+const isAddress = (a) => /^0x[a-fA-F0-9]{40}$/.test(a || '');
+
+async function scanChain(chain, env, address, fiat) {
+  const [native, tokens] = await Promise.all([
+    getNativeBalance(chain, env, address).catch(() => 0),
+    getErc20Balances(chain, env, address).catch(() => []),
+  ]);
+
+  const [nativePx, tokenPxs] = await Promise.all([
+    priceNative(chain, env, fiat).catch(() => 0),
+    priceTokens(chain, env, tokens.map((t) => t.contract), fiat).catch(() => ({})),
+  ]);
+
+  const tokenRows = tokens.map((t) => {
+    const px = tokenPxs[t.contract.toLowerCase()]?.[fiat.toLowerCase()] ?? 0;
+    return { ...t, chain: chain.id, priceFiat: px, valueFiat: px * t.amount };
+  });
+
+  const nativeRow = native > 0 ? [{
+    contract: 'native',
+    symbol: chain.nativeSymbol,
+    name: `${chain.name} native`,
+    chain: chain.id,
+    decimals: 18,
+    amount: native,
+    priceFiat: nativePx,
+    valueFiat: nativePx * native,
+    logo: null,
+  }] : [];
+
+  const allTokens = [...nativeRow, ...tokenRows];
+  return {
+    chain: chain.id,
+    chainName: chain.name,
+    chainId: chain.chainId,
+    tier: chain.tier,
+    tokens: allTokens.sort((a, b) => b.valueFiat - a.valueFiat),
+    totalFiat: allTokens.reduce((s, t) => s + (t.valueFiat || 0), 0),
+  };
+}
+
+export async function handlePortfolio(request, env) {
+  const url = new URL(request.url);
+  const address = (url.searchParams.get('address') || '').toLowerCase();
+  const fiat = (url.searchParams.get('fiat') || 'USD').toUpperCase();
+  const chainFilter = url.searchParams.get('chains'); // optional CSV
+
+  if (!isAddress(address)) {
+    return json({ error: 'invalid address' }, 400);
+  }
+
+  const chainsToScan = chainFilter
+    ? CHAINS.filter((c) => chainFilter.split(',').includes(c.id))
+    : CHAINS;
+
+  const perChain = await Promise.all(chainsToScan.map((c) =>
+    scanChain(c, env, address, fiat).catch((err) => ({
+      chain: c.id, chainName: c.name, chainId: c.chainId, tier: c.tier,
+      tokens: [], totalFiat: 0, error: String(err),
+    }))
+  ));
+
+  const portfolioFiat = perChain.reduce((s, c) => s + c.totalFiat, 0);
+  const activeChains = perChain.filter((c) => c.totalFiat > 0).length;
+  const totalTokens = perChain.reduce((s, c) => s + c.tokens.length, 0);
+
+  return json({
+    address,
+    fiat,
+    portfolioFiat,
+    activeChains,
+    totalTokens,
+    chains: perChain,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+function json(data, status = 200) {
+  return new Response(JSON.stringify(data, null, 2), {
+    status,
+    headers: {
+      'content-type': 'application/json',
+      'cache-control': 'public, max-age=30',
+      'access-control-allow-origin': '*',
+    },
+  });
+}
+
+Acceptance: Hit /api/portfolio?address=0x1003...17b0&fiat=CHF and confirm:
+portfolioFiat > 0
+activeChains >= 4 (you have tokens on Ethereum, Optimism, Arbitrum, Polygon)
+The chains array contains entries for optimism (with USDC.E), polygon (with POL/MATIC), ethereum (with RENDER), etc.
+
+🏦 Task 6 — DeFi Positions Handler
+Goal: Detect lending, staking, LP, and farming positions across major protocols. This is what "Open Positions" should actually count.
+Do:
+Create worker/handlers/defi-positions.js:
+// worker/handlers/defi-positions.js
+// Reads DeFi positions across protocols using DefiLlama + direct contract calls.
+
+import { CHAINS, CHAINS_BY_ID } from '../lib/chains.js';
+
+const isAddress = (a) => /^0x[a-fA-F0-9]{40}$/.test(a || '');
+
+// DefiLlama tracks positions for many protocols via their /pools and /yields endpoints.
+// For lending positions specifically we read Aave/Compound user data on-chain.
+
+const AAVE_V3_POOL = {
+  ethereum: '0x87870bca3f3fd6335c3f4ce8392d69350b4fa4e2',
+  optimism: '0x794a61358d6845594f94dc1db02a252b5b4814ad',
+  arbitrum: '0x794a61358d6845594f94dc1db02a252b5b4814ad',
+  base:     '0xa238dd80c259a72e81d7e4664a9801593f98d1c5',
+  polygon:  '0x794a61358d6845594f94dc1db02a252b5b4814ad',
+  avalanche:'0x794a61358d6845594f94dc1db02a252b5b4814ad',
+};
+
+// getUserAccountData(address) returns:
+//   totalCollateralBase, totalDebtBase, availableBorrowsBase,
+//   currentLiquidationThreshold, ltv, healthFactor
+const GET_USER_ACCOUNT_DATA = '0xbf92857c'; // function selector
+
+async function readAaveV3(chain, env, address) {
+  const pool = AAVE_V3_POOL[chain.id];
+  if (!pool || !chain.alchemy) return null;
+  const url = `https://${chain.alchemy}.g.alchemy.com/v2/${env.ALCHEMY_KEY}`;
+  const data = GET_USER_ACCOUNT_DATA + address.replace(/^0x/, '').padStart(64, '0');
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0', id: 1, method: 'eth_call',
+      params: [{ to: pool, data }, 'latest'],
+    }),
+  });
+  const j = await r.json();
+  if (!j.result || j.result === '0x') return null;
+  const hex = j.result.replace(/^0x/, '');
+  if (hex.length < 64 * 6) return null;
+  const parse = (i) => BigInt('0x' + hex.slice(i * 64, (i + 1) * 64));
+  const totalCollateral = Number(parse(0)) / 1e8; // USD with 8 decimals
+  const totalDebt = Number(parse(1)) / 1e8;
+  const ltv = Number(parse(3)) / 10000;
+  const healthFactor = Number(parse(5)) / 1e18;
+  if (totalCollateral === 0 && totalDebt === 0) return null;
+  return {
+    protocol: 'Aave v3',
+    chain: chain.id,
+    type: 'lending',
+    suppliedUsd: totalCollateral,
+    borrowedUsd: totalDebt,
+    netUsd: totalCollateral - totalDebt,
+    ltv,
+    healthFactor: healthFactor > 1e18 ? null : healthFactor,
+    liquidationRisk: healthFactor < 1.5 ? 'high' : healthFactor < 2 ? 'medium' : 'low',
+  };
+}
+
+// DefiLlama's /api/v1/positions/{address} returns yield positions tracked by them
+async function readDefiLlamaPositions(env, address) {
+  const url = `https://yields.llama.fi/poolsByAddress/${address}`;
+  const r = await fetch(url);
+  if (!r.ok) return [];
+  const j = await r.json();
+  return (j.data || []).map((p) => ({
+    protocol: p.project,
+    chain: p.chain?.toLowerCase(),
+    type: 'yield',
+    poolName: p.symbol,
+    apy: p.apy,
+    suppliedUsd: p.tvlUsd || 0,
+    borrowedUsd: 0,
+    netUsd: p.tvlUsd || 0,
+  }));
+}
+
+export async function handleDefiPositions(request, env) {
+  const url = new URL(request.url);
+  const address = (url.searchParams.get('address') || '').toLowerCase();
+  if (!isAddress(address)) {
+    return new Response(JSON.stringify({ error: 'invalid address' }), {
+      status: 400, headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  const aaveResults = await Promise.all(
+    CHAINS.filter((c) => AAVE_V3_POOL[c.id])
+          .map((c) => readAaveV3(c, env, address).catch(() => null))
+  );
+  const llamaResults = await readDefiLlamaPositions(env, address).catch(() => []);
+
+  const positions = [...aaveResults.filter(Boolean), ...llamaResults];
+  const totalSupplied = positions.reduce((s, p) => s + (p.suppliedUsd || 0), 0);
+  const totalBorrowed = positions.reduce((s, p) => s + (p.borrowedUsd || 0), 0);
+  const atRisk = positions.filter((p) => p.liquidationRisk === 'high').length;
+
+  return new Response(JSON.stringify({
+    address,
+    positions,
+    totalSupplied,
+    totalBorrowed,
+    netDefiValue: totalSupplied - totalBorrowed,
+    positionCount: positions.length,
+    atRiskCount: atRisk,
+    updatedAt: new Date().toISOString(),
+  }, null, 2), {
+    headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*' },
+  });
+}
+
+Acceptance: /api/defi-positions?address=0x... returns a JSON array. For wallets with no DeFi activity, returns positions: []. For wallets with Aave positions, returns health factor.
+
+🖼 Task 7 — NFT Handler with Floor Prices
+Goal: List NFTs across all chains, enriched with collection floor price (so we can value them).
+Do:
+Create worker/handlers/nfts.js:
+// worker/handlers/nfts.js
+import { CHAINS } from '../lib/chains.js';
+import { getNfts } from '../lib/providers.js';
+import { priceNative } from '../lib/prices.js';
+
+const isAddress = (a) => /^0x[a-fA-F0-9]{40}$/.test(a || '');
+
+async function getOpenSeaFloor(contract, env) {
+  if (!env.OPENSEA_KEY) return null;
+  const url = `https://api.opensea.io/api/v2/collections/${contract}/stats`;
+  const r = await fetch(url, { headers: { 'X-API-KEY': env.OPENSEA_KEY } });
+  if (!r.ok) return null;
+  const j = await r.json();
+  return j.total?.floor_price || null;
+}
+
+export async function handleNfts(request, env) {
+  const url = new URL(request.url);
+  const address = (url.searchParams.get('address') || '').toLowerCase();
+  const fiat = (url.searchParams.get('fiat') || 'USD').toUpperCase();
+  if (!isAddress(address)) {
+    return new Response(JSON.stringify({ error: 'invalid address' }), {
+      status: 400, headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  const perChainNfts = await Promise.all(
+    CHAINS.map((c) => getNfts(c, env, address).catch(() => []))
+  );
+  const allNfts = perChainNfts.flat();
+
+  // Group by collection so we only look up floor once
+  const byCollection = new Map();
+  for (const n of allNfts) {
+    const k = `${n.chain}:${n.contract}`;
+    if (!byCollection.has(k)) byCollection.set(k, { ...n, items: [] });
+    byCollection.get(k).items.push({ tokenId: n.tokenId, title: n.title, image: n.image });
+  }
+
+  const ethPrice = await priceNative(CHAINS[0], env, fiat).catch(() => 0);
+
+  const collections = await Promise.all([...byCollection.values()].map(async (c) => {
+    const floorEth = c.floorEth ?? null;
+    const floorFiat = floorEth ? floorEth * ethPrice : null;
+    return {
+      chain: c.chain,
+      contract: c.contract,
+      collection: c.collection,
+      itemCount: c.items.length,
+      floorEth,
+      floorFiat,
+      estimatedValueFiat: floorFiat ? floorFiat * c.items.length : null,
+      items: c.items.slice(0, 10),
+    };
+  }));
+
+  const totalEstimatedValue = collections.reduce((s, c) => s + (c.estimatedValueFiat || 0), 0);
+
+  return new Response(JSON.stringify({
+    address,
+    fiat,
+    totalNfts: allNfts.length,
+    totalCollections: collections.length,
+    totalEstimatedValueFiat: totalEstimatedValue,
+    collections: collections.sort((a, b) => (b.estimatedValueFiat || 0) - (a.estimatedValueFiat || 0)),
+    updatedAt: new Date().toISOString(),
+  }, null, 2), {
+    headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*' },
+  });
+}
+
+Acceptance: /api/nfts?address=0x1003...17b0 returns at least 2 NFTs (matches your screenshots showing the shark + whale collectibles). Each collection has a floorFiat if available.
+
+🧮 Task 8 — Score Engine (Real Weights)
+Goal: Replace the placeholder score with one that actually uses portfolio + DeFi positions + NFTs + on-chain history. Map to your published methodology.
+Do:
+Create worker/scoring/factors.js:
+// worker/scoring/factors.js
+// Each factor returns 0..maxWeight. Sum is mapped to FICO-style band.
+
+export function onChainActivityFactor(portfolio) {
+  const tokenCount = portfolio.totalTokens || 0;
+  return Math.min(20, tokenCount * 1.2);
+}
+
+export function multiChainDiversityFactor(portfolio) {
+  const active = portfolio.activeChains || 0;
+  return Math.min(15, active * 3);
+}
+
+export function nativeLiquidityFactor(portfolio) {
+  const v = portfolio.portfolioFiat || 0;
+  if (v >= 10000) return 20;
+  if (v >= 1000) return 15;
+  if (v >= 100) return 8;
+  if (v >= 10) return 3;
+  return 1;
+}
+
+export function walletAgeFactor(firstTxTimestamp) {
+  if (!firstTxTimestamp) return 5;
+  const days = (Date.now() - firstTxTimestamp) / (1000 * 60 * 60 * 24);
+  if (days >= 1095) return 15; // 3+ years
+  if (days >= 365) return 12;
+  if (days >= 180) return 8;
+  if (days >= 30) return 4;
+  return 1;
+}
+
+export function contractDiversityFactor(portfolio) {
+  const contracts = new Set();
+  for (const c of portfolio.chains || []) {
+    for (const t of c.tokens || []) {
+      if (t.contract !== 'native') contracts.add(t.contract);
+    }
+  }
+  return Math.min(15, contracts.size * 0.8);
+}
+
+export function tokenDiversityFactor(portfolio) {
+  const symbols = new Set();
+  for (const c of portfolio.chains || []) {
+    for (const t of c.tokens || []) symbols.add(t.symbol);
+  }
+  return Math.min(10, symbols.size * 0.7);
+}
+
+export function defiEngagementFactor(positions) {
+  const count = positions.positionCount || 0;
+  const atRisk = positions.atRiskCount || 0;
+  const base = Math.min(10, count * 2);
+  return Math.max(0, base - atRisk * 3);
+}
+
+export function nftHoldingsFactor(nftData) {
+  const v = nftData.totalEstimatedValueFiat || 0;
+  if (v >= 50000) return 5;
+  if (v >= 5000) return 4;
+  if (v >= 500) return 3;
+  if (v >= 50) return 2;
+  if ((nftData.totalNfts || 0) > 0) return 1;
+  return 0;
+}
+
+Create worker/scoring/weights.js:
+// worker/scoring/weights.js
+// Weight allocation totals 100. Edit here to tune.
+export const WEIGHTS = {
+  onChainActivity: 20,
+  multiChainDiversity: 15,
+  nativeLiquidity: 20,
+  walletAge: 15,
+  contractDiversity: 15,
+  tokenDiversity: 10,
+  defiEngagement: 10,
+  nftHoldings: 5,
+};
+
+// Sum is 110 — leaves headroom; capped at 100.
+
+Create worker/scoring/grades.js:
+// worker/scoring/grades.js
+// Map raw 0..100 to FICO-style 300..850 + band labels.
+export function toFicoScore(raw) {
+  const clamped = Math.max(0, Math.min(100, raw));
+  return Math.round(300 + (clamped / 100) * 550);
+}
+
+export function bandFor(score) {
+  if (score >= 800) return { band: 'Excellent', color: '#10b981' };
+  if (score >= 740) return { band: 'Very Good', color: '#22c55e' };
+  if (score >= 670) return { band: 'Good', color: '#84cc16' };
+  if (score >= 580) return { band: 'Fair', color: '#f59e0b' };
+  return { band: 'Poor', color: '#ef4444' };
+}
+
+Create worker/handlers/score.js:
+// worker/handlers/score.js
+import { handlePortfolio } from './portfolio.js';
+import { handleDefiPositions } from './defi-positions.js';
+import { handleNfts } from './nfts.js';
+import { CHAINS_BY_ID } from '../lib/chains.js';
+import { getFirstTxTimestamp } from '../lib/providers.js';
+import * as F from '../scoring/factors.js';
+import { WEIGHTS } from '../scoring/weights.js';
+import { toFicoScore, bandFor } from '../scoring/grades.js';
+
+const isAddress = (a) => /^0x[a-fA-F0-9]{40}$/.test(a || '');
+
+export async function handleScore(request, env) {
+  const url = new URL(request.url);
+  const address = (url.searchParams.get('address') || '').toLowerCase();
+  const fiat = (url.searchParams.get('fiat') || 'USD').toUpperCase();
+
+  if (!isAddress(address)) {
+    return new Response(JSON.stringify({ error: 'invalid address' }), {
+      status: 400, headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  // Fan out three subrequests in parallel.
+  const baseUrl = `${url.origin}`;
+  const [portRes, posRes, nftRes] = await Promise.all([
+    handlePortfolio(new Request(`${baseUrl}/api/portfolio?address=${address}&fiat=${fiat}`), env),
+    handleDefiPositions(new Request(`${baseUrl}/api/defi-positions?address=${address}`), env),
+    handleNfts(new Request(`${baseUrl}/api/nfts?address=${address}&fiat=${fiat}`), env),
+  ]);
+  const [portfolio, positions, nftData] = await Promise.all([portRes.json(), posRes.json(), nftRes.json()]);
+
+  const firstTx = await getFirstTxTimestamp(CHAINS_BY_ID.ethereum, env, address).catch(() => null);
+
+  const factors = {
+    onChainActivity:     F.onChainActivityFactor(portfolio),
+    multiChainDiversity: F.multiChainDiversityFactor(portfolio),
+    nativeLiquidity:     F.nativeLiquidityFactor(portfolio),
+    walletAge:           F.walletAgeFactor(firstTx),
+    contractDiversity:   F.contractDiversityFactor(portfolio),
+    tokenDiversity:      F.tokenDiversityFactor(portfolio),
+    defiEngagement:      F.defiEngagementFactor(positions),
+    nftHoldings:         F.nftHoldingsFactor(nftData),
+  };
+
+  // Each factor is already capped at its weight; sum directly.
+  const raw = Object.values(factors).reduce((s, v) => s + v, 0);
+  const score = toFicoScore(raw);
+  const { band, color } = bandFor(score);
+
+  return new Response(JSON.stringify({
+    address,
+    score,
+    band,
+    color,
+    raw,
+    factors,
+    weights: WEIGHTS,
+    walletAgeDays: firstTx ? Math.floor((Date.now() - firstTx) / 86400000) : null,
+    portfolioFiat: portfolio.portfolioFiat,
+    netDefiValue: positions.netDefiValue || 0,
+    nftValueFiat: nftData.totalEstimatedValueFiat || 0,
+    totalValueFiat: (portfolio.portfolioFiat || 0) + (positions.netDefiValue || 0) + (nftData.totalEstimatedValueFiat || 0),
+    updatedAt: new Date().toISOString(),
+  }, null, 2), {
+    headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*' },
+  });
+}
+
+Acceptance: /api/score?address=0x1003...17b0&fiat=CHF returns a score that:
+Is no longer 432 (your wallet should now show diversity across 4 chains).
+Has all 8 factor values populated and non-zero.
+Returns totalValueFiat matching what you see in your wallet app.
+
+🎯 Task 9 — Recommendations Engine
+Goal: Match the wallet's risk profile to specific protocols, tokens, and NFTs.
+Do: Use the recommendations file from the previous bundle (worker/recommendations.js from the earlier patch). Update its imports to use the new structure: import { handleScore } from './score.js'. Have it call /api/score to get the user's actual band, then filter the catalog by minScore. Return separate sections for: protocols, stablecoins, blue-chip tokens, growth tokens, NFT collections, and yield strategies.
+Acceptance: /api/recommendations?address=0x...&risk=balanced returns 4+ protocols, 6+ tokens, 3+ NFT collections, all gated by the wallet's actual score.
+
+🚨 Task 10 — Alerts Handler
+Goal: Detect risk events the user should know about: low health factor, position size changes, suspicious tokens, drained balances.
+Do:
+Create worker/handlers/alerts.js:
+// worker/handlers/alerts.js
+// Generates real-time alerts. For now, computes from current state;
+// in Task 14 we wire this to a Durable Object for historical tracking.
+
+import { handlePortfolio } from './portfolio.js';
+import { handleDefiPositions } from './defi-positions.js';
+
+const isAddress = (a) => /^0x[a-fA-F0-9]{40}$/.test(a || '');
+
+const DUST_THRESHOLD_USD = 0.01;
+
+// Hardcoded suspicious-token denylist; in production, sync from a public list.
+const SUSPICIOUS_PATTERNS = [
+  /visit.*claim/i,
+  /\.com$/i,
+  /\.io$/i,
+  /airdrop/i,
+  /reward/i,
+];
+
+export async function handleAlerts(request, env) {
+  const url = new URL(request.url);
+  const address = (url.searchParams.get('address') || '').toLowerCase();
+  if (!isAddress(address)) {
+    return new Response(JSON.stringify({ error: 'invalid address' }), {
+      status: 400, headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  const baseUrl = url.origin;
+  const [portRes, posRes] = await Promise.all([
+    handlePortfolio(new Request(`${baseUrl}/api/portfolio?address=${address}&fiat=USD`), env),
+    handleDefiPositions(new Request(`${baseUrl}/api/defi-positions?address=${address}`), env),
+  ]);
+  const [portfolio, positions] = await Promise.all([portRes.json(), posRes.json()]);
+
+  const alerts = [];
+
+  // 1. Health-factor alerts
+  for (const p of (positions.positions || [])) {
+    if (p.healthFactor != null && p.healthFactor < 1.2) {
+      alerts.push({
+        severity: 'critical',
+        type: 'liquidation_risk',
+        title: `${p.protocol} position near liquidation`,
+        message: `Health factor: ${p.healthFactor.toFixed(2)} on ${p.chain}. Add collateral or repay.`,
+        actionUrl: `https://app.aave.com`,
+      });
+    } else if (p.healthFactor != null && p.healthFactor < 1.5) {
+      alerts.push({
+        severity: 'warning',
+        type: 'low_health',
+        title: `${p.protocol} health factor low`,
+        message: `Health factor: ${p.healthFactor.toFixed(2)} on ${p.chain}.`,
+      });
+    }
+  }
+
+  // 2. Suspicious tokens (likely scam airdrops)
+  for (const c of (portfolio.chains || [])) {
+    for (const t of (c.tokens || [])) {
+      const looksScam = SUSPICIOUS_PATTERNS.some((re) => re.test(t.name || '') || re.test(t.symbol || ''));
+      if (looksScam) {
+        alerts.push({
+          severity: 'warning',
+          type: 'suspicious_token',
+          title: `Suspicious token detected: ${t.symbol}`,
+          message: `On ${c.chainName}. Do NOT interact — likely scam airdrop. Hide or revoke approvals.`,
+          tokenContract: t.contract,
+          chain: c.chain,
+        });
+      }
+    }
+  }
+
+  // 3. Dust (informational)
+  let dustCount = 0;
+  for (const c of (portfolio.chains || [])) {
+    for (const t of (c.tokens || [])) {
+      if (t.valueFiat > 0 && t.valueFiat < DUST_THRESHOLD_USD) dustCount++;
+    }
+  }
+  if (dustCount >= 5) {
+    alerts.push({
+      severity: 'info',
+      type: 'dust',
+      title: `${dustCount} dust tokens detected`,
+      message: 'Consider sweeping to consolidate.',
+    });
+  }
+
+  // 4. Single-chain concentration
+  const sorted = (portfolio.chains || []).slice().sort((a, b) => b.totalFiat - a.totalFiat);
+  if (sorted[0]?.totalFiat > 0 && sorted[0].totalFiat / portfolio.portfolioFiat > 0.9) {
+    alerts.push({
+      severity: 'info',
+      type: 'concentration',
+      title: 'Portfolio concentrated on one chain',
+      message: `${(sorted[0].totalFiat / portfolio.portfolioFiat * 100).toFixed(0)}% on ${sorted[0].chainName}.`,
+    });
+  }
+
+  return new Response(JSON.stringify({
+    address,
+    alertCount: alerts.length,
+    criticalCount: alerts.filter((a) => a.severity === 'critical').length,
+    alerts,
+    updatedAt: new Date().toISOString(),
+  }, null, 2), {
+    headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*' },
+  });
+}
+
+Acceptance: /api/alerts?address=0x... returns alerts. For wallets with scam airdrops (most wallets have these), at least one suspicious_token alert appears.
+
+📈 Task 11 — Protocols Catalog Endpoint
+Goal: Public catalog of protocols you score, used by the Recommendations engine and a future "Browse Protocols" page.
+Do:
+Create worker/handlers/protocols.js:
+// worker/handlers/protocols.js
+// Returns the full DeFi Safety Rating catalog.
+// Source = static curated JSON + DefiLlama TVL enrichment.
+
+const CATALOG = [
+  // Lending
+  { slug: 'aave-v3',     name: 'Aave v3',     category: 'Lending', chains: ['ethereum','optimism','arbitrum','base','polygon','avalanche'], safetyScore: 92, llamaSlug: 'aave-v3' },
+  { slug: 'compound-v3', name: 'Compound v3', category: 'Lending', chains: ['ethereum','arbitrum','base','polygon'], safetyScore: 88, llamaSlug: 'compound-v3' },
+  { slug: 'morpho',      name: 'Morpho',      category: 'Lending', chains: ['ethereum','base'], safetyScore: 80, llamaSlug: 'morpho-blue' },
+  { slug: 'spark',       name: 'Spark',       category: 'Lending', chains: ['ethereum','gnosis'], safetyScore: 82, llamaSlug: 'spark' },
+  // DEXes
+  { slug: 'uniswap-v3',  name: 'Uniswap v3',  category: 'DEX', chains: ['ethereum','optimism','arbitrum','base','polygon'], safetyScore: 95, llamaSlug: 'uniswap-v3' },
+  { slug: 'curve',       name: 'Curve',       category: 'Stable DEX', chains: ['ethereum','optimism','arbitrum','polygon'], safetyScore: 84, llamaSlug: 'curve-dex' },
+  { slug: 'balancer',    name: 'Balancer',    category: 'DEX', chains: ['ethereum','arbitrum','polygon'], safetyScore: 80, llamaSlug: 'balancer-v2' },
+  { slug: 'aerodrome',   name: 'Aerodrome',   category: 'DEX', chains: ['base'], safetyScore: 70, llamaSlug: 'aerodrome-v1' },
+  { slug: 'velodrome',   name: 'Velodrome',   category: 'DEX', chains: ['optimism'], safetyScore: 72, llamaSlug: 'velodrome-v2' },
+  // Staking / LSTs
+  { slug: 'lido',        name: 'Lido',        category: 'Liquid Staking', chains: ['ethereum'], safetyScore: 90, llamaSlug: 'lido' },
+  { slug: 'rocketpool',  name: 'Rocket Pool', category: 'Liquid Staking', chains: ['ethereum'], safetyScore: 88, llamaSlug: 'rocket-pool' },
+  // Yield
+  { slug: 'pendle',      name: 'Pendle',      category: 'Yield Trading', chains: ['ethereum','arbitrum'], safetyScore: 75, llamaSlug: 'pendle' },
+  { slug: 'yearn-v3',    name: 'Yearn v3',    category: 'Yield Aggregator', chains: ['ethereum','arbitrum','optimism'], safetyScore: 78, llamaSlug: 'yearn-finance' },
+  // Perps
+  { slug: 'gmx',         name: 'GMX',         category: 'Perpetuals', chains: ['arbitrum','avalanche'], safetyScore: 70, llamaSlug: 'gmx-v2' },
+  { slug: 'dydx-v4',     name: 'dYdX v4',     category: 'Perpetuals', chains: ['ethereum'], safetyScore: 72, llamaSlug: 'dydx-v4' },
+  { slug: 'hyperliquid', name: 'Hyperliquid', category: 'Perpetuals', chains: ['ethereum'], safetyScore: 65, llamaSlug: 'hyperliquid' },
+  // Bridges
+  { slug: 'across',      name: 'Across',      category: 'Bridge', chains: ['ethereum','optimism','arbitrum','base','polygon'], safetyScore: 78, llamaSlug: 'across' },
+  { slug: 'stargate',    name: 'Stargate',    category: 'Bridge', chains: ['ethereum','optimism','arbitrum','base','polygon','bnb','avalanche'], safetyScore: 70, llamaSlug: 'stargate' },
+];
+
+export async function handleProtocols(request, env) {
+  const url = new URL(request.url);
+  const category = url.searchParams.get('category');
+  const chain = url.searchParams.get('chain');
+  const minScore = Number(url.searchParams.get('minScore') || 0);
+
+  // Enrich with TVL from DefiLlama (cached in real deploy)
+  let tvls = {};
+  try {
+    const r = await fetch('https://api.llama.fi/protocols');
+    if (r.ok) {
+      const list = await r.json();
+      tvls = Object.fromEntries(list.map((p) => [p.slug, p.tvl]));
+    }
+  } catch {}
+
+  let results = CATALOG.map((p) => ({ ...p, tvlUsd: tvls[p.llamaSlug] || null }));
+  if (category) results = results.filter((p) => p.category === category);
+  if (chain) results = results.filter((p) => p.chains.includes(chain));
+  if (minScore) results = results.filter((p) => p.safetyScore >= minScore);
+
+  return new Response(JSON.stringify({
+    count: results.length,
+    protocols: results.sort((a, b) => b.safetyScore - a.safetyScore),
+    categories: [...new Set(CATALOG.map((p) => p.category))],
+    updatedAt: new Date().toISOString(),
+  }, null, 2), {
+    headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*' },
+  });
+}
+
+Acceptance: /api/protocols returns 18 protocols with TVL. /api/protocols?category=Lending&minScore=80 filters correctly.
+
+🔌 Task 12 — Wire Up the Worker Router
+Do:
+Create worker/index.js:
+import { handlePortfolio } from './handlers/portfolio.js';
+import { handleDefiPositions } from './handlers/defi-positions.js';
+import { handleNfts } from './handlers/nfts.js';
+import { handleScore } from './handlers/score.js';
+import { handleRecommendations } from './handlers/recommendations.js';
+import { handleAlerts } from './handlers/alerts.js';
+import { handleProtocols } from './handlers/protocols.js';
+
+const ROUTES = {
+  '/api/portfolio':       handlePortfolio,
+  '/api/defi-positions':  handleDefiPositions,
+  '/api/nfts':            handleNfts,
+  '/api/score':           handleScore,
+  '/api/recommendations': handleRecommendations,
+  '/api/alerts':          handleAlerts,
+  '/api/protocols':       handleProtocols,
+  '/api/health':          () => new Response(JSON.stringify({ ok: true, time: new Date().toISOString() }), {
+    headers: { 'content-type': 'application/json' },
+  }),
+};
+
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+
+    if (request.method === 'OPTIONS') {
+      return new Response(null, {
+        headers: {
+          'access-control-allow-origin': '*',
+          'access-control-allow-methods': 'GET,POST,OPTIONS',
+          'access-control-allow-headers': 'content-type, authorization',
+          'access-control-max-age': '86400',
+        },
+      });
+    }
+
+    const handler = ROUTES[url.pathname];
+    if (handler) {
+      try {
+        return await handler(request, env);
+      } catch (err) {
+        return new Response(JSON.stringify({ error: String(err.message || err) }), {
+          status: 500,
+          headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*' },
+        });
+      }
+    }
+
+    return new Response('Not Found', { status: 404 });
+  },
+};
+
+Update wrangler.jsonc:
+{
+  "name": "defiscoring-api",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-04-30",
+  "workers_dev": true,
+  "routes": [
+    { "pattern": "defiscoring.com/api/*", "zone_name": "defiscoring.com" }
+  ],
+  "kv_namespaces": [
+    { "binding": "CACHE", "id": "TODO_RUN_WRANGLER_KV_CREATE" }
+  ]
+}
+
+Run npx wrangler kv:namespace create CACHE and paste the returned ID into wrangler.jsonc where it says TODO.
+Acceptance: npx wrangler dev starts. /api/health returns {ok: true}. All 7 endpoints respond without 500 errors.
+
+💻 Task 13 — Dashboard SPA Rewrite
+Goal: Replace the existing dashboard with a multi-tab interface that shows everything the API returns.
+Do:
+Replace dashboard/index.html with a new layout that has these tabs/sections:
+┌─────────────────────────────────────────────────────────┐
+│ DeFi Scoring        [0x1003...17b0]    [Disconnect]    │
+├─────────────────────────────────────────────────────────┤
+│  TOTAL VALUE: CHF 1,234.56                              │
+│  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐                   │
+│  │Score │ │Wallet│ │ DeFi │ │ NFTs │                   │
+│  │ 612  │ │ 2yr  │ │ $0   │ │ 2    │                   │
+│  └──────┘ └──────┘ └──────┘ └──────┘                   │
+├─────────────────────────────────────────────────────────┤
+│ [Overview] [Tokens] [DeFi] [NFTs] [Recommendations] [Alerts] [Protocols] │
+├─────────────────────────────────────────────────────────┤
+│  (active tab content)                                   │
+└─────────────────────────────────────────────────────────┘
+
+Build each tab as a function in dashboard/app.js that:
+Fetches the relevant /api/* endpoint.
+Renders into a single <main id="content"> container.
+Caches results for 30s to avoid hammering the API on tab switches.
+The detailed implementation of dashboard/app.js should:
+Read wallet address from window.ethereum (MetaMask) or query string.
+Persist the chosen fiat (localStorage.setItem('fiat', ...)).
+Show skeleton loaders during fetch.
+Show per-chain breakdown sorted by total value descending.
+For NFTs, show grid of cards with image + collection + estimated floor.
+For Recommendations, show three columns: Protocols / Tokens / NFTs.
+For Alerts, show stacked cards colored by severity (red / amber / blue).
+For Protocols, show a filterable table with TVL, safety score, chains.
+Use the dashboard/app.js from the previous bundle as the starting point — extend it for the new endpoints.
+Acceptance: The dashboard loads, shows your real CHF total (NOT $0), all tabs render real data, and switching between tabs is instant after the first fetch.
+
+📅 Task 14 — Historical Tracking (Optional, Recommended)
+Goal: Store daily snapshots of wallet value and score so users can see trends.
+Do:
+Add a new KV namespace called HISTORY with wrangler kv:namespace create HISTORY.
+Create a Cloudflare Cron Trigger in wrangler.jsonc:
+"triggers": { "crons": ["0 0 * * *"] }
+
+
+Add a scheduled handler in worker/index.js that, for every wallet in a "tracked" list, snapshots {address, score, portfolioFiat, timestamp} into KV under key hist:{address}:{YYYY-MM-DD}.
+Add /api/history?address=0x...&days=30 returning the last N daily snapshots.
+Add a History tab to the dashboard with a Chart.js line chart of value + score over time.
+Acceptance: After running for 2+ days, the History tab shows a chart with at least 2 data points.
+
+🔐 Task 15 — Wallet Connect Flow
+Goal: Replace the manual address entry with a real wallet connection. Show the connected address, allow disconnect, and persist via localStorage.
+Do:
+In dashboard/app.js, add a connectWallet() function using window.ethereum.request({ method: 'eth_requestAccounts' }).
+After connect, call all 7 endpoints with the address.
+Handle network changes via window.ethereum.on('accountsChanged', ...).
+Show a "Connect Wallet" button when no address; show "Disconnect" + truncated address when connected.
+Add WalletConnect v2 support (via @walletconnect/ethereum-provider) for non-MetaMask users.
+Acceptance: Connecting MetaMask reads the active address and triggers a full dashboard load. Disconnecting clears the UI.
+
+🛡 Task 16 — Token Approval Scanner
+Goal: Show users which contracts have unlimited spending approvals on their tokens — this is the #1 actual security risk.
+Do:
+Create worker/handlers/approvals.js.
+For each chain × each token in the portfolio, call eth_getLogs for the Approval event topic, filtered to the user's address.
+Aggregate into { token, spender, allowance, lastBlock } rows.
+Flag any allowance > 1e30 as unlimited.
+Add an "Approvals" tab to the dashboard with a table + revoke link to revoke.cash.
+Acceptance: /api/approvals?address=0x... returns approval rows. Dashboard shows them in a table sortable by risk.
+
+📤 Task 17 — Export & Share
+Goal: Let users export their full report as PDF and share a public read-only link.
+Do:
+Add a "Download Report" button that compiles all 7 endpoints into a single PDF (use html2pdf.js client-side).
+Add a "Share" button that generates a URL like defiscoring.com/wallet/0x1003...17b0 — a public read-only view of the wallet's score (no recommendations/alerts).
+Add OG meta tags to that public page so links unfurl on Twitter/Telegram.
+Acceptance: Clicking Download produces a multi-page PDF. Clicking Share copies a URL that, when opened, shows score + chains + portfolio total (no PII).
+
+🧪 Task 18 — Testing
+Goal: Make sure regressions don't reintroduce the $0 across Phase 1 chains bug.
+Do:
+Create worker/__tests__/portfolio.test.js. Use Vitest.
+Mock fetch and assert that:
+Calling /api/portfolio for an address returns ALL 11 chains in the response.
+Tokens on Optimism, Polygon, Arbitrum are NOT filtered out.
+portfolioFiat equals the sum of all chain totals.
+Add a CI workflow in .github/workflows/test.yml that runs npm test on every PR.
+Acceptance: npm test passes. CI runs green.
+
+🚀 Task 19 — Deploy
+Do:
+npx wrangler deploy — pushes the Worker to production.
+Update Jekyll's dashboard/index.html to point its API calls at the deployed worker URL (or leave it as /api/* if the route in wrangler.jsonc is matched).
+Run bundle exec jekyll build && wrangler pages deploy _site (or whatever your current deploy flow is).
+Hit https://defiscoring.com/api/health to confirm deployment.
+Hit https://defiscoring.com/dashboard/?address=0x1003...17b0 and confirm:
+Total value > 0
+All 4+ chains visible
+NFTs visible
+Score updated from 432 to a realistic number
+Acceptance: Production site shows the actual portfolio. The bug from your screenshots is gone.
+
+📋 Task 20 — Documentation Update
+Do:
+Update methodology.md to document the 8 factors actually used (not just the 4 pillars), with the new weights from worker/scoring/weights.js.
+Update api.md with the 7 new endpoints, request params, and example responses.
+Add a CHANGELOG.md documenting the rewrite.
+Update README.md with quickstart instructions for contributors.
+Acceptance: All four docs are current. A new contributor could clone the repo and have it running in under 10 minutes.
+
+✅ Final Verification Checklist
+Before marking the project done, run through this manually:
+[ ] Connect wallet 0x1003...17b0 (or any test wallet)
+[ ] Total value matches what you see in Trust Wallet
+[ ] Optimism USDC.E shows up in the Tokens tab
+[ ] Polygon POL shows up
+[ ] Both NFT collectibles appear in the NFTs tab
+[ ] Score is no longer 432 — it reflects actual diversity
+[ ] Recommendations tab shows 4+ protocols
+[ ] Alerts tab flags any scam airdrops in the wallet
+[ ] Protocols tab loads with TVL data
+[ ] PDF export works
+[ ] Share link works
+[ ] Mobile view on iOS Safari renders correctly (your screenshots show iOS — test there)
+
+🎁 Stretch Goals (After Launch)
+Telegram/Discord bot with /score 0x... command
+Email alerts for liquidation risk
+Solana support (non-EVM)
+Cosmos / Sui support
+Tax export (CSV for crypto tax software)
+Multi-wallet portfolios (track multiple addresses under one account)
+Premium tier with real-time Webhooks instead of polling
+
+Got it — that changes the architecture significantly. You're describing a fully static, edge-computed stack with no traditional backend server. Let me reframe everything around that constraint, because it's actually a clever choice for this product (cheap, fast, censorship-resistant, fits the no-KYC ethos) but it has hard limits you need to design around.
+The stack, clarified
+Replit = the build environment / IDE / AI agent that writes the code and pushes to GitHub.
+GitHub = source of truth, CI/CD via Actions, issue tracking.
+GitHub Pages (Jekyll) = static site hosting for the marketing site, methodology docs, public dashboards, backtest pages.
+Cloudflare Workers / Pages = the actual compute layer. This is where scoring, API endpoints, caching, auth, paywall logic, and webhook delivery live.
+Cloudflare Web3 Gateways = Ethereum + IPFS gateways, so you don't pay Alchemy/Infura for RPC. Also Cloudflare's distributed web hosting via IPFS if you want a .eth domain mirror.
+Cloudflare D1 (SQLite at edge) + KV (cache) + R2 (object storage for PDFs/exports) + Durable Objects (for stateful things like rate limits and webhook queues) + Queues (for async jobs).
+What this stack can't do — design constraints to accept
+No long-running compute. Workers cap at 30s CPU on paid plan, 50ms free. ZK proof generation, ML training, and heavy backtests cannot run here. Solution: precompute offline (GitHub Actions cron), commit results as JSON to the repo, serve as static files.
+No Solana RPC via Cloudflare Web3. Cloudflare's Web3 gateway is Ethereum-only. Solana/Cosmos need Helius/Triton/QuickNode. Budget for this — it's the one paid dependency you can't eliminate.
+No persistent in-memory state. Workers are stateless. Use Durable Objects or D1 for anything that needs to persist across requests.
+Jekyll is build-time only. Anything dynamic (live scores, user dashboards) must be client-side JS hitting Workers, not Jekyll templates.
+No traditional sessions. Auth must be SIWE (Sign-In With Ethereum) → JWT in cookie, verified by Worker on each request.
+Architecture map
+[ User Browser ]
+       │
+       ├── static pages, marketing, docs, backtest viz
+       │   → GitHub Pages (Jekyll, served via Cloudflare CDN)
+       │
+       └── dashboard JS, API calls, paywalled features
+           → Cloudflare Workers (api.defiscoring.com)
+                 │
+                 ├── D1 (users, watchlists, score cache, subscriptions)
+                 ├── KV (hot score cache, rate limits)
+                 ├── R2 (PDF reports, export bundles)
+                 ├── Durable Objects (per-wallet score computation, webhook queues)
+                 ├── Queues (async indexing jobs)
+                 │
+                 ├── Cloudflare Eth Gateway → Ethereum / Arbitrum / Polygon / Optimism / Base
+                 └── External RPC (Helius) → Solana
+
+[ GitHub Actions ]
+       ├── Nightly backtest job → commits JSON to /data → Pages rebuilds
+       ├── Methodology audit job → commits report
+       └── Deploy Workers via Wrangler
+
+Paywall strategy (the part you asked about explicitly)
+Since you have no KYC and no Stripe-friendly user accounts in the traditional sense, the paywall has to be Web3-native. Three tiers, three mechanisms:
+Free tier — public, rate-limited
+10 wallet scores per IP per day, hashed IP in KV.
+Single-chain only (Ethereum mainnet).
+No API key needed.
+Cached scores, 1-hour staleness OK.
+Watermarked PDF exports.
+Pro tier — $19/mo or 0.01 ETH/mo, paid on-chain
+Unlimited wallet scores, all supported chains.
+API key with 1000 req/day.
+Real-time alerts via Telegram/Discord/email.
+Synced watchlist across devices.
+Clean PDF exports.
+Mechanism: user pays a Coinbase Commerce charge, Stripe checkout, or sends payment to a subscription smart contract (Unlock Protocol or Hypersub). Worker verifies on-chain payment via Cloudflare Eth Gateway → issues signed JWT good for 30 days.
+Institutional / API tier — $499+/mo, custom
+Higher rate limits (100k+ req/day).
+Webhook delivery with HMAC signing.
+Bulk wallet scoring endpoint.
+White-label PDF reports.
+SLA + priority queue.
+Mechanism: invoiced via Stripe or paid in stables to multisig; API key issued manually.
+Recommendation: use Unlock Protocol or Hypersub as the primary on-chain paywall. They're battle-tested, give you NFT-based subscription keys (so users can resell/transfer), and verification is one eth_call in a Worker. Stripe as the fiat fallback for institutions who can't pay in crypto.
+The Worker auth flow looks like:
+1. User signs SIWE message → Worker issues JWT (free tier).
+2. User upgrades → pays Unlock Protocol → receives NFT key.
+3. Worker checks key ownership via getHasValidKey() on every Pro endpoint hit, caches result in KV for 5min.
+4. JWT carries tier claim; Worker re-verifies key on cache miss.
+
+Replit task breakdown — six sprints
+Sprint 0 — Repo & infra scaffolding (3–4 days)
+Monorepo on GitHub: /site (Jekyll), /workers (TS, one Worker per concern), /contracts (Foundry, for the score oracle later), /data (committed JSON outputs from cron jobs), /sdk-js, /sdk-py.
+GitHub Actions: Wrangler deploy on push to main, Jekyll build on push, nightly cron for backtests.
+Cloudflare setup: zone, Workers routes, D1 database, KV namespaces (SCORES, RATELIMIT, AUTH), R2 bucket (exports), Queues (indexing, webhooks).
+Wrangler config with env separation (dev/staging/prod).
+Custom domain on Cloudflare; .eth subdomain via Cloudflare's IPFS gateway as a mirror.
+Sprint 1 — Static site + auth + free-tier scoring (2 weeks)
+Jekyll site: landing, methodology page, /docs, /backtest viewer (reads /data/backtest.json), /api docs.
+Worker: POST /v1/score/:chain/:address — fetches via Cloudflare Eth Gateway, computes score, caches in KV.
+SIWE auth Worker: POST /v1/auth/siwe — verifies signature, issues JWT.
+Watchlist Worker: GET/POST /v1/watchlist — D1-backed, JWT-gated.
+Frontend: vanilla JS or Preact (small bundle) on dashboard pages, calls Workers, renders score, factor breakdown, heatmap.
+IP-based rate limiting via Durable Object.
+Sprint 2 — Paywall & Pro features (2 weeks)
+Deploy Unlock Protocol lock on Base or Polygon (cheap gas).
+Worker middleware: requireTier('pro') checks NFT ownership, caches result.
+Stripe checkout fallback Worker for fiat — webhook updates D1 user record with tier='pro' and expiry.
+Pro features: multi-chain scoring, synced watchlist, clean PDF export (generate via PDF Worker using @cloudflare/puppeteer or simpler pdf-lib), API key issuance.
+API key auth: hashed key in D1, lookup + rate limit per key in Durable Object.
+Sprint 3 — Multi-chain + transparency (2 weeks)
+Add Optimism, Base via Cloudflare Eth Gateway (free).
+Add Solana via Helius RPC — separate scoring module, separate ChainAdapter.
+GitHub Action nightly job: pull historical liquidation events, recompute backtest, commit /data/backtest.jsonand /data/methodology-v{n}.json. Jekyll rebuilds, public backtest page updates automatically.
+Open-source the scoring rules in /scoring-rules directory; keep anti-sybil heuristics in private Worker code.
+Methodology page renders directly from committed JSON — version-controlled and auditable.
+Sprint 4 — Alerts, webhooks, automation (2 weeks)
+Telegram bot: Cloudflare Worker as webhook receiver for /start, links Telegram chat ID to wallet via signed message.
+Discord bot: same pattern, slash commands.
+Email alerts via MailChannels (free from Workers) or Resend.
+Webhook delivery: HMAC-signed POSTs from Queue consumer Worker, with retry + DLQ.
+Score oracle smart contract (Sprint 4 stretch, or move to Sprint 5): a contract on Base that lenders can read scores from. Worker signs score updates with a known key, contract verifies signature. This is your B2B hook for the "score-gated lending" feature.
+Sprint 5 — Identity, omni-chain, yield routing (3 weeks)
+Gitcoin Passport, ENS age, Farcaster integrations as optional reputation boosts (capped at +30 points).
+Wallet clustering via signed claims (user attests "these wallets are mine"); store cluster IDs in D1.
+Omni-chain aggregated score endpoint.
+Yield-Optimized LTV routing endpoint: indexes Aave / Morpho / Spark / Gearbox rates (cron job, results in /data/rates.json), returns ranked options for a given score.
+Sprint 6 — ZK credit badge (4 weeks, with spillover budget)
+This is the only piece that really doesn't fit the stack. Options:
+Use a separate prover service (run on a small VPS or Vercel function) that the Worker calls. Acceptable compromise.
+Or use Sindri / Succinct as a hosted prover.
+Circuit (Noir or Circom): prove score >= threshold and wallet_age >= N without revealing wallet.
+Verifier contract deployed to Base.
+User flow: pay Pro tier → request proof → prover service generates → user submits to lender's gating contract.
+Big things to fix / get right early
+Don't put secrets in the repo. Cloudflare Worker secrets via wrangler secret put, never in wrangler.toml. Anti-sybil heuristics in a separate private repo, deployed as a Worker that the public Worker calls internally.
+JWT secret rotation — bake a kid into JWTs from day one.
+D1 has size limits (10GB per DB, currently). Plan for partitioning by chain or by user-cohort once you grow.
+Cloudflare Eth Gateway has rate limits too — not infinite. Cache aggressively in KV; never hit it twice for the same (block, address) tuple.
+Jekyll on Pages doesn't support every plugin — use jekyll-redirect-from, jekyll-sitemap, jekyll-feedand forget custom plugins unless you switch to GitHub Actions-built Pages.
+CORS. Workers must explicitly set CORS headers; the dashboard at defiscoring.com calling api.defiscoring.com will fail silently otherwise.
+Score versioning in every response — methodology_version, computed_at_block, chain_coverage array. Lenders need this for audit trails.
+Webhook signing day one. HMAC with rotating secret per subscriber.
+Idempotency keys on POST endpoints so retries don't double-charge or double-trigger.
+Static fallback for the dashboard. If Workers go down, the Jekyll site should still load and explain the outage. Don't have a hard dependency from marketing pages to live API.
+One pushback on this stack choice
+The biggest risk: Cloudflare Workers' 30s CPU limit will hurt you when scoring whale wallets with 50k+ transactions. You'll need to chunk indexing into Queue jobs and return "score pending" responses, then poll. Design the API for async-by-default from day one — don't promise synchronous scoring even if it works for 95% of wallets today.
+Want me to take Sprint 0 and turn it into the actual repo skeleton — wrangler.toml, GitHub Actions YAML, Jekyll _config.yml, monorepo file tree, and a starter Worker with SIWE auth? That'd give Replit something concrete to start building against.
