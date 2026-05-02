@@ -1,0 +1,64 @@
+If you’re using **Cloudflare Workers**, store sensitive values as **Secrets** in the Cloudflare dashboard, not in code or plain environment variables. Cloudflare treats secrets like environment variables, but their values are hidden after creation in the dashboard and Wrangler, which is why API keys and tokens should go there.[1][2]
+
+## In dashboard
+
+1. Open the [Cloudflare dashboard](https://dash.cloudflare.com/) and go to **Workers & Pages**.[2][1]
+2. Select your Worker, then open **Settings**.[1][2]
+3. Find **Variables and Secrets** and click **Add**.[2][1]
+4. Choose **Secret** as the type, then enter:
+- Variable name, for example `STRIPE_SECRET_KEY`
+- Value, for example your actual Stripe secret key[2]
+5. Click **Deploy** or **Save** to apply the change.[1][2]
+
+## What to store
+
+Use **Secrets** for anything sensitive, such as:
+
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `TURNSTILE_SECRET`
+- API tokens, database passwords, or private signing keys[3][4]
+
+Use normal environment variables only for non-sensitive values, such as public URLs or public site keys.[5][1]
+
+## In code
+
+Inside a Worker, you access a secret through the `env` object, the same way you access any other binding. For example, a secret named `STRIPE_SECRET_KEY` is available as `env.STRIPE_SECRET_KEY` in your Worker code.[2]
+
+Example:
+
+```js
+export default {
+  async fetch(request, env) {
+    const stripeKey = env.STRIPE_SECRET_KEY;
+    return new Response("OK");
+  }
+}
+```
+
+## Account-level option
+
+Cloudflare also has **Secrets Store**, which is a centralized account-level secret manager that you can bind to Workers if you need to reuse secrets across multiple Workers. In the dashboard, you create a secret in **Secrets Store**, then add a binding from your Worker under **Settings → Bindings** so the Worker can use it.[6]
+
+## Best practice
+
+Do not hardcode secrets in source files or commit them to Git. Keep public values like `TURNSTILE_SITE_KEY` as regular variables if needed, but store private values like `TURNSTILE_SECRET` and Stripe secrets as encrypted Cloudflare secrets instead.[7][1]
+
+If you want, I can turn this into an exact list of Cloudflare secret names for your Stripe and Turnstile setup.
+
+Sources
+[1] Environment variables · Cloudflare Workers docs https://developers.cloudflare.com/workers/configuration/environment-variables/
+[2] Secrets on deployed Workers https://developers.cloudflare.com/workers/configuration/secrets/
+[3] Secrets · Cloudflare Workers docs https://cloudflare-docs-zh.pages.dev/workers/configuration/secrets/
+[4] Docs - Environment Variables | Hakuto https://hakuto.dev/docs/setting-up/environment-variables/
+[5] Environment variables and secrets - Workers - Cloudflare Docs https://developers.cloudflare.com/workers/development-testing/environment-variables/
+[6] Workers integration · Cloudflare Secrets Store docs https://developers.cloudflare.com/secrets-store/integrations/workers/
+[7] Cloudflare Workers Environment Variables and Secrets - Isaac. https://ememisaac.com/articles/cloudflare-worker-env-vars-secrets
+[8] Env Vars https://opennext.js.org/cloudflare/howtos/env-vars
+[9] GitHub - Fr-e-d/cloudflare-workers-env-sync: # Cloudflare Microservice Secrets - A centralized microservice for managing environment variables and shared secrets across all Cloudflare Workers in a project. Simplify configuration with environment-specific settings, enhanced security, and automated deployment. Set up any worker with a single command. https://github.com/Fr-e-d/cloudflare-workers-env-sync
+[10] how to set up environment variables in cloudflare workers https://howto.im/q/how-to-set-up-environment-variables-in-cloudflare-workers
+[11] Introducing Cloudflare Secrets Store (Beta): secure your secrets, simplify your workflow - Raven Cybersecurity https://www.ravencybersec.com/introducing-cloudflare-secrets-store-beta-secure-your-secrets-simplify-your-workflow/
+[12] Cloudflare Workersでシークレットを設定する3つの方法 - Qiita https://qiita.com/natsugure/items/6f20bd0276eeaba022b9
+[13] Cloudflare Workers for Noobs - Giuseppe Gurgone https://giuseppegurgone.com/cloudflare-workers
+[14] Using Secrets in Cloudflare Workers with GitHub Actions https://dev.to/bryce/using-secrets-in-cloudflare-workers-with-github-actions-32fi
+[15] Prevent secrets/env vars from being deleted when ... https://github.com/cloudflare/workers-sdk/issues/8871
