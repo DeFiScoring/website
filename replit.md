@@ -119,3 +119,46 @@ failures (one chain timing out never produces a 500).
 Optional secrets that upgrade T4 endpoints when set (none required):
 `ALCHEMY_KEY` (faster eth_call + best NFT metadata), `MORALIS_KEY`
 (NFT fallback), `RESERVOIR_KEY` (higher rate limit on NFT free tier).
+
+## Worker Module Layout (T5 — May 2026)
+
+T5 added the multi-chain composite wallet score (300–850), score-band-aware
+protocol recommendations, and an enriched protocols catalog. All three new
+endpoints compose T3 + T4 outputs without duplicating their fetchers, and
+the legacy `POST /api/health-score` (Eth-only, used by `dashboard.js` and
+`health-score.js`) is left COMPLETELY UNTOUCHED for backward compat.
+
+-   `worker/lib/protocols-data.js` — bundled mirror of `_data/protocols.yml`
+    + `_data/risk_profiles.yml`. Avoids cross-origin fetches back to the
+    Jekyll site (which would create a circular dep). Indexed lookups by
+    slug and by lowercased contract address.
+-   `worker/lib/protocols.js` — catalog enrichment with live DeFiLlama TVL,
+    audits, links. Cached 1h. Best-effort: catalog returns even if
+    DeFiLlama is down.
+-   `worker/lib/score.js` — multi-chain wallet score with 5 named pillars:
+    `loan_reliability` (0.35, Aave HF across all chains),
+    `portfolio_health` (0.25, diversification + size + multichain bonus),
+    `liquidity_provision` (0.15, Uni V3 LP NFT count),
+    `governance` (0.10, Snapshot vote count),
+    `account_age` (0.15, Eth first-tx age). Each pillar tagged
+    `real: true/false`; `false` means "data unavailable, neutral 50 used".
+    Bonuses: +50 (HF>2), +30 (3+ chains). Penalties: −150 (HF<1),
+    −50 (>80% in single position). Clamped to 300–850.
+-   `worker/lib/recommendations.js` — ranks the catalog by TVL + audits +
+    profile-bucket weight × score-band tolerance, minus a concentration
+    penalty. Conservative profile excludes derivatives entirely; degen
+    keeps the full menu.
+-   `worker/handlers/wallet-score.js` — `GET /api/wallet-score?wallet=&fiat=`.
+    Internally fans out to `handlePortfolio` + `getAllDeFiPositions` in
+    parallel, then to Snapshot + Etherscan first-tx for the gov/age pillars.
+-   `worker/handlers/recommendations.js` — `GET /api/recommendations?wallet=
+    &profile=&band=&limit=`. If `wallet` is provided and `band` isn't,
+    derives the band from `/api/wallet-score` internally.
+-   `worker/handlers/protocols.js` — `GET /api/protocols` (full enriched
+    catalog) or `?slug=X` (single protocol).
+-   All three routes wired in `worker/index.js` with the same rate-limit
+    posture as the T3/T4 endpoints (30/min/IP + 10/min/address on the
+    wallet-scoped ones; 60/min/IP on `/api/protocols` since it's catalog-only).
+
+Existing endpoints `POST /api/health-score`, `GET /api/score/:protocol`,
+`POST /api/exposure` — all unchanged.

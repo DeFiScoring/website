@@ -13,6 +13,13 @@
  *   GET  /api/nfts               -> NEW (T4): NFT collections per chain via
  *                                   worker/handlers/nfts.js (Reservoir → Alchemy
  *                                   → Moralis tier fallback).
+ *   GET  /api/wallet-score       -> NEW (T5): multi-chain composite 300-850 score
+ *                                   composing T3+T4 outputs into 5 named pillars.
+ *                                   Sibling to the legacy POST /api/health-score.
+ *   GET  /api/recommendations    -> NEW (T5): score-band-aware protocol recs from
+ *                                   the catalog, filtered by risk profile.
+ *   GET  /api/protocols          -> NEW (T5): enriched catalog (bundled metadata
+ *                                   + live DeFiLlama TVL). 1h cache.
  *   GET  /onchain/:wallet        -> Etherscan V2 multichain history (Eth/Arb/Polygon)
  *   GET  /api/score/:protocol    -> DeFiLlama+Etherscan composite score (cached 6h in DEFI_CACHE)
  *   POST /api/exposure           -> { wallet } -> wallet's contract interactions matched against
@@ -40,9 +47,12 @@
  *                                   the Pro API (higher rate limit).
  */
 
-import { handlePortfolio } from "./handlers/portfolio.js";
-import { handleDeFi }     from "./handlers/defi.js";
-import { handleNfts }     from "./handlers/nfts.js";
+import { handlePortfolio }       from "./handlers/portfolio.js";
+import { handleDeFi }            from "./handlers/defi.js";
+import { handleNfts }            from "./handlers/nfts.js";
+import { handleWalletScore }     from "./handlers/wallet-score.js";
+import { handleRecommendations } from "./handlers/recommendations.js";
+import { handleProtocols }       from "./handlers/protocols.js";
 
 // ---------------------------------------------------------------------------
 // CORS — origin allowlist driven by env.ALLOWED_ORIGINS (comma-separated).
@@ -2455,6 +2465,50 @@ async function dispatch(request, env, peekedAddr) {
 
     if (request.method === "GET" && url.pathname.startsWith("/api/score/")) {
       return handleProtocolScore(url.pathname.slice("/api/score/".length), env);
+    }
+
+    // T5 — multi-chain composite wallet score (300-850). Sibling endpoint
+    // to the legacy POST /api/health-score (which is Eth-only and stays
+    // wired for existing front-end consumers). Internally fans out to
+    // /api/portfolio + /api/defi + Snapshot + Etherscan first-tx, so it's
+    // the most expensive endpoint we ship — same rate-limit posture.
+    if (request.method === "GET" && url.pathname === "/api/wallet-score") {
+      const blockedIp = await rateLimit(request, env, "/api/wallet-score", 30, 60);
+      if (blockedIp) return blockedIp;
+      const wsAddr = (url.searchParams.get("address") || url.searchParams.get("wallet") || "").toLowerCase();
+      if (wsAddr) {
+        const blockedAddr = await rateLimitByAddress(
+          request, env, wsAddr, "/api/wallet-score", 10, 60
+        );
+        if (blockedAddr) return blockedAddr;
+      }
+      return handleWalletScore(request, env, corsHeadersFor(request, env));
+    }
+
+    // T5 — score-band-aware protocol recommendations. Cheap when called
+    // with explicit ?band= (no wallet scan); expensive when wallet provided
+    // since it derives the band from /api/wallet-score internally. Same
+    // rate-limit posture as the heavier endpoints.
+    if (request.method === "GET" && url.pathname === "/api/recommendations") {
+      const blockedIp = await rateLimit(request, env, "/api/recommendations", 30, 60);
+      if (blockedIp) return blockedIp;
+      const recAddr = (url.searchParams.get("address") || url.searchParams.get("wallet") || "").toLowerCase();
+      if (recAddr) {
+        const blockedAddr = await rateLimitByAddress(
+          request, env, recAddr, "/api/recommendations", 10, 60
+        );
+        if (blockedAddr) return blockedAddr;
+      }
+      return handleRecommendations(request, env, corsHeadersFor(request, env));
+    }
+
+    // T5 — enriched protocol catalog (bundled metadata + live DeFiLlama TVL).
+    // Lighter than the wallet-scoped endpoints (no per-IP/wallet limits needed,
+    // 1h cache) — just the standard IP rate limit.
+    if (request.method === "GET" && url.pathname === "/api/protocols") {
+      const blockedIp = await rateLimit(request, env, "/api/protocols", 60, 60);
+      if (blockedIp) return blockedIp;
+      return handleProtocols(request, env, corsHeadersFor(request, env));
     }
 
     // Rate limit the expensive AI/GitHub endpoints (KV-backed sliding window
