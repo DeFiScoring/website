@@ -325,3 +325,52 @@ alerts against the worker API, and walk through a guided first-run flow.
   added to the worker's `ALLOWED_ORIGINS` env var or sign-in returns
   `domain_mismatch`. Production (`defiscoring.com`) is always in the
   allowlist.
+
+## T8 — Sprint 1 (this session)
+
+Six quick-win items shipped on top of T7:
+
+- **S1-A** — P3 cleanup: `worker/lib/auth.js` Y2106 BigInt-only path,
+  `worker/lib/stripe.js` checkout collapsed into `stripeRequest` with
+  rationale comment, `worker/handlers/alerts.js` `deserializeRule` now
+  emits `next_eligible_at` + `is_cooling_down`, `worker/lib/tiers.js`
+  rolling-window comment.
+- **S1-B** — Public score badge SVG. New
+  `worker/handlers/badge.js` (`GET /badge/{0x..}.svg`, public, 5min
+  edge cache, sources from `health_scores`). New `badge/index.html`
+  embed-your-score page with markdown/HTML/BBCode snippet copying.
+- **S1-C** — Address book labels + tags. `migrations/0008_address_book.sql`
+  adds `tags TEXT` to `wallet_connections`. New
+  `handleWalletUpdate` in `worker/handlers/wallets.js`
+  (`PATCH /api/wallets/{addr}` body `{label, tags}`). Wallet picker UI
+  gains a rename pencil button.
+- **S1-D** — Score breakdown explainability modal. New
+  `assets/js/score-breakdown.js` + `assets/css/score-breakdown.css`.
+  `dashboard-score.js` `drawFactors` emits `data-factor-*` attrs and
+  HTML-escapes every factor field. Conditionally loaded on
+  `/dashboard/score/`.
+- **S1-E** — Quota observability. New `worker/handlers/quota.js`
+  (`GET /api/quota` returns flat `{tier, quotas:{key:{used, limit,
+  remaining, reset_at}}}` for both rolling-window and cardinality
+  keys). New `assets/js/quota-widget.js` shows AI-explain remaining in
+  the topbar. Mount in `_includes/dashboard/wallet-bar.html`.
+- **S1-F** — `threat_model.md` (root). STRIDE-style document covering
+  SIWE replay, session theft, Stripe webhook forgery, Telegram bot
+  impersonation, OFAC bypass, rate-limit evasion, and key rotation
+  procedures.
+
+### Operational notes (T8 deltas)
+
+- Worker has **new routes** that need `wrangler deploy`:
+  - `GET /badge/{0x..}.svg` (public)
+  - `GET /api/quota` (auth required)
+  - `PATCH /api/wallets/{addr}` (auth required)
+- D1 migration to apply after deploy:
+  `wrangler d1 execute HEALTH_DB --file migrations/0008_address_book.sql`
+
+### Sprint 2 / 3 backlog
+
+See `.local/session_plan.md` for the full Sprint 2 (status page, OFAC API,
+audit log, webhook delivery, PDF report) and Sprint 3 follow-ups
+(multi-chain audit, Telegram two-way bot, leaderboard, Discord bot, twin
+search, backfill, e2e suite).

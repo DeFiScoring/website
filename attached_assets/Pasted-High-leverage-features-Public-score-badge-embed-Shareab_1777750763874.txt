@@ -1,0 +1,23 @@
+High-leverage features
+Public score badge / embed. Shareable widget anyone can paste into a forum signature, Twitter bio link, or Discord — https://defiscoring.com/badge/0xabc.svg. Free viral loop, costs ~50 lines of SVG generation.
+Wallet "report card" PDF. Pro/Plus tier exclusive — generate a polished PDF summary (score, history, top risks, recommendations). Premium-feeling deliverable that justifies the price.
+Telegram bot commands. /score 0xabc, /watch 0xabc, /alerts — turn the existing bot from one-way notifier into a two-way interface. Massive sticky usage on mobile.
+Webhook deliveries (Plus/Enterprise). Let users POST alerts to their own URL with HMAC signing — unlocks integration with Discord, Slack, internal tools. Standard enterprise checkbox.
+Multi-chain coverage. Today everything is Ethereum mainnet. Add Base, Arbitrum, Optimism — same scoring engine, different RPC. Roughly triples your addressable market.
+Polish & reliability
+Address book / labels. Let signed-in users name their wallets ("Cold storage", "DeFi degen"), tag them with categories, group views. Tiny effort, huge daily-use UX win.
+Score breakdown explainability. Click any subscore → modal explaining the inputs ("Loan reliability is 720 because: 14 loans, 0 liquidations, avg HF 1.8…"). Builds trust in the number.
+Historical score backfill job. Right now history starts from when a wallet was first scanned. Run a one-time backfill from on-chain history so new users immediately see 12 months of context.
+Status page. defiscoring.com/status — last cron run, alert delivery success rate, RPC health. Public trust signal + your own ops dashboard.
+Architect's deferred P3s. Y2106 dead code, Stripe form-encoding redundancy, alert cooldown surfacing in API responses, quota window comment. ~1 hour total.
+Growth & moat
+SEO landing pages per token / per protocol. "Aave health score for 0xabc" auto-generated pages, indexed by Google. Long-tail organic traffic, very cheap to produce with Jekyll.
+OFAC/sanctions screening API endpoint. You already have the OFAC list URL secret — expose /api/screen/0xabc as a paid B2B endpoint. Compliance teams will pay enterprise prices for this.
+Wallet "twin" / similarity search. "Wallets that look most like yours" — Plus/Enterprise feature using behavioral clustering. Surprising and shareable.
+Public leaderboard. Top 100 highest-scoring wallets (opt-in). Drives sign-ups to "claim your spot" and is a natural press hook.
+Discord verification bot. Communities can require a minimum DeFi score for entry — your bot verifies via SIWE. Free distribution channel into every DAO/NFT Discord.
+Quality / security hardening
+End-to-end test suite. Real Playwright runs against the dashboard covering SIWE → wallet link → alert creation → Stripe upgrade. Prevents regressions as the surface grows.
+Rate-limit observability. Surface per-tier quota usage in API responses (X-Quota-Remaining header) and a dashboard widget. Prevents silent 429s.
+Audit log for the user. "Recent activity" panel — logins, wallet links, alert triggers, billing events. Plus tier upsell driver and a security feature regulators ask about.
+Threat model document. I have the threat-modeling skill — formal doc covering session theft, replay attacks, webhook forgery, key rotation. Useful for enterprise sales.

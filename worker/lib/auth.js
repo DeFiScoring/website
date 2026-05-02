@@ -46,11 +46,9 @@ export function newId() {
   // 48-bit timestamp + 80-bit randomness, encoded base32 = 26 chars
   const time = Date.now();
   const timeBytes = new Uint8Array(6);
-  for (let i = 5; i >= 0; i--) {
-    timeBytes[i] = time >>> 0 & 0xff;
-    // Note: JS bitwise ops are 32-bit; for ms timestamps this is fine until 2106
-  }
-  // Simpler: write the 48-bit time bigint manually
+  // Write the 48-bit ms timestamp big-endian. We use BigInt because JS
+  // bitwise ops are 32-bit and `time >>> 0` would silently truncate for
+  // any ms timestamp past Jan 19 2038 (the 32-bit signed-int rollover).
   let t = BigInt(time);
   for (let i = 5; i >= 0; i--) {
     timeBytes[i] = Number(t & 0xffn);

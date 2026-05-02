@@ -32,11 +32,64 @@ export async function handleWalletsList(request, env) {
   const auth = await requireSession(request, env);
   if (auth instanceof Response) return auth;
 
+  // tags is a CSV column added in migrations/0008_address_book.sql; we LEFT
+  // it out of the older schema, so SELECT it defensively and let SQLite
+  // raise if the migration hasn't run (caller will see a 500 — preferable
+  // to silently dropping the field).
   const { results } = await env.HEALTH_DB.prepare(
-    `SELECT wallet_address, label, is_primary, connected_at, last_seen_at
+    `SELECT wallet_address, label, tags, is_primary, connected_at, last_seen_at
      FROM wallet_connections WHERE user_id = ? ORDER BY is_primary DESC, connected_at ASC`
   ).bind(auth.user.id).all();
-  return json({ success: true, wallets: results || [] });
+
+  const wallets = (results || []).map((w) => ({
+    ...w,
+    tags: w.tags
+      ? w.tags.split(",").map((s) => s.trim()).filter(Boolean)
+      : [],
+  }));
+  return json({ success: true, wallets });
+}
+
+/**
+ * PATCH /api/wallets/{address} — rename or re-tag a linked wallet.
+ *   body: { label?: string|null, tags?: string[]|null }
+ * The user must own the wallet; primary or non-primary doesn't matter.
+ */
+export async function handleWalletUpdate(request, env, walletAddress) {
+  const auth = await requireSession(request, env);
+  if (auth instanceof Response) return auth;
+
+  const target = (walletAddress || "").toLowerCase();
+  if (!/^0x[0-9a-f]{40}$/.test(target)) return json({ success: false, error: "invalid_address" }, 400);
+
+  let body; try { body = await request.json(); } catch { return json({ success: false, error: "invalid_json" }, 400); }
+
+  const updates = [];
+  const binds = [];
+  if ("label" in body) {
+    const label = body.label == null ? null : String(body.label).trim().slice(0, 80);
+    updates.push("label = ?"); binds.push(label || null);
+  }
+  if ("tags" in body) {
+    let tagsCsv = null;
+    if (Array.isArray(body.tags)) {
+      const cleaned = body.tags
+        .map((t) => String(t || "").toLowerCase().trim().replace(/[^a-z0-9_-]+/g, "-"))
+        .filter(Boolean)
+        .slice(0, 8);
+      tagsCsv = cleaned.length ? cleaned.join(",") : null;
+    }
+    updates.push("tags = ?"); binds.push(tagsCsv);
+  }
+  if (!updates.length) return json({ success: false, error: "nothing_to_update" }, 400);
+
+  binds.push(auth.user.id, target);
+  const res = await env.HEALTH_DB.prepare(
+    `UPDATE wallet_connections SET ${updates.join(", ")} WHERE user_id = ? AND wallet_address = ?`
+  ).bind(...binds).run();
+
+  if (!res?.meta?.changes) return json({ success: false, error: "wallet_not_found" }, 404);
+  return json({ success: true });
 }
 
 export async function handleWalletLink(request, env) {

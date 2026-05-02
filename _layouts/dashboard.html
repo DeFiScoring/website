@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="{{ '/assets/css/dashboard.css' | relative_url }}?v={{ site.time | date: '%s' }}">
   <link rel="stylesheet" href="{{ '/assets/css/wallet-picker.css' | relative_url }}?v={{ site.time | date: '%s' }}">
   <link rel="stylesheet" href="{{ '/assets/css/onboarding.css' | relative_url }}?v={{ site.time | date: '%s' }}">
+  <link rel="stylesheet" href="{{ '/assets/css/score-breakdown.css' | relative_url }}?v={{ site.time | date: '%s' }}">
   <link rel="stylesheet" href="{{ '/assets/css/footer.css' | relative_url }}?v={{ site.time | date: '%s' }}">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
@@ -92,7 +93,9 @@
   <script src="{{ '/assets/js/wallet-modal.js' | relative_url }}"></script>
   <script src="{{ '/assets/js/defi-onchain.js' | relative_url }}"></script>
   <script src="{{ '/assets/js/dashboard.js' | relative_url }}"></script>
-  {% if page.dashboard_section == 'score' %}<script src="{{ '/assets/js/dashboard-score.js' | relative_url }}"></script>{% endif %}
+  <script src="{{ '/assets/js/quota-widget.js' | relative_url }}?v={{ site.time | date: '%s' }}" defer></script>
+  {% if page.dashboard_section == 'score' %}<script src="{{ '/assets/js/dashboard-score.js' | relative_url }}"></script>
+  <script src="{{ '/assets/js/score-breakdown.js' | relative_url }}?v={{ site.time | date: '%s' }}" defer></script>{% endif %}
   {% if page.dashboard_section == 'portfolio' %}<script src="{{ '/assets/js/dashboard-portfolio.js' | relative_url }}"></script>{% endif %}
   {% if page.dashboard_section == 'alerts' %}<script src="{{ '/assets/js/dashboard-alerts.js' | relative_url }}"></script>{% endif %}
   {% if page.dashboard_section == 'home' %}<script src="{{ '/assets/js/dashboard-home.js' | relative_url }}"></script>{% endif %}

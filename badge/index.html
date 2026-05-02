@@ -1,0 +1,98 @@
+---
+layout: default
+title: Embed your DeFi Score
+permalink: /badge/
+description: Paste a live DeFi credit-score badge anywhere — forum signatures, READMEs, Discord, Twitter bio link.
+---
+
+<style>
+  .badge-page { max-width: 880px; margin: 0 auto; padding: 64px 24px 96px; color: #e6edf6; }
+  .badge-page h1 { font-size: 36px; font-weight: 800; margin: 0 0 8px; }
+  .badge-page .lede { color: #98a4b3; font-size: 16px; line-height: 1.6; margin: 0 0 32px; }
+  .badge-card { background: #0f172a; border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 24px; margin-bottom: 20px; }
+  .badge-card h2 { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #7c8a9b; margin: 0 0 12px; }
+  .badge-input { width: 100%; padding: 12px 14px; background: #0a0f1d; border: 1px solid rgba(255,255,255,.1); border-radius: 8px; color: #e6edf6; font-size: 14px; font-family: 'JetBrains Mono', monospace; }
+  .badge-input:focus { outline: none; border-color: #00f5ff; }
+  .badge-preview { display: flex; justify-content: center; padding: 32px 0; background: rgba(255,255,255,.02); border-radius: 8px; margin: 16px 0; }
+  .badge-preview img { max-width: 100%; height: auto; }
+  .snippet { position: relative; background: #0a0f1d; border: 1px solid rgba(255,255,255,.1); border-radius: 8px; padding: 14px 16px; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #cfd9e6; white-space: pre-wrap; word-break: break-all; }
+  .snippet button { position: absolute; top: 8px; right: 8px; background: rgba(0,245,255,.12); color: #00f5ff; border: 1px solid rgba(0,245,255,.3); padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .snippet button:hover { background: rgba(0,245,255,.2); }
+  .snippet-row { display: grid; grid-template-columns: 130px 1fr; gap: 12px; align-items: start; margin-bottom: 12px; }
+  .snippet-row label { color: #7c8a9b; font-size: 12px; font-weight: 600; padding-top: 14px; }
+  .badge-card p { color: #cfd9e6; font-size: 14px; line-height: 1.6; margin: 0; }
+</style>
+
+<section class="badge-page">
+  <h1>Embed your DeFi Score</h1>
+  <p class="lede">A small SVG badge that auto-updates with your latest score. Paste it into a forum signature, GitHub README, Discord profile, or Twitter bio link card. Free, public, cached at the edge for 5 minutes.</p>
+
+  <div class="badge-card">
+    <h2>1. Your wallet address</h2>
+    <input id="badge-addr" class="badge-input" placeholder="0x…" autocomplete="off" spellcheck="false" />
+    <div class="badge-preview" id="badge-preview" style="display:none;">
+      <img id="badge-img" alt="DeFi Score badge" />
+    </div>
+  </div>
+
+  <div class="badge-card" id="badge-snippets" style="display:none;">
+    <h2>2. Copy a snippet</h2>
+    <div class="snippet-row">
+      <label>Markdown</label>
+      <div class="snippet"><button data-copy="md">Copy</button><span id="snip-md"></span></div>
+    </div>
+    <div class="snippet-row">
+      <label>HTML</label>
+      <div class="snippet"><button data-copy="html">Copy</button><span id="snip-html"></span></div>
+    </div>
+    <div class="snippet-row">
+      <label>BBCode</label>
+      <div class="snippet"><button data-copy="bb">Copy</button><span id="snip-bb">[url=https://defiscoring.com/dashboard/score/][img]…[/img][/url]</span></div>
+    </div>
+  </div>
+
+  <div class="badge-card">
+    <h2>How it works</h2>
+    <p>The badge URL is <code>https://defiscoring.com/badge/&lt;wallet&gt;.svg</code>. We render the latest persisted score from our scoring engine; if the wallet hasn't been scanned yet, the badge shows "no scan yet" until one is captured. The image is cached for 5 minutes at the edge so embeds stay fast.</p>
+  </div>
+</section>
+
+<script>
+(function () {
+  var BADGE_BASE = "https://api.defiscoring.com/badge/";
+  var input = document.getElementById("badge-addr");
+  var preview = document.getElementById("badge-preview");
+  var img = document.getElementById("badge-img");
+  var snippets = document.getElementById("badge-snippets");
+  var snipMd = document.getElementById("snip-md");
+  var snipHtml = document.getElementById("snip-html");
+  var snipBb = document.getElementById("snip-bb");
+  function update() {
+    var v = input.value.trim().toLowerCase();
+    if (!/^0x[0-9a-f]{40}$/.test(v)) { preview.style.display = "none"; snippets.style.display = "none"; return; }
+    var url = BADGE_BASE + v + ".svg";
+    var profileUrl = "https://defiscoring.com/dashboard/score/?wallet=" + v;
+    img.src = url;
+    preview.style.display = "";
+    snippets.style.display = "";
+    snipMd.textContent  = "[![DeFi Score](" + url + ")](" + profileUrl + ")";
+    snipHtml.textContent = '<a href="' + profileUrl + '"><img src="' + url + '" alt="DeFi Score" /></a>';
+    snipBb.textContent  = "[url=" + profileUrl + "][img]" + url + "[/img][/url]";
+  }
+  input.addEventListener("input", update);
+  document.addEventListener("click", function (ev) {
+    var btn = ev.target.closest("[data-copy]");
+    if (!btn) return;
+    var which = btn.dataset.copy;
+    var text = which === "md" ? snipMd.textContent : which === "html" ? snipHtml.textContent : snipBb.textContent;
+    navigator.clipboard.writeText(text).then(function () {
+      var orig = btn.textContent;
+      btn.textContent = "Copied!";
+      setTimeout(function () { btn.textContent = orig; }, 1200);
+    });
+  });
+  // Pre-fill from ?wallet= or signed-in user later
+  var qs = new URLSearchParams(location.search);
+  if (qs.get("wallet")) { input.value = qs.get("wallet"); update(); }
+})();
+</script>

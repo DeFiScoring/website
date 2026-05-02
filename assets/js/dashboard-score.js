@@ -32,19 +32,44 @@
     bandEl && (bandEl.textContent = band);
   }
 
+  function escapeAttr(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c];
+    });
+  }
   function drawFactors(factors) {
     const wrap = document.getElementById("score-factors");
+    // Each factor row gets data-factor-* attrs so score-breakdown.js can
+    // pick it up via event delegation. The "›" affordance + hover state
+    // are added via score-breakdown.css.
+    //
+    // Defensive: even though factor.name and factor.detail are produced
+    // by our own worker today, they may eventually include user-controlled
+    // strings (e.g. wallet labels). Escape on every text-node insertion.
     wrap.innerHTML = factors.map((f) => {
       const realTag = f.real === false ? ' <span style="color:#facc15">(data unavailable)</span>' : '';
-      const valStr = f.value == null ? '—' : f.value + ' / 100';
-      const detail = f.detail ? ' · ' + f.detail : '';
-      const fillWidth = f.value == null ? 0 : f.value;
-      return '<div class="defi-factor">' +
-        '<div class="defi-factor__row"><span>' + f.name + realTag + '</span>' +
-          '<span>' + valStr + ' · weight ' + f.weight + '%' + detail + '</span></div>' +
+      const valStr = f.value == null ? '—' : escapeAttr(f.value) + ' / 100';
+      const detail = f.detail ? ' · ' + escapeAttr(f.detail) : '';
+      const fillWidth = f.value == null ? 0 : Number(f.value) || 0;
+      return '<div class="defi-factor"' +
+        ' role="button" tabindex="0"' +
+        ' data-factor-name="'   + escapeAttr(f.name)   + '"' +
+        ' data-factor-value="'  + (f.value == null ? "" : escapeAttr(f.value)) + '"' +
+        ' data-factor-weight="' + escapeAttr(f.weight) + '"' +
+        ' data-factor-detail="' + escapeAttr(f.detail || "") + '"' +
+        ' title="Click for breakdown">' +
+        '<div class="defi-factor__row"><span>' + escapeAttr(f.name) + realTag + '</span>' +
+          '<span>' + valStr + ' · weight ' + escapeAttr(f.weight) + '%' + detail + '</span></div>' +
         '<div class="defi-factor__bar"><div class="defi-factor__fill" style="width:' + fillWidth + '%"></div></div>' +
       '</div>';
     }).join("");
+
+    // Keyboard accessibility for the new role=button rows.
+    wrap.querySelectorAll('[data-factor-name]').forEach(function (row) {
+      row.addEventListener("keydown", function (ev) {
+        if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); row.click(); }
+      });
+    });
   }
 
   async function refresh() {

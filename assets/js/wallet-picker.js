@@ -106,6 +106,12 @@
         var primaryFlag = w.is_primary ? '<span class="defi-wallet-flag">primary</span>' : "";
         var unlink = w.is_primary ? "" :
           '<button type="button" class="defi-wallet-item__unlink" data-unlink="' + w.wallet_address + '" title="Unlink">×</button>';
+        // Inline rename pencil — opens prompt() on click. Keeps the markup
+        // tiny; a richer inline-edit UX can replace this later without
+        // changing the API surface.
+        var rename =
+          '<button type="button" class="defi-wallet-item__rename" data-rename="' + w.wallet_address +
+          '" title="Rename / add tags">✎</button>';
         return (
           '<li class="defi-wallet-item' + (isActive ? " is-active" : "") + '">' +
             '<button type="button" class="defi-wallet-item__pick" data-pick="' + w.wallet_address + '">' +
@@ -113,6 +119,7 @@
               (w.label ? '<span class="defi-wallet-item__label">' + escapeHtml(w.label) + '</span>' : "") +
               primaryFlag +
             '</button>' +
+            rename +
             unlink +
           '</li>'
         );
@@ -184,6 +191,46 @@
     }
   }
 
+  /**
+   * Rename + retag a linked wallet via PATCH /api/wallets/{addr}.
+   * Two prompts (label, comma-separated tags). Empty input clears the field.
+   * After success we ask DefiAuth to re-fetch the wallet list so the UI
+   * reflects the new label without a page reload.
+   */
+  async function doRename(addr) {
+    var snap = window.DefiAuth.snapshot();
+    var current = (snap.wallets || []).find(function (w) { return w.wallet_address === addr; }) || {};
+    var newLabel = window.prompt(
+      "Label for " + fmtAddr(addr) + " (e.g. \"Cold storage\"). Leave blank to clear.",
+      current.label || ""
+    );
+    if (newLabel === null) return; // cancelled
+    var currentTags = Array.isArray(current.tags) ? current.tags.join(", ") : "";
+    var newTagsRaw = window.prompt(
+      "Comma-separated tags (e.g. \"defi, treasury, ledger\"). Leave blank to clear.",
+      currentTags
+    );
+    if (newTagsRaw === null) return;
+    var newTags = newTagsRaw.split(",").map(function (t) { return t.trim(); }).filter(Boolean);
+
+    try {
+      var res = await fetch("/api/wallets/" + encodeURIComponent(addr), {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ label: newLabel.trim() || null, tags: newTags }),
+      });
+      var data = await res.json().catch(function () { return {}; });
+      if (!res.ok || !data.success) throw new Error(data.error || ("HTTP " + res.status));
+      toast("Saved.", "ok");
+      if (typeof window.DefiAuth.refresh === "function") {
+        await window.DefiAuth.refresh();
+      }
+    } catch (e) {
+      toast("Couldn't save: " + ((e && e.message) || "unknown"), "bad");
+    }
+  }
+
   async function doSignOut() {
     try {
       await window.DefiAuth.signOut();
@@ -233,6 +280,8 @@
     if (pick) { doPick(pick.dataset.pick); return; }
     var unlink = t.closest("[data-unlink]");
     if (unlink) { ev.preventDefault(); doUnlink(unlink.dataset.unlink); return; }
+    var rename = t.closest("[data-rename]");
+    if (rename) { ev.preventDefault(); doRename(rename.dataset.rename); return; }
     // Click outside the picker closes it
     if (!t.closest("#defi-wallet-picker")) closePicker();
   });

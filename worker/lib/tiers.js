@@ -128,7 +128,18 @@ export async function requireTier(userId, minTier, env) {
   return sub;
 }
 
-/* ---------- quota tracking ---------- */
+/* ---------- quota tracking ----------
+ *
+ * Quota windows are *rolling*, not calendar-aligned: a window starts the
+ * first time a user consumes the quota in this period and ends exactly
+ * windowMs later. Calendar alignment (UTC midnight, 1st-of-month) would
+ * be friendlier in usage dashboards but would also let a user burst at
+ * 23:59 and again at 00:01 for 2× their stated limit. We trade a small
+ * UI quirk ("resets in 7h") for a hard, predictable cap.
+ *
+ * `month` is 30 days, not "calendar month", for the same reason — every
+ * row in tier_quotas resets exactly windowMs after its own start.
+ */
 
 const WINDOW_MS = {
   day:   24 * 60 * 60 * 1000,

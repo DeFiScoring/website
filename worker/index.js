@@ -60,8 +60,10 @@ import {
   handleAuthNonce, handleAuthVerify, handleAuthLogout, handleAuthMe,
 } from "./handlers/auth-siwe.js";
 import {
-  handleWalletsList, handleWalletLink, handleWalletUnlink,
+  handleWalletsList, handleWalletLink, handleWalletUnlink, handleWalletUpdate,
 } from "./handlers/wallets.js";
+import { handleScoreBadge } from "./handlers/badge.js";
+import { handleQuota } from "./handlers/quota.js";
 import {
   handleBillingConfig, handleBillingCheckout, handleBillingPortal,
   handleStripeWebhook,
@@ -2688,6 +2690,11 @@ async function dispatch(request, env, peekedAddr) {
     if (url.pathname === "/api/auth/verify" && request.method === "POST") return handleAuthVerify(request, env);
     if (url.pathname === "/api/auth/logout" && request.method === "POST") return handleAuthLogout(request, env);
     if (url.pathname === "/api/auth/me"     && request.method === "GET")  return handleAuthMe(request, env);
+    // Quota observability — dashboard widget polls this for a snapshot of
+    // every quota key in the active tier (rolling-window counters + live
+    // cardinality counts). See worker/handlers/quota.js for the rationale
+    // (vs. attaching X-Quota-* headers to every JSON response).
+    if (url.pathname === "/api/quota"       && request.method === "GET")  return handleQuota(request, env);
 
     // -----------------------------------------------------------------------
     // T6.5 — Multi-wallet linking.
@@ -2700,6 +2707,22 @@ async function dispatch(request, env, peekedAddr) {
     if (url.pathname.startsWith("/api/wallets/") && request.method === "DELETE") {
       const addr = url.pathname.slice("/api/wallets/".length).replace(/\/$/, "");
       return handleWalletUnlink(request, env, addr);
+    }
+    // PATCH /api/wallets/{addr} — rename + retag (address-book follow-up)
+    if (url.pathname.startsWith("/api/wallets/") && request.method === "PATCH") {
+      const addr = url.pathname.slice("/api/wallets/".length).replace(/\/$/, "");
+      return handleWalletUpdate(request, env, addr);
+    }
+
+    // -----------------------------------------------------------------------
+    // T7-followup — Public score badge SVG. No auth, edge-cached 5min.
+    //   GET /badge/{0x…}.svg
+    // Sourced from the latest persisted health_scores row; never triggers
+    // a fresh scan. Same domain we already serve assets from, so it
+    // unfurls correctly in Discord/Slack/etc.
+    // -----------------------------------------------------------------------
+    if (request.method === "GET" && url.pathname.startsWith("/badge/")) {
+      return handleScoreBadge(request, env, url.pathname.slice("/badge/".length));
     }
 
     // -----------------------------------------------------------------------

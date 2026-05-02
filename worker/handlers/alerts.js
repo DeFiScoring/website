@@ -261,6 +261,12 @@ export async function handleAlertDeliveriesList(request, env) {
 /* ---------- helpers ---------- */
 
 function deserializeRule(row) {
+  // Surface the next time this rule is eligible to fire so clients can
+  // render "armed" vs "cooling down (next eligible 14:32 UTC)" without a
+  // second roundtrip. Mirrors the cron's gating logic
+  // (cron.js: `now - last_fired_at < cooldown_secs * 1000`).
+  const cooldownMs = (row.cooldown_secs || 3600) * 1000;
+  const nextEligibleAt = row.last_fired_at ? row.last_fired_at + cooldownMs : null;
   return {
     id: row.id,
     wallet_address: row.wallet_address,
@@ -271,6 +277,8 @@ function deserializeRule(row) {
     cooldown_secs: row.cooldown_secs,
     last_fired_at: row.last_fired_at,
     last_value: safeParseJson(row.last_value),
+    next_eligible_at: nextEligibleAt,
+    is_cooling_down: nextEligibleAt != null && nextEligibleAt > Date.now(),
     created_at: row.created_at,
     updated_at: row.updated_at,
   };

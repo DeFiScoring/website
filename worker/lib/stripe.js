@@ -30,6 +30,11 @@ export function isConfigured(env) {
 /* ---------- form-encoded body helpers ----------
  * Stripe accepts nested params via bracket notation, e.g.
  *   line_items[0][price]=price_xxx&line_items[0][quantity]=1
+ *
+ * We hand-roll this rather than reach for `URLSearchParams` because
+ * URLSearchParams flattens nested objects/arrays — it has no notion of
+ * Stripe's `key[0][subkey]` syntax. So we walk the tree ourselves and
+ * percent-encode each leaf the same way URLSearchParams would.
  */
 
 function encodeForm(obj, prefix = "") {
@@ -98,19 +103,10 @@ export async function createCheckoutSession(env, { priceId, customerId, customer
   if (customerId) params.customer = customerId;
   else if (customerEmail) params.customer_email = customerEmail;
 
-  // Use a flat (already-bracketed) form body since we already wrote brackets
-  const headers = {
-    authorization: `Bearer ${env.STRIPE_SECRET_KEY}`,
-    "content-type": "application/x-www-form-urlencoded",
-  };
-  const body = Object.entries(params)
-    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
-    .join("&");
-  const res = await fetch(`${STRIPE_API}/checkout/sessions`, { method: "POST", headers, body });
-  const text = await res.text();
-  let data; try { data = JSON.parse(text); } catch { data = { raw: text }; }
-  if (!res.ok) throw new Error(data?.error?.message || `stripe_${res.status}`);
-  return data;
+  // All keys here are already pre-bracketed strings, so encodeForm's
+  // recursion bottoms out immediately at the leaf level. Reusing it
+  // (instead of an ad-hoc loop) keeps a single percent-encoding rule.
+  return stripeRequest(env, "/checkout/sessions", params);
 }
 
 export async function createPortalSession(env, { customerId, returnUrl }) {

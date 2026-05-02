@@ -1,0 +1,229 @@
+/* Score breakdown modal — opens when a user clicks any subscore. */
+
+.defi-factor[data-factor-name] {
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.05s ease;
+  border-radius: 8px;
+  padding: 8px;
+  margin: -8px;
+}
+.defi-factor[data-factor-name]:hover {
+  background-color: rgba(0, 245, 255, 0.05);
+}
+.defi-factor[data-factor-name]:active {
+  transform: translateY(1px);
+}
+.defi-factor[data-factor-name]::after {
+  content: "›";
+  float: right;
+  margin-top: -22px;
+  margin-right: 4px;
+  color: var(--defi-text-dim, #7c8a9b);
+  font-size: 18px;
+  line-height: 1;
+  opacity: 0.6;
+}
+
+.defi-breakdown-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.defi-breakdown-modal.is-open {
+  display: flex;
+  animation: defi-bd-fade 0.16s ease;
+}
+@keyframes defi-bd-fade { from { opacity: 0 } to { opacity: 1 } }
+
+.defi-breakdown-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(8, 12, 24, 0.72);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.defi-breakdown-modal__panel {
+  position: relative;
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100vh - 64px);
+  overflow: auto;
+  padding: 28px 28px 24px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+  color: #e6edf6;
+}
+
+.defi-breakdown-modal__close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  background: transparent;
+  border: 0;
+  color: #7c8a9b;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 8px;
+}
+.defi-breakdown-modal__close:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.defi-breakdown-modal__head { margin-bottom: 14px; }
+.defi-breakdown-modal__title {
+  font-size: 22px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+.defi-breakdown-modal__meta {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.defi-breakdown-modal__weight {
+  color: #7c8a9b;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.defi-breakdown-modal__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  color: #0b1220;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.defi-breakdown-modal__what {
+  margin: 14px 0 12px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #cfd9e6;
+}
+.defi-breakdown-modal__detail {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  background: rgba(0, 245, 255, 0.06);
+  border-left: 3px solid #00f5ff;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #cfd9e6;
+}
+
+.defi-breakdown-modal__cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.defi-breakdown-modal__col {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.defi-breakdown-modal__col p {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #cfd9e6;
+}
+.defi-breakdown-modal__col-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #7c8a9b;
+}
+
+.defi-breakdown-modal__inputs-wrap {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.defi-breakdown-modal__inputs {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: #cfd9e6;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+@media (max-width: 600px) {
+  .defi-breakdown-modal__cols { grid-template-columns: 1fr; }
+  .defi-breakdown-modal__panel { padding: 22px 18px 18px; }
+}
+
+/* ---------- Quota widget (S1-E) ---------- */
+.defi-quota-widget {
+  display: inline-block;
+  min-width: 130px;
+  max-width: 180px;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  font-size: 11px;
+  color: #cfd9e6;
+  vertical-align: middle;
+}
+.defi-quota-widget__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: baseline;
+  margin-bottom: 4px;
+}
+.defi-quota-widget__label {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #7c8a9b;
+  font-size: 10px;
+}
+.defi-quota-widget__nums {
+  font-variant-numeric: tabular-nums;
+  color: #e6edf6;
+  font-weight: 600;
+}
+.defi-quota-widget__bar {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.defi-quota-widget__fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+/* Inline rename pencil button next to each wallet in the picker */
+.defi-wallet-item__rename {
+  background: transparent;
+  border: 0;
+  color: #7c8a9b;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 14px;
+  line-height: 1;
+}
+.defi-wallet-item__rename:hover {
+  color: #00f5ff;
+  background: rgba(0, 245, 255, 0.08);
+}
