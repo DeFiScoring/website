@@ -85,6 +85,55 @@ async function etherscanCall(chain, env, params) {
   return data.result;
 }
 
+// Generic eth_call wrapper. T4 (lib/defi.js) needs this to read Aave V3
+// getUserAccountData, Compound V3 supply/borrow balances, and Uniswap V3
+// LP NFT counts, without having to know which provider answered. Mirrors
+// the tier order of the balance helpers above: Alchemy → Etherscan v2.
+//
+// Returns the hex string result (e.g. "0x000...abc"). Caller is responsible
+// for ABI-decoding via hexWord() below. Returns null on any failure so the
+// caller can degrade gracefully (a chain with no Aave deployment, or an RPC
+// that times out, must never bubble up as a 500).
+export async function ethCall(chain, env, to, data) {
+  if (chain.alchemy && env.ALCHEMY_KEY) {
+    try {
+      return await alchemyRpc(chain, env, 'eth_call', [{ to, data }, 'latest']);
+    } catch { /* fall through */ }
+  }
+  try {
+    return await etherscanCall(chain, env, {
+      module: 'proxy', action: 'eth_call', to, data, tag: 'latest',
+    });
+  } catch {
+    return null;
+  }
+}
+
+// ABI helpers — pulled out of lib/defi.js so any handler can decode return
+// data without re-implementing them.
+
+// Pad a 20-byte address into a 32-byte word for ABI-encoded calldata.
+export function abiPadAddr(addr) {
+  return '000000000000000000000000' + addr.toLowerCase().replace(/^0x/, '');
+}
+
+// Pull the Nth 32-byte word out of a hex result. Returns BigInt(0) for
+// missing/malformed results so callers can do math without null-checking.
+export function abiHexWord(hex, wordIndex) {
+  if (typeof hex !== 'string' || !hex.startsWith('0x')) return 0n;
+  const start = 2 + wordIndex * 64;
+  const slice = hex.slice(start, start + 64);
+  if (slice.length !== 64) return 0n;
+  try { return BigInt('0x' + slice); } catch { return 0n; }
+}
+
+// Encode a single function selector + address argument (the most common
+// shape: balanceOf, getUserAccountData, etc.). Selector should already
+// include the leading "0x".
+export function abiEncodeSingleAddr(selector, addr) {
+  return selector + abiPadAddr(addr);
+}
+
 // ============================================================================
 // Public API — every handler should consume only these.
 // ============================================================================

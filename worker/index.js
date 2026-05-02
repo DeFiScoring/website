@@ -8,6 +8,11 @@
  *                                   worker/handlers/portfolio.js. Replaces
  *                                   /onchain/:wallet for the dashboard once T7
  *                                   ships; both endpoints coexist until then.
+ *   GET  /api/defi               -> NEW (T4): Aave V3 + Compound V3 + Uni V3 LP
+ *                                   positions per chain via worker/handlers/defi.js.
+ *   GET  /api/nfts               -> NEW (T4): NFT collections per chain via
+ *                                   worker/handlers/nfts.js (Reservoir → Alchemy
+ *                                   → Moralis tier fallback).
  *   GET  /onchain/:wallet        -> Etherscan V2 multichain history (Eth/Arb/Polygon)
  *   GET  /api/score/:protocol    -> DeFiLlama+Etherscan composite score (cached 6h in DEFI_CACHE)
  *   POST /api/exposure           -> { wallet } -> wallet's contract interactions matched against
@@ -36,6 +41,8 @@
  */
 
 import { handlePortfolio } from "./handlers/portfolio.js";
+import { handleDeFi }     from "./handlers/defi.js";
+import { handleNfts }     from "./handlers/nfts.js";
 
 // ---------------------------------------------------------------------------
 // CORS — origin allowlist driven by env.ALLOWED_ORIGINS (comma-separated).
@@ -2411,6 +2418,39 @@ async function dispatch(request, env, peekedAddr) {
         if (blockedAddr) return blockedAddr;
       }
       return handlePortfolio(request, env, corsHeadersFor(request, env));
+    }
+
+    // T4 — DeFi positions handler. Reads Aave V3 / Compound V3 / Uni V3 LP
+    // counts via eth_call across every chain in parallel. Same rate-limit
+    // posture as /api/portfolio because each scan fans out to ~3 RPC calls
+    // per chain × 11 chains = 33 round-trips worst case.
+    if (request.method === "GET" && url.pathname === "/api/defi") {
+      const blockedIp = await rateLimit(request, env, "/api/defi", 30, 60);
+      if (blockedIp) return blockedIp;
+      const defiAddr = (url.searchParams.get("address") || url.searchParams.get("wallet") || "").toLowerCase();
+      if (defiAddr) {
+        const blockedAddr = await rateLimitByAddress(
+          request, env, defiAddr, "/api/defi", 10, 60
+        );
+        if (blockedAddr) return blockedAddr;
+      }
+      return handleDeFi(request, env, corsHeadersFor(request, env));
+    }
+
+    // T4 — NFT collections handler. Reservoir (keyless free tier) → Alchemy
+    // → Moralis fallback. Cheaper per call than /api/defi (1 HTTP per chain),
+    // but cached longer (5 min) since NFT holdings move slowly.
+    if (request.method === "GET" && url.pathname === "/api/nfts") {
+      const blockedIp = await rateLimit(request, env, "/api/nfts", 30, 60);
+      if (blockedIp) return blockedIp;
+      const nftAddr = (url.searchParams.get("address") || url.searchParams.get("wallet") || "").toLowerCase();
+      if (nftAddr) {
+        const blockedAddr = await rateLimitByAddress(
+          request, env, nftAddr, "/api/nfts", 10, 60
+        );
+        if (blockedAddr) return blockedAddr;
+      }
+      return handleNfts(request, env, corsHeadersFor(request, env));
     }
 
     if (request.method === "GET" && url.pathname.startsWith("/api/score/")) {

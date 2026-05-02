@@ -83,3 +83,39 @@ Optional Cloudflare Worker secrets that upgrade `/api/portfolio` when set
 (falls back to Etherscan v2 + free CoinGecko if absent):
 `ALCHEMY_KEY`, `MORALIS_KEY`, `COINGECKO_KEY`. Set with
 `wrangler secret put <NAME>`.
+
+## Worker Module Layout (T4 — May 2026)
+
+T4 added DeFi position reading and NFT collection reading in the same modular
+pattern. Both endpoints share the provider layer with T3 and isolate per-chain
+failures (one chain timing out never produces a 500).
+
+-   `worker/lib/defi-protocols.js` — per-chain registry of Aave V3 Pool
+    addresses, Compound V3 (Comet) market addresses, the Uniswap V3
+    NonfungiblePositionManager, and yield-bearing ERC-20s
+    (stETH/wstETH/rETH/sfrxETH/cbETH/swETH/mETH/sDAI). Adding a protocol or
+    chain only requires editing this file.
+-   `worker/lib/defi.js` — readers for Aave V3 (`getUserAccountData` decodes
+    collateral, debt, healthFactor in 8-decimal base units), Compound V3
+    (`balanceOf` + `borrowBalanceOf` on each market), and Uni V3 LP NFT count
+    (`balanceOf` on the position manager). Plus `classifyYieldTokens()` which
+    re-tags ERC-20s already returned by the portfolio scan as DeFi positions
+    (no extra RPC calls).
+-   `worker/lib/nft.js` — collection fetcher with 3-tier fallback: Alchemy
+    (`getContractsForOwner`) → Moralis (`/nft/collections`) → Reservoir
+    (keyless `/users/.../collections/v3`, supports 9 EVM chains). Capped at
+    50 collections/chain, cached 5 min.
+-   `worker/lib/providers.js` — extended with `ethCall(chain, env, to, data)`
+    (Alchemy → Etherscan v2 fallback) plus ABI helpers `abiPadAddr`,
+    `abiHexWord`, `abiEncodeSingleAddr`.
+-   `worker/handlers/defi.js` — `GET /api/defi?wallet=&chains=&fiat=&tier=`.
+    Aggregates totalCollateralUsd, totalDebtUsd, totalNetUsd, and
+    healthSummary (lowest HF + risk band: liquidatable/risky/caution/safe).
+-   `worker/handlers/nfts.js` — `GET /api/nfts?wallet=&chains=&tier=`.
+    Aggregates totalCollections, totalNfts, totalFloorEth.
+-   Both routes wired in `worker/index.js` with the same rate-limiter
+    posture as `/api/portfolio` (30 req/min/IP + 10 req/min/address).
+
+Optional secrets that upgrade T4 endpoints when set (none required):
+`ALCHEMY_KEY` (faster eth_call + best NFT metadata), `MORALIS_KEY`
+(NFT fallback), `RESERVOIR_KEY` (higher rate limit on NFT free tier).
