@@ -55,23 +55,43 @@
     });
   }
 
-  function renderTrend(history) {
+  function renderTrend(history, meta) {
     const canvas = document.getElementById("score-trend");
     const note = document.getElementById("score-trend-note");
     if (!canvas) return;
     if (window._trendChart) { window._trendChart.destroy(); window._trendChart = null; }
     if (!history || history.length === 0) {
       canvas.style.display = "none";
-      if (note) { note.style.display = ""; note.textContent = "Historical score trend will appear here once the scoring backend has snapshotted this wallet over time."; }
+      if (note) {
+        note.style.display = "";
+        note.textContent = "Historical score trend will appear here once the scoring backend has snapshotted this wallet over time.";
+      }
       return;
     }
     canvas.style.display = "";
-    if (note) note.style.display = "none";
+    if (note) {
+      if (meta && meta.tier === "free" && meta.tier_cap_days && meta.tier_cap_days < 30) {
+        note.style.display = "";
+        note.innerHTML = 'Showing the last <strong>' + meta.days_applied + ' days</strong>. ' +
+          '<a href="/pricing/" style="color:var(--defi-accent)">Upgrade to Pro</a> for full 30-day history.';
+      } else {
+        note.style.display = "none";
+      }
+    }
+    // Build sensible date labels — the history endpoint returns `computed_at`
+    // (ms epoch); legacy callers use `date` / `captured_at` / `month`.
+    const labels = history.map((p) => {
+      const raw = p.computed_at || p.date || p.captured_at;
+      if (raw) {
+        try { return new Date(raw).toLocaleDateString(undefined, { month: "short", day: "numeric" }); } catch (e) {}
+      }
+      return p.month || "";
+    });
     const ctx = canvas.getContext("2d");
     window._trendChart = new Chart(ctx, {
       type: "line",
       data: {
-        labels: history.map((p) => p.month),
+        labels: labels,
         datasets: [{
           label: "Score", data: history.map((p) => p.score),
           borderColor: "#00f5ff", backgroundColor: "rgba(0,245,255,0.15)",
@@ -126,7 +146,25 @@
       renderMiniGauge(score.score);
       renderBreakdown(score.factors);
 
-      renderTrend(score.history);
+      // Tier-aware history: ask the worker for the longest window the user's
+      // tier allows. Worker clamps to its own cap so we can safely request 365.
+      try {
+        const base = (window.DEFI_RISK_WORKER_URL || "").replace(/\/$/, "");
+        const histResp = await fetch(base + "/api/health-score/" + encodeURIComponent(wallet) + "/history?days=365",
+          { credentials: "include" });
+        if (histResp.ok) {
+          const j = await histResp.json();
+          if (j && j.success) {
+            renderTrend(j.history || [], { tier: j.tier, days_applied: j.days_applied, tier_cap_days: j.tier_cap_days });
+          } else {
+            renderTrend(score.history);
+          }
+        } else {
+          renderTrend(score.history);
+        }
+      } catch (e) {
+        renderTrend(score.history);
+      }
 
       const notices = [score.notice, portfolio.notice, alerts.notice].filter(Boolean);
       setNotice("home-status", notices.join("  •  "));
@@ -146,4 +184,7 @@
   });
   document.addEventListener("defi:wallet-changed", refresh);
   document.addEventListener("defi:scan", refresh);
+  // wallet-picker.js dispatches this when the user switches the active wallet
+  // from the dropdown without changing the connected EIP-1193 account.
+  window.addEventListener("defi:wallet-picked", refresh);
 })();

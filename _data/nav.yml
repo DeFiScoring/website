@@ -47,6 +47,7 @@ groups:
 
   - id: footer
     items:
-      - { id: market, label: Live Market Data, path: /dashboard/market-intel/, icon: radio, match: market }
-      - { id: alerts, label: Alerts,           path: /dashboard/alerts/,       icon: bell,  match: alerts }
-      - { id: report, label: Report Issue,     path: /dashboard/report-issue/, icon: flag,  match: report }
+      - { id: market,  label: Live Market Data, path: /dashboard/market-intel/, icon: radio,    match: market }
+      - { id: alerts,  label: Alerts,           path: /dashboard/alerts/,       icon: bell,     match: alerts }
+      - { id: pricing, label: Upgrade Plan,     path: /pricing/,                icon: sparkles, match: pricing }
+      - { id: report,  label: Report Issue,     path: /dashboard/report-issue/, icon: flag,     match: report }

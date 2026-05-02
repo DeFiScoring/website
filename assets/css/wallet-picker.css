@@ -1,0 +1,210 @@
+/* Wallet picker dropdown + tier pill + toast — extends dashboard.css tokens. */
+
+.defi-tier-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-right: 10px;
+  background: var(--defi-card);
+  border: 1px solid var(--defi-border-hi);
+  color: var(--defi-text-dim);
+}
+.defi-tier-pill--pro {
+  background: rgba(0, 245, 255, 0.12);
+  color: var(--defi-accent);
+  border-color: rgba(0, 245, 255, 0.4);
+}
+.defi-tier-pill--plus {
+  background: linear-gradient(135deg, rgba(0, 245, 255, 0.18), rgba(168, 85, 247, 0.22));
+  color: #fff;
+  border-color: rgba(168, 85, 247, 0.45);
+}
+.defi-tier-pill--enterprise {
+  background: rgba(250, 204, 21, 0.15);
+  color: var(--defi-gold);
+  border-color: rgba(250, 204, 21, 0.45);
+}
+
+/* ---------- Picker ---------- */
+
+.defi-wallet-picker {
+  position: relative;
+  display: inline-flex;
+  margin-right: 8px;
+}
+.defi-wallet-picker__toggle {
+  background: var(--defi-card);
+  border: 1px solid var(--defi-border-hi);
+  color: var(--defi-text);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font: 600 13px/1 var(--defi-font-mono);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.defi-wallet-picker__toggle:hover {
+  background: var(--defi-card-hover);
+  border-color: var(--defi-accent);
+}
+.defi-wallet-picker__toggle::after {
+  content: "▾";
+  font-size: 9px;
+  opacity: 0.6;
+}
+.defi-wallet-picker__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 280px;
+  background: rgba(15, 15, 22, 0.96);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--defi-border-hi);
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+  z-index: 100;
+  display: none;
+}
+.defi-wallet-picker__menu.is-open { display: block; }
+.defi-wallet-picker__heading {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--defi-text-mute);
+  padding: 8px 10px 4px;
+}
+.defi-wallet-picker__list {
+  list-style: none;
+  margin: 0 0 6px;
+  padding: 0;
+  max-height: 280px;
+  overflow-y: auto;
+}
+.defi-wallet-item {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  border-radius: 8px;
+  position: relative;
+}
+.defi-wallet-item:hover { background: var(--defi-card); }
+.defi-wallet-item.is-active { background: rgba(0, 245, 255, 0.08); }
+.defi-wallet-item__pick {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--defi-text);
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font: inherit;
+}
+.defi-wallet-item__addr {
+  font-family: var(--defi-font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--defi-text);
+}
+.defi-wallet-item__label {
+  font-size: 11px;
+  color: var(--defi-text-dim);
+}
+.defi-wallet-flag {
+  display: inline-block;
+  align-self: flex-start;
+  margin-top: 2px;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  background: rgba(0, 245, 255, 0.18);
+  color: var(--defi-accent);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.defi-wallet-item__unlink {
+  background: none;
+  border: none;
+  color: var(--defi-text-mute);
+  cursor: pointer;
+  font-size: 18px;
+  padding: 0 12px;
+  border-radius: 8px;
+}
+.defi-wallet-item__unlink:hover { color: var(--defi-bad); background: rgba(255, 93, 108, 0.1); }
+.defi-wallet-picker__sep {
+  height: 1px;
+  background: var(--defi-border);
+  margin: 6px 4px;
+}
+.defi-wallet-picker__action {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--defi-text);
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font: 500 13px/1.4 var(--defi-font-sans);
+}
+.defi-wallet-picker__action:hover { background: var(--defi-card-hover); color: var(--defi-accent); }
+.defi-wallet-picker__action--danger:hover { color: var(--defi-bad); background: rgba(255, 93, 108, 0.08); }
+
+/* ---------- Toast ---------- */
+
+.defi-toast {
+  position: fixed;
+  top: 20px; left: 50%;
+  transform: translate(-50%, -130%);
+  z-index: 9999;
+  background: rgba(15, 15, 22, 0.95);
+  color: var(--defi-text);
+  border: 1px solid var(--defi-border-hi);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 13px 22px;
+  border-radius: 12px;
+  font: 600 14px/1.4 var(--defi-font-sans);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+  transition: transform 280ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  max-width: 86vw;
+}
+.defi-toast.is-show { transform: translate(-50%, 0); }
+.defi-toast--ok { border-color: rgba(43, 212, 164, 0.5); color: var(--defi-good); }
+.defi-toast--warn { border-color: rgba(250, 204, 21, 0.5); color: var(--defi-gold); }
+.defi-toast--bad { border-color: rgba(255, 93, 108, 0.5); color: var(--defi-bad); }
+
+/* ---------- Verification overlay (used by alerts page) ---------- */
+
+.defi-channel-verify {
+  background: rgba(0, 245, 255, 0.05);
+  border: 1px dashed rgba(0, 245, 255, 0.4);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: var(--defi-text);
+}
+.defi-channel-verify code {
+  font-family: var(--defi-font-mono);
+  background: rgba(0, 0, 0, 0.4);
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: var(--defi-accent);
+  font-size: 12px;
+}

@@ -4,55 +4,137 @@ permalink: /dashboard/alerts/
 title: Alerts
 dashboard_section: alerts
 dashboard_title: Alerts
-dashboard_subtitle: Configure rules and review recent triggers. Email delivery handled by the Cloudflare Worker.
+dashboard_subtitle: Configure rules, deliver to email or Telegram, review recent triggers.
 sitemap: false
 ---
 
-<div class="defi-card" style="margin-bottom:18px">
-  <div class="defi-card__title">New Rule</div>
-  <form id="rule-form" class="defi-form-row">
-    <div class="defi-form-group">
-      <label for="rule-type">Trigger</label>
-      <select class="defi-select" id="rule-type" name="type" required>
-        <option>Score drop &gt; threshold</option>
-        <option>Health factor &lt; threshold</option>
-        <option>New liquidation event</option>
-        <option>Position size &gt; threshold (USD)</option>
-      </select>
-    </div>
-    <div class="defi-form-group">
-      <label for="rule-threshold">Threshold</label>
-      <input class="defi-input" id="rule-threshold" name="threshold" placeholder="e.g. 30 or 1.5 or 10000" required>
-    </div>
-    <div class="defi-form-group">
-      <label for="rule-email">Notify email</label>
-      <input class="defi-input" id="rule-email" name="email" type="email" placeholder="you@example.com">
-    </div>
-    <div class="defi-form-group" style="flex:0 0 auto;min-width:0">
-      <label>&nbsp;</label>
-      <button type="submit" class="defi-btn defi-btn--primary">Add rule</button>
-    </div>
-  </form>
+<div id="alerts-signin-required" class="defi-empty" style="display:none">
+  <h3 style="margin:0 0 8px">Sign in to manage alerts</h3>
+  <p style="margin:0;color:var(--defi-text-dim)">Click <strong>Sign in</strong> in the top bar to prove you own a wallet, then come back here to set up real-time alerts.</p>
 </div>
 
-<div class="defi-card" style="margin-bottom:18px">
-  <div class="defi-card__title">Your Rules</div>
-  <table class="defi-table">
-    <thead>
-      <tr><th>Trigger</th><th>Threshold</th><th>Email</th><th></th></tr>
-    </thead>
-    <tbody id="rules-tbody"></tbody>
-  </table>
-  <p style="margin:12px 0 0;color:var(--defi-text-dim);font-size:12px">
-    Rules are stored locally for now. The Worker will mirror them to D1 once the API is wired up.
+<div id="alerts-paywall" class="defi-card" style="display:none;border-color:rgba(0,245,255,0.4);background:linear-gradient(135deg, rgba(0,245,255,0.06), rgba(168,85,247,0.06));margin-bottom:18px">
+  <div class="defi-card__title" style="display:flex;justify-content:space-between;align-items:center;gap:18px">
+    <span>Alerts are a Pro feature</span>
+    <a href="/pricing/" class="defi-btn defi-btn--primary" style="text-decoration:none">Upgrade →</a>
+  </div>
+  <p style="margin:8px 0 0;color:var(--defi-text-dim);font-size:13px">
+    The Free tier includes the score and history. Upgrade to Pro ($15/mo) to receive
+    real-time email + Telegram alerts when your health factor drops, score moves,
+    a token approval changes, or a liquidation risk appears.
   </p>
 </div>
 
-<div class="defi-card">
-  <div class="defi-card__title">Recent Alerts</div>
-  <div id="alerts-empty" class="defi-empty" style="display:none">
-    Connect a wallet to view recent alerts.
+<!-- ────────────────  Channels (where alerts go)  ──────────────── -->
+<div id="alerts-app" style="display:none">
+
+  <div class="defi-card" style="margin-bottom:18px">
+    <div class="defi-card__title" style="display:flex;justify-content:space-between;align-items:center">
+      <span>Delivery channels</span>
+      <button type="button" id="channel-new-btn" class="defi-btn defi-btn--ghost">+ Add channel</button>
+    </div>
+    <div id="channels-empty" class="defi-empty" style="display:none">
+      No delivery channels yet. Add an email or Telegram chat ID to receive alerts.
+    </div>
+    <table class="defi-table" id="channels-table" style="display:none">
+      <thead>
+        <tr><th>Type</th><th>Destination</th><th>Status</th><th>Added</th><th></th></tr>
+      </thead>
+      <tbody id="channels-tbody"></tbody>
+    </table>
+
+    <!-- inline "new channel" form -->
+    <form id="channel-form" class="defi-form-row" style="display:none;margin-top:14px">
+      <div class="defi-form-group">
+        <label for="channel-kind">Type</label>
+        <select class="defi-select" id="channel-kind" required>
+          <option value="email">Email</option>
+          <option value="telegram">Telegram chat ID</option>
+        </select>
+      </div>
+      <div class="defi-form-group" style="flex:2">
+        <label for="channel-destination" id="channel-destination-label">Email address</label>
+        <input class="defi-input" id="channel-destination" placeholder="you@example.com" required>
+      </div>
+      <div class="defi-form-group" style="flex:1">
+        <label for="channel-label">Label (optional)</label>
+        <input class="defi-input" id="channel-label" placeholder="Personal">
+      </div>
+      <div class="defi-form-group" style="flex:0 0 auto">
+        <label>&nbsp;</label>
+        <div style="display:flex;gap:8px">
+          <button type="button" id="channel-cancel" class="defi-btn defi-btn--ghost">Cancel</button>
+          <button type="submit" class="defi-btn defi-btn--primary">Add</button>
+        </div>
+      </div>
+    </form>
+    <p id="telegram-hint" class="defi-card__delta" style="display:none;font-size:12px;color:var(--defi-text-dim);margin-top:10px">
+      Open <a href="https://t.me/DeFiScoringBot" target="_blank" rel="noopener" style="color:var(--defi-accent)">@DeFiScoringBot</a>,
+      send <code>/start</code>, then paste the numeric chat ID it replies with.
+    </p>
   </div>
-  <div id="alerts-list"></div>
-  <div id="alerts-notice" class="defi-card__delta" style="margin-top:14px;font-size:12px;color:var(--defi-text-dim);display:none"></div>
+
+  <!-- ────────────────  Rules (when alerts fire)  ──────────────── -->
+  <div class="defi-card" style="margin-bottom:18px">
+    <div class="defi-card__title" style="display:flex;justify-content:space-between;align-items:center">
+      <span>Alert rules</span>
+      <button type="button" id="rule-new-btn" class="defi-btn defi-btn--ghost">+ Add rule</button>
+    </div>
+    <div id="rules-empty" class="defi-empty" style="display:none">
+      No rules configured yet. Add a rule above to start monitoring.
+    </div>
+    <table class="defi-table" id="rules-table" style="display:none">
+      <thead>
+        <tr><th>Wallet</th><th>Trigger</th><th>Threshold</th><th>Channels</th><th>Active</th><th>Last fired</th><th></th></tr>
+      </thead>
+      <tbody id="rules-tbody"></tbody>
+    </table>
+
+    <form id="rule-form" class="defi-form-row" style="display:none;margin-top:14px;flex-wrap:wrap">
+      <div class="defi-form-group" style="flex:1.4;min-width:240px">
+        <label for="rule-wallet">Wallet</label>
+        <select class="defi-select" id="rule-wallet" required></select>
+      </div>
+      <div class="defi-form-group" style="flex:1.4;min-width:200px">
+        <label for="rule-kind">Trigger</label>
+        <select class="defi-select" id="rule-kind" required>
+          <option value="health_factor">Health factor &lt; threshold</option>
+          <option value="score_change">Score drops by &gt; X points</option>
+          <option value="liquidation_risk">Liquidation risk detected</option>
+          <option value="approval_change">New / changed token approval</option>
+          <option value="price">Token price &lt; threshold (USD)</option>
+        </select>
+      </div>
+      <div class="defi-form-group" style="flex:1;min-width:140px">
+        <label for="rule-threshold" id="rule-threshold-label">Threshold</label>
+        <input class="defi-input" id="rule-threshold" placeholder="e.g. 1.5" required>
+      </div>
+      <div class="defi-form-group" style="flex:1.4;min-width:200px">
+        <label>Notify via</label>
+        <div id="rule-channels" style="display:flex;gap:10px;flex-wrap:wrap;padding:8px 0"></div>
+      </div>
+      <div class="defi-form-group" style="flex:1;min-width:140px">
+        <label for="rule-cooldown">Cooldown (min)</label>
+        <input class="defi-input" id="rule-cooldown" type="number" value="60" min="1" max="1440">
+      </div>
+      <div class="defi-form-group" style="flex:0 0 auto">
+        <label>&nbsp;</label>
+        <div style="display:flex;gap:8px">
+          <button type="button" id="rule-cancel" class="defi-btn defi-btn--ghost">Cancel</button>
+          <button type="submit" class="defi-btn defi-btn--primary">Add rule</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- ────────────────  Recent triggers  ──────────────── -->
+  <div class="defi-card">
+    <div class="defi-card__title">Recent triggers</div>
+    <div id="deliveries-empty" class="defi-empty" style="display:none">
+      No alert deliveries yet. When a rule fires, you'll see the audit log here.
+    </div>
+    <div id="deliveries-list"></div>
+  </div>
 </div>
+
+<script src="{{ '/assets/js/dashboard-alerts.js' | relative_url }}?v={{ site.time | date: '%s' }}" defer></script>

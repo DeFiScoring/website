@@ -1,0 +1,162 @@
+/* DeFi Scoring – first-time onboarding modal + soft upgrade nudge.
+   Mirrors the dashboard's dark glassmorphic look (uses --defi-* tokens). */
+
+/* ---------- Backdrop + modal shell ---------- */
+.defi-ob-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 5, 12, 0.78);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 240ms ease;
+}
+.defi-ob-backdrop.is-open { opacity: 1; pointer-events: auto; }
+
+.defi-ob {
+  width: min(560px, 92vw);
+  max-height: 92vh;
+  overflow: auto;
+  background: rgba(15, 15, 22, 0.97);
+  border: 1px solid var(--defi-border-hi);
+  border-radius: 16px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+  color: var(--defi-text);
+  padding: 28px 30px;
+  position: relative;
+  transform: translateY(8px) scale(0.98);
+  transition: transform 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.defi-ob-backdrop.is-open .defi-ob { transform: translateY(0) scale(1); }
+.defi-ob__close {
+  position: absolute; top: 14px; right: 16px;
+  background: none; border: none; color: var(--defi-text-mute);
+  font-size: 22px; cursor: pointer; line-height: 1;
+}
+.defi-ob__close:hover { color: var(--defi-text); }
+
+.defi-ob__progress {
+  display: flex; gap: 6px; margin-bottom: 20px;
+}
+.defi-ob__dot {
+  flex: 1; height: 4px; border-radius: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  transition: background 200ms ease;
+}
+.defi-ob__dot.is-done { background: var(--defi-accent); }
+.defi-ob__dot.is-current { background: var(--defi-accent); box-shadow: 0 0 8px rgba(0, 245, 255, 0.6); }
+
+.defi-ob__step-tag {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em;
+  color: var(--defi-accent); font-weight: 700; margin-bottom: 6px;
+}
+.defi-ob__title {
+  font-size: 22px; font-weight: 800; margin: 0 0 8px;
+  background: linear-gradient(135deg, #fff, var(--defi-accent));
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.defi-ob__desc { color: var(--defi-text-dim); font-size: 14px; line-height: 1.55; margin: 0 0 20px; }
+
+.defi-ob__score-display {
+  display: flex; align-items: center; justify-content: center;
+  gap: 22px; padding: 24px;
+  background: rgba(0, 245, 255, 0.04);
+  border: 1px solid rgba(0, 245, 255, 0.18);
+  border-radius: 12px; margin-bottom: 18px;
+}
+.defi-ob__score-num {
+  font: 800 56px/1 var(--defi-font-mono);
+  background: linear-gradient(135deg, #fff, var(--defi-accent));
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.defi-ob__score-band { font-size: 13px; color: var(--defi-text-dim); }
+.defi-ob__score-band strong { color: var(--defi-text); display: block; font-size: 18px; margin-bottom: 4px; }
+
+.defi-ob__alert-preview {
+  background: rgba(255, 93, 108, 0.06);
+  border: 1px solid rgba(255, 93, 108, 0.25);
+  border-radius: 10px; padding: 14px 16px; margin-bottom: 18px;
+  font-size: 13px; line-height: 1.55;
+}
+.defi-ob__alert-preview code {
+  background: rgba(0, 0, 0, 0.4); padding: 2px 8px; border-radius: 4px;
+  color: var(--defi-accent); font-size: 12px;
+}
+
+.defi-ob__upsell {
+  background: linear-gradient(135deg, rgba(0, 245, 255, 0.08), rgba(168, 85, 247, 0.10));
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  border-radius: 12px; padding: 18px 20px; margin-bottom: 18px;
+}
+.defi-ob__upsell h4 { margin: 0 0 6px; font-size: 15px; }
+.defi-ob__upsell ul { margin: 8px 0 0; padding-left: 20px; font-size: 13px; color: var(--defi-text-dim); line-height: 1.7; }
+
+.defi-ob__actions {
+  display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px;
+}
+.defi-ob__skip {
+  margin-right: auto;
+  background: none; border: none; color: var(--defi-text-mute);
+  font-size: 12px; cursor: pointer; text-decoration: underline;
+}
+.defi-ob__skip:hover { color: var(--defi-text-dim); }
+.defi-ob__loading {
+  text-align: center; padding: 30px; color: var(--defi-text-dim); font-size: 13px;
+}
+.defi-ob__loading::before {
+  content: ""; display: inline-block; width: 18px; height: 18px;
+  border: 2px solid rgba(0, 245, 255, 0.25); border-top-color: var(--defi-accent);
+  border-radius: 50%; animation: defi-ob-spin 700ms linear infinite;
+  vertical-align: middle; margin-right: 10px;
+}
+@keyframes defi-ob-spin { to { transform: rotate(360deg); } }
+
+/* ---------- Confetti canvas ---------- */
+.defi-ob-confetti {
+  position: fixed; inset: 0; pointer-events: none; z-index: 10000;
+}
+
+/* ---------- Soft upgrade nudge banner ---------- */
+.defi-nudge {
+  position: relative;
+  margin: 0 0 18px;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, rgba(0, 245, 255, 0.10), rgba(168, 85, 247, 0.12));
+  border: 1px solid rgba(0, 245, 255, 0.4);
+  border-radius: 12px;
+  color: var(--defi-text);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.defi-nudge__icon {
+  font-size: 20px;
+}
+.defi-nudge__body { flex: 1; }
+.defi-nudge__title { font-weight: 700; margin-bottom: 2px; }
+.defi-nudge__sub { color: var(--defi-text-dim); font-size: 12px; }
+.defi-nudge__cta {
+  display: inline-block;
+  background: linear-gradient(135deg, var(--defi-accent), var(--defi-accent-2, #a855f7));
+  color: #0a0a12;
+  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.defi-nudge__cta:hover { color: #0a0a12; opacity: 0.92; }
+.defi-nudge__close {
+  background: none; border: none; color: var(--defi-text-mute);
+  font-size: 20px; cursor: pointer; padding: 0 4px; line-height: 1;
+}
+.defi-nudge__close:hover { color: var(--defi-text); }

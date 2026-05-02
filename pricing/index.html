@@ -1,0 +1,179 @@
+---
+layout: default
+title: Pricing
+permalink: /pricing/
+description: "Simple per-wallet DeFi credit scoring. Free for individuals, Pro $15/mo for active borrowers, Plus $49/mo for power users, Enterprise for protocols."
+keywords: "DeFi scoring pricing, on-chain credit score plans, Pro Plus Enterprise tiers, Stripe checkout, DeFiScore"
+---
+
+<link rel="stylesheet" href="{{ '/assets/css/pricing.css' | relative_url }}?v={{ site.time | date: '%s' }}">
+
+<section class="pr-hero">
+  <span class="pr-eyebrow">Pricing</span>
+  <h1 class="pr-h1">Pay only for the protection you need</h1>
+  <p class="pr-sub">
+    Every plan includes the full 300–850 credit score and a free public API.
+    Upgrade when you want longer history, more wallets, faster alerts, and
+    deeper risk tooling.
+  </p>
+  <div id="pr-current-plan" class="pr-current-plan" hidden></div>
+</section>
+
+<section class="pr-grid">
+
+  <!-- ──────────────── FREE ──────────────── -->
+  <article class="pr-tier" data-tier="free">
+    <header class="pr-tier__head">
+      <h2 class="pr-tier__name">Free</h2>
+      <p class="pr-tier__price"><span class="pr-tier__amount">$0</span><span class="pr-tier__per">/forever</span></p>
+      <p class="pr-tier__pitch">Get a number on any wallet, today.</p>
+    </header>
+    <ul class="pr-features">
+      <li><strong>1</strong> linked wallet</li>
+      <li>Live credit score (300–850)</li>
+      <li><strong>7-day</strong> score history</li>
+      <li>Portfolio risk heatmap</li>
+      <li><strong>5</strong> scans / day</li>
+      <li>Public API access (rate-limited)</li>
+      <li>Email support</li>
+    </ul>
+    <button type="button" class="pr-cta pr-cta--ghost" data-pr-action="dashboard">Get started</button>
+    <p class="pr-tier__foot">No credit card required.</p>
+  </article>
+
+  <!-- ──────────────── PRO ──────────────── -->
+  <article class="pr-tier pr-tier--popular" data-tier="pro">
+    <span class="pr-popular-flag">Most popular</span>
+    <header class="pr-tier__head">
+      <h2 class="pr-tier__name">Pro</h2>
+      <p class="pr-tier__price"><span class="pr-tier__amount">$15</span><span class="pr-tier__per">/month</span></p>
+      <p class="pr-tier__pitch">For active DeFi borrowers and LPs.</p>
+    </header>
+    <ul class="pr-features">
+      <li><strong>3</strong> linked wallets</li>
+      <li>Everything in Free, plus:</li>
+      <li><strong>30-day</strong> score history</li>
+      <li><strong>Real-time alerts</strong> (email + Telegram)</li>
+      <li><strong>Unlimited</strong> scans</li>
+      <li>Health-factor &amp; liquidation alerts</li>
+      <li>Token approval risk monitor</li>
+      <li>Priority email support</li>
+    </ul>
+    <button type="button" class="pr-cta pr-cta--primary" data-pr-action="checkout" data-pr-tier="pro">Upgrade to Pro</button>
+    <p class="pr-tier__foot">Cancel anytime · 14-day money back.</p>
+  </article>
+
+  <!-- ──────────────── PLUS ──────────────── -->
+  <article class="pr-tier" data-tier="plus">
+    <header class="pr-tier__head">
+      <h2 class="pr-tier__name">Plus</h2>
+      <p class="pr-tier__price"><span class="pr-tier__amount">$49</span><span class="pr-tier__per">/month</span></p>
+      <p class="pr-tier__pitch">For pros, funds, and DAO treasuries.</p>
+    </header>
+    <ul class="pr-features">
+      <li><strong>10</strong> linked wallets</li>
+      <li>Everything in Pro, plus:</li>
+      <li><strong>365-day</strong> score history</li>
+      <li>AI Risk Profiler &amp; project picks</li>
+      <li>RWA scoring suite</li>
+      <li>Custom watchlists &amp; tags</li>
+      <li>PDF report exports</li>
+      <li>Webhook delivery for alerts</li>
+    </ul>
+    <button type="button" class="pr-cta pr-cta--primary" data-pr-action="checkout" data-pr-tier="plus">Upgrade to Plus</button>
+    <p class="pr-tier__foot">Cancel anytime · 14-day money back.</p>
+  </article>
+
+  <!-- ──────────────── ENTERPRISE ──────────────── -->
+  <article class="pr-tier pr-tier--ent" data-tier="enterprise">
+    <header class="pr-tier__head">
+      <h2 class="pr-tier__name">Enterprise</h2>
+      <p class="pr-tier__price"><span class="pr-tier__amount">Custom</span></p>
+      <p class="pr-tier__pitch">For protocols, exchanges, custodians.</p>
+    </header>
+    <ul class="pr-features">
+      <li>Unlimited wallets &amp; scans</li>
+      <li>Dedicated API quota &amp; SLA</li>
+      <li>OFAC / sanctions screening</li>
+      <li>Custom scoring weights</li>
+      <li>SSO &amp; user roles</li>
+      <li>White-label embeds</li>
+      <li>Dedicated CSM &amp; Slack channel</li>
+      <li>Annual invoicing</li>
+    </ul>
+    <a class="pr-cta pr-cta--ghost" href="mailto:enterprise@defiscoring.com?subject=DeFi%20Scoring%20Enterprise%20enquiry">Contact sales</a>
+    <p class="pr-tier__foot">Typically replies within 1 business day.</p>
+  </article>
+
+</section>
+
+<section class="pr-compare">
+  <h2 class="pr-h2">Compare every feature</h2>
+  <div class="pr-compare__scroll">
+    <table class="pr-compare__table">
+      <thead>
+        <tr>
+          <th>&nbsp;</th>
+          <th>Free</th>
+          <th class="is-popular">Pro</th>
+          <th>Plus</th>
+          <th>Enterprise</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><th>Linked wallets</th><td>1</td><td>3</td><td>10</td><td>Unlimited</td></tr>
+        <tr><th>Score history</th><td>7 days</td><td>30 days</td><td>365 days</td><td>Unlimited</td></tr>
+        <tr><th>Scans / day</th><td>5</td><td>Unlimited</td><td>Unlimited</td><td>Unlimited</td></tr>
+        <tr><th>Real-time alerts (email)</th><td>—</td><td>✓</td><td>✓</td><td>✓</td></tr>
+        <tr><th>Telegram alerts</th><td>—</td><td>✓</td><td>✓</td><td>✓</td></tr>
+        <tr><th>Webhook delivery</th><td>—</td><td>—</td><td>✓</td><td>✓</td></tr>
+        <tr><th>AI Risk Profiler</th><td>—</td><td>—</td><td>✓</td><td>✓</td></tr>
+        <tr><th>RWA scoring suite</th><td>—</td><td>—</td><td>✓</td><td>✓</td></tr>
+        <tr><th>PDF report export</th><td>—</td><td>—</td><td>✓</td><td>✓</td></tr>
+        <tr><th>OFAC screening API</th><td>—</td><td>—</td><td>—</td><td>✓</td></tr>
+        <tr><th>Custom scoring weights</th><td>—</td><td>—</td><td>—</td><td>✓</td></tr>
+        <tr><th>SSO &amp; user roles</th><td>—</td><td>—</td><td>—</td><td>✓</td></tr>
+        <tr><th>White-label embeds</th><td>—</td><td>—</td><td>—</td><td>✓</td></tr>
+        <tr><th>Support</th><td>Email</td><td>Priority email</td><td>Priority email</td><td>Dedicated CSM</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="pr-faq">
+  <h2 class="pr-h2">Frequently asked</h2>
+  <div class="pr-faq__grid">
+    <details class="pr-faq__item">
+      <summary>Do I need an account to try the score?</summary>
+      <p>No. Connect any wallet on the <a href="/dashboard/">dashboard</a> and you get a free score instantly. An account only unlocks history, alerts, and multi-wallet linking.</p>
+    </details>
+    <details class="pr-faq__item">
+      <summary>How is billing handled?</summary>
+      <p>All payments go through Stripe Checkout — we never see your card. Your subscription auto-renews monthly and you can cancel from the customer portal at any time.</p>
+    </details>
+    <details class="pr-faq__item">
+      <summary>What happens if I downgrade or cancel?</summary>
+      <p>Your paid features stay active until the end of the current billing period, then your account drops to the Free tier. Your history and linked wallets are preserved.</p>
+    </details>
+    <details class="pr-faq__item">
+      <summary>Do you offer annual pricing?</summary>
+      <p>Annual plans (~2 months free) and team seats are available on Plus and Enterprise. <a href="mailto:sales@defiscoring.com">Email us</a>.</p>
+    </details>
+    <details class="pr-faq__item">
+      <summary>Is the public API really free?</summary>
+      <p>Yes. The 300–850 score endpoint is free with generous rate limits. Paid tiers raise the cap and unlock authenticated endpoints (history, alerts, RWA).</p>
+    </details>
+    <details class="pr-faq__item">
+      <summary>Do you take crypto?</summary>
+      <p>Stripe-supported cards today; ETH / USDC checkout is on the roadmap for Plus and Enterprise.</p>
+    </details>
+  </div>
+</section>
+
+<section class="pr-cta-band">
+  <h2 class="pr-h2">Ready to know your number?</h2>
+  <p>Connect your wallet — no signup required to see your score.</p>
+  <a class="pr-cta pr-cta--primary pr-cta--lg" href="/dashboard/">Open dashboard</a>
+</section>
+
+<script src="{{ '/assets/js/pricing.js' | relative_url }}?v={{ site.time | date: '%s' }}" defer></script>

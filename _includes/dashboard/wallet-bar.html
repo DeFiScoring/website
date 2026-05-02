@@ -1,12 +1,39 @@
+{%- comment -%}
+  Top-of-dashboard wallet bar.
+  Driven by assets/js/wallet-picker.js, which subscribes to DefiAuth state.
+  All elements are present in the DOM so the JS can show/hide them based on
+  signed-in state without doing template-side branching.
+{%- endcomment -%}
 <header class="defi-topbar">
   <div class="defi-topbar__title">
     <h1>{{ page.dashboard_title | default: page.title }}</h1>
     {% if page.dashboard_subtitle %}<p>{{ page.dashboard_subtitle }}</p>{% endif %}
   </div>
   <div class="defi-topbar__actions">
-    <span id="defi-wallet-status" class="defi-wallet-status defi-wallet-status--disconnected">Not connected</span>
+    <span id="defi-tier-pill" class="defi-tier-pill" style="display:none">Free</span>
+    <span id="defi-wallet-status" class="defi-wallet-status defi-wallet-status--disconnected">Not signed in</span>
+
+    <div id="defi-wallet-picker" class="defi-wallet-picker" style="display:none">
+      <button type="button"
+              id="defi-wallet-picker-toggle"
+              class="defi-wallet-picker__toggle"
+              aria-haspopup="true" aria-expanded="false"
+              aria-controls="defi-wallet-picker-menu">
+        Wallets
+      </button>
+      <div id="defi-wallet-picker-menu" class="defi-wallet-picker__menu" role="menu">
+        <span class="defi-wallet-picker__heading">Linked wallets</span>
+        <ul id="defi-wallet-picker-list" class="defi-wallet-picker__list"></ul>
+        <div class="defi-wallet-picker__sep"></div>
+        <button type="button" id="defi-wallet-picker-add" class="defi-wallet-picker__action">+ Add another wallet</button>
+        <a href="/pricing/" class="defi-wallet-picker__action" style="text-decoration:none;display:block">↗ Upgrade plan</a>
+        <div class="defi-wallet-picker__sep"></div>
+        <button type="button" id="defi-wallet-picker-signout" class="defi-wallet-picker__action defi-wallet-picker__action--danger">Sign out</button>
+      </div>
+    </div>
+
     <div class="defi-topbar__buttons">
-      <button id="defi-connect-btn" class="defi-btn defi-btn--primary" type="button">Connect Wallet</button>
+      <button id="defi-connect-btn" class="defi-btn defi-btn--primary" type="button" data-action="signin">Sign in</button>
       <button id="defi-scan-btn" class="defi-btn defi-btn--ghost" type="button" disabled>Scan</button>
     </div>
   </div>

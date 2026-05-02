@@ -227,6 +227,7 @@
 
   window.DefiState = {
     get wallet() { return state.wallet; },
+    setWallet,           // exposed so wallet-picker.js can switch the active wallet
     shorten,
     bandFor,
   };

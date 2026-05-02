@@ -248,3 +248,80 @@ working while the operator (you) provisions Stripe / Gmail / Telegram.
 - `@noble/hashes` ^1.x — keccak256, hmac-sha256
 
 Both are pure ESM, dependency-free, and routinely audited.
+
+## T7 — Pricing + Dashboard SPA + Onboarding (May 2026)
+
+T7 turns the site into a self-serve product: visitors can compare plans, pay
+on Stripe, sign in with their wallet, link multiple wallets, configure real
+alerts against the worker API, and walk through a guided first-run flow.
+
+### New pages
+- `pricing/index.html` — 4-tier comparison (Free / Pro $15 / Plus $49 /
+  Enterprise) + FAQ + CTA band. Buttons hit `POST /api/billing/checkout
+  { tier }` and redirect to Stripe; the user's current plan is shown as a
+  badge from `/api/auth/me`. The "Manage subscription" link routes to
+  `/api/billing/portal`.
+- `dashboard/alerts.html` — full CRUD UI for delivery channels (email,
+  Telegram), alert rules, and a recent triggers audit log. Free-tier
+  visitors see a paywall card; signed-out visitors see a sign-in
+  required state.
+
+### New JS modules (all under `assets/js/`)
+- `auth.js` — `window.DefiAuth` singleton. Methods: `init`, `refresh`,
+  `signIn`, `signOut`, `linkWallet`, `unlinkWallet`, `listWallets`,
+  `subscribe(cb)`. Builds EIP-4361 SIWE messages client-side, signs via
+  `personal_sign`, calls `/api/auth/{nonce,verify,me,logout}`. Truth lives
+  in the `ds_session` cookie; nothing sensitive in localStorage.
+- `wallet-picker.js` — drives the dashboard wallet bar: tier pill,
+  connection state, dropdown of linked wallets, add/unlink, sign in/out,
+  cross-page toast helper. Syncs the active wallet back to the legacy
+  `window.DefiState.setWallet()` so existing dashboard widgets re-render
+  on wallet switch.
+- `dashboard-alerts.js` — full CRUD against `/api/alerts/{rules,channels,
+  deliveries}`; tier-aware (paywall for free).
+- `pricing.js` — checkout button wiring + current-plan badge.
+- `billing-return.js` — loaded on every dashboard page; toasts post-
+  Stripe `?billing=success&tier=X` and cleans the URL.
+- `onboarding.js` — 4-step modal (welcome → first scan with confetti →
+  HF<1.3 alert → upsell) gated on `defi_onboarding_state` localStorage.
+  Also renders a soft upgrade nudge above the dashboard topbar after the
+  Nth (=5) free-tier scan, dismissible with a 7-day re-arm.
+- `dashboard-home.js` (modified) — fetches `/api/health-score/{wallet}/
+  history?days=365` so the worker clamps to the tier cap, then renders
+  the trend chart with `computed_at`-based date labels and a "Showing N
+  days · Upgrade for full 30-day history" upsell note for free users.
+
+### New CSS
+- `assets/css/wallet-picker.css` — dropdown, tier pill, toast, channel
+  verification overlay.
+- `assets/css/onboarding.css` — modal, progress bar, score display,
+  confetti canvas, soft nudge banner.
+- `assets/css/pricing.css` — `.pr-*` scoped, reuses landing tokens.
+
+### Layout/include changes
+- `_layouts/dashboard.html` — added wallet-picker + onboarding CSS, and
+  `auth.js` (eager) + `wallet-picker.js` + `onboarding.js` (deferred).
+- `_includes/dashboard/wallet-bar.html` — added picker dropdown markup
+  + tier pill.
+- `_data/nav.yml` — added "Upgrade plan" sidebar item.
+- `_layouts/default.html` — added "Pricing" link to landing nav.
+- `assets/js/dashboard.js` — exposed `setWallet` on `window.DefiState`
+  so the picker can switch the active wallet without reloading.
+
+### Worker contracts consumed (no worker code changes for T7)
+- `GET  /api/auth/{nonce,me}` · `POST /api/auth/{verify,logout}`
+- `GET  /api/wallets` · `POST /api/wallets/link` · `DELETE /api/wallets/{addr}`
+- `GET/POST/PUT/DELETE /api/alerts/rules` and `/channels`
+- `POST /api/alerts/channels/{id}/verify` · `GET /api/alerts/deliveries`
+- `GET  /api/health-score/{wallet}/history?days=`
+- `POST /api/billing/checkout` · `POST /api/billing/portal`
+
+### Operational notes
+- Worker is **not yet redeployed** for T7 (no worker code changed, but
+  `wrangler deploy` should be run anyway so the production worker has the
+  latest of T6+T6.5). All new front-end calls hit endpoints that already
+  exist in `worker/index.js`.
+- For dev/preview SIWE testing on Replit, the preview hostname must be
+  added to the worker's `ALLOWED_ORIGINS` env var or sign-in returns
+  `domain_mismatch`. Production (`defiscoring.com`) is always in the
+  allowlist.
