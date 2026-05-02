@@ -4,6 +4,10 @@
  * Routes:
  *   POST /                       -> AI risk profile (cached in PROFILE_CACHE)
  *   POST /profile                -> alias of POST /
+ *   GET  /api/portfolio          -> NEW (T3): multi-chain native+ERC-20 scan via
+ *                                   worker/handlers/portfolio.js. Replaces
+ *                                   /onchain/:wallet for the dashboard once T7
+ *                                   ships; both endpoints coexist until then.
  *   GET  /onchain/:wallet        -> Etherscan V2 multichain history (Eth/Arb/Polygon)
  *   GET  /api/score/:protocol    -> DeFiLlama+Etherscan composite score (cached 6h in DEFI_CACHE)
  *   POST /api/exposure           -> { wallet } -> wallet's contract interactions matched against
@@ -22,7 +26,16 @@
  *   env.CACHE_TTL_SECONDS        – var, default "600"  (AI cache)
  *   env.SCORE_CACHE_TTL_SECONDS  – var, default "21600" (protocol cache, 6h)
  *   env.ETHERSCAN_API_KEY        – secret
+ *   env.ALCHEMY_KEY              – secret (optional). When set, /api/portfolio
+ *                                   prefers Alchemy over Etherscan for richer
+ *                                   ERC-20 metadata + faster reads.
+ *   env.MORALIS_KEY              – secret (optional). Fallback for chains
+ *                                   Alchemy doesn't cover (Gnosis).
+ *   env.COINGECKO_KEY            – secret (optional). Routes price calls to
+ *                                   the Pro API (higher rate limit).
  */
+
+import { handlePortfolio } from "./handlers/portfolio.js";
 
 // ---------------------------------------------------------------------------
 // CORS — origin allowlist driven by env.ALLOWED_ORIGINS (comma-separated).
@@ -2375,6 +2388,29 @@ async function dispatch(request, env, peekedAddr) {
 
     if (request.method === "GET" && url.pathname.startsWith("/onchain/")) {
       return handleOnchain(url.pathname.slice("/onchain/".length), env);
+    }
+
+    // T3 — new modular portfolio handler. Lives in worker/handlers/portfolio.js
+    // and uses worker/lib/{chains,providers,prices,cache}.js. Accepts either
+    // ?wallet= or ?address= so it's drop-in compatible with the existing
+    // dashboard.js while the SPA rewrite (T7) is in flight.
+    //
+    // Rate-limited because each scan fans out to many third-party calls
+    // (11 chains × {native + tokentx + balanceOf …}). Per-IP keeps a single
+    // host from amplifying load; per-address keeps a botnet rotating IPs
+    // but reusing one wallet from doing the same. Both fail open if KV is
+    // unavailable — same posture as the existing rateLimit() helpers.
+    if (request.method === "GET" && url.pathname === "/api/portfolio") {
+      const blockedIp = await rateLimit(request, env, "/api/portfolio", 30, 60); // 30/min/IP
+      if (blockedIp) return blockedIp;
+      const portfolioAddr = (url.searchParams.get("address") || url.searchParams.get("wallet") || "").toLowerCase();
+      if (portfolioAddr) {
+        const blockedAddr = await rateLimitByAddress(
+          request, env, portfolioAddr, "/api/portfolio", 10, 60      // 10/min/address
+        );
+        if (blockedAddr) return blockedAddr;
+      }
+      return handlePortfolio(request, env, corsHeadersFor(request, env));
     }
 
     if (request.method === "GET" && url.pathname.startsWith("/api/score/")) {

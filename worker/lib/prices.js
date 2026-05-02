@@ -20,20 +20,29 @@ function cgHeaders(env) { return env && env.COINGECKO_KEY ? { 'x-cg-pro-api-key'
 const PRICE_TTL = 60;
 
 // Hash a sorted contract list into a short cache key suffix. Avoids blowing
-// past KV's 512-byte key limit when wallets hold dozens of tokens.
-function hashContracts(contracts) {
+// past KV's 512-byte key limit when wallets hold dozens of tokens. Uses
+// SHA-256 (truncated) — collisions are computationally infeasible, so two
+// distinct token sets can never serve each other's cached prices. Both
+// Cloudflare Workers and Node 18+ expose crypto.subtle globally.
+async function hashContracts(contracts) {
   const joined = contracts.slice().sort().join(',');
   if (joined.length <= 200) return joined;
-  let h = 5381;
-  for (let i = 0; i < joined.length; i++) h = ((h * 33) ^ joined.charCodeAt(i)) >>> 0;
-  return 'h' + h.toString(36) + '_' + contracts.length;
+  const data = new TextEncoder().encode(joined);
+  const buf = await crypto.subtle.digest('SHA-256', data);
+  // 16 hex chars (64 bits) is plenty for a price-cache key — collision
+  // probability is ~2^-32 even at 10^9 distinct token sets, which we'll
+  // never see, and it keeps KV keys under 64 bytes total.
+  const bytes = new Uint8Array(buf, 0, 8);
+  let hex = '';
+  for (let i = 0; i < bytes.length; i++) hex += bytes[i].toString(16).padStart(2, '0');
+  return 'h' + hex + '_' + contracts.length;
 }
 
 export async function priceTokens(chain, env, contracts, fiat) {
   if (!contracts || !contracts.length) return {};
   if (!chain.coingecko) return {};
   const fiatLow = String(fiat || 'USD').toLowerCase();
-  const cacheKey = `px:tok:${chain.id}:${fiatLow}:${hashContracts(contracts)}`;
+  const cacheKey = `px:tok:${chain.id}:${fiatLow}:${await hashContracts(contracts)}`;
   const cached = await cacheGet(env, cacheKey);
   if (cached) return cached;
 

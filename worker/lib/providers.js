@@ -147,7 +147,7 @@ export async function getErc20Balances(chain, env, address) {
   if (chain.moralis && env.MORALIS_KEY) {
     try {
       const j = await moralisGet(chain, env, `/${address}/erc20`);
-      return (Array.isArray(j) ? j : []).map((t) => {
+      const mapped = (Array.isArray(j) ? j : []).map((t) => {
         const decimals = Number(t.decimals || 18);
         const raw = BigInt(t.balance || '0');
         return {
@@ -160,6 +160,14 @@ export async function getErc20Balances(chain, env, address) {
           source: 'moralis',
         };
       }).filter((t) => t.contract && t.amount > 0);
+      // Same 100/chain cap as the Alchemy branch — bounds CPU + downstream
+      // CoinGecko URL length on dust-airdropped wallets, and prevents Moralis
+      // pagination edge cases from blowing past the worker's CPU budget.
+      // Sort by raw amount as a coarse priority; we don't have prices yet, so
+      // this can't be value-sorted, but it does push known-zero/spam to the tail.
+      return mapped
+        .sort((a, b) => (b.amount || 0) - (a.amount || 0))
+        .slice(0, 100);
     } catch { /* fall through */ }
   }
   // Tier 3 — Etherscan v2: derive token list from tokentx history, then
