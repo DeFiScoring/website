@@ -41,3 +41,9 @@ externalPort = 8080
 deploymentTarget = "static"
 build = ["bundle", "exec", "jekyll", "build"]
 publicDir = "_site"
+
+[userenv]
+
+[userenv.shared]
+ADMIN_BOOTSTRAP_ADDRESS = "0x1003eaaf88a7ab1af230029fa9531584e3f217b0"
+OFAC_LIST_URL = "https://www.treasury.gov/ofac/downloads/sdn.xml"

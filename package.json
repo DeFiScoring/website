@@ -1,0 +1,20 @@
+{
+  "name": "defiscoring-worker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Cloudflare Worker for defiscoring.com — score, portfolio, alerts, billing",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "migrate:local": "wrangler d1 migrations apply defi_health --local",
+    "migrate:remote": "wrangler d1 migrations apply defi_health --remote"
+  },
+  "dependencies": {
+    "@noble/curves": "^1.6.0",
+    "@noble/hashes": "^1.5.0"
+  },
+  "devDependencies": {
+    "wrangler": "^3.99.0"
+  }
+}

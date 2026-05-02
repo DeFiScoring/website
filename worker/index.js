@@ -54,6 +54,27 @@ import { handleWalletScore }     from "./handlers/wallet-score.js";
 import { handleRecommendations } from "./handlers/recommendations.js";
 import { handleProtocols }       from "./handlers/protocols.js";
 
+// T6 / T6.5 — auth, billing, alerts. See worker/lib/{auth,tiers,stripe,email,
+// telegram,alerts}.js for the implementation. Routed below in dispatch().
+import {
+  handleAuthNonce, handleAuthVerify, handleAuthLogout, handleAuthMe,
+} from "./handlers/auth-siwe.js";
+import {
+  handleWalletsList, handleWalletLink, handleWalletUnlink,
+} from "./handlers/wallets.js";
+import {
+  handleBillingConfig, handleBillingCheckout, handleBillingPortal,
+  handleStripeWebhook,
+} from "./handlers/billing.js";
+import {
+  handleAlertRulesList, handleAlertRuleCreate, handleAlertRuleUpdate, handleAlertRuleDelete,
+  handleAlertChannelsList, handleAlertChannelCreate, handleAlertChannelVerify, handleAlertChannelDelete,
+  handleAlertDeliveriesList,
+} from "./handlers/alerts.js";
+import { scanAlertRules } from "./handlers/cron.js";
+import { optionalSession } from "./lib/auth.js";
+import { getSubscription, tierLimit } from "./lib/tiers.js";
+
 // ---------------------------------------------------------------------------
 // CORS — origin allowlist driven by env.ALLOWED_ORIGINS (comma-separated).
 // "*" is still supported for transitional/dev use, but as soon as a session
@@ -79,10 +100,14 @@ function corsHeadersFor(request, env) {
   const allowed = parseAllowedOrigins(env);
   const origin = request.headers.get("Origin") || "";
   const out = { ...BASE_CORS };
+  // T6.5 — session cookies require Allow-Credentials, but the browser refuses
+  // to honor it together with Allow-Origin: "*". So we only set credentials
+  // when we echo a specific origin back.
   if (allowed.includes("*")) {
     out["Access-Control-Allow-Origin"] = "*";
   } else if (origin && allowed.includes(origin)) {
     out["Access-Control-Allow-Origin"] = origin;
+    out["Access-Control-Allow-Credentials"] = "true";
   } else {
     // Unknown origin: still safe to omit the header (browser blocks the read).
     // Same-origin requests (no Origin header) are unaffected.
@@ -1437,6 +1462,25 @@ async function fetchHistory(env, wallet, limit) {
   }
 }
 
+// T6.5 — time-windowed companion to fetchHistory(). Used by the tier-gated
+// /api/health-score/.../history endpoint so a free user who scans many
+// times in one day still gets a full 7d window (rather than 7 rows of
+// today's repeats). Hard cap of 1000 rows protects D1 from a hot wallet.
+async function fetchHistoryByDays(env, wallet, days) {
+  if (!env.HEALTH_DB) return [];
+  const sinceMs = Date.now() - Math.max(1, Math.min(36500, days || 7)) * 86400000;
+  try {
+    const r = await env.HEALTH_DB.prepare(
+      "SELECT score, loan_reliability, liquidity_provision, governance, account_age, computed_at " +
+      "FROM health_scores WHERE wallet = ? AND computed_at >= ? " +
+      "ORDER BY computed_at DESC LIMIT 1000"
+    ).bind(wallet.toLowerCase(), sinceMs).all();
+    return (r.results || []).reverse();
+  } catch (e) {
+    return [];
+  }
+}
+
 async function handleHealthScore(request, env) {
   let body;
   try { body = await request.json(); }
@@ -1510,13 +1554,41 @@ async function handleHealthScore(request, env) {
   return json(payload);
 }
 
-async function handleHealthHistory(wallet, env, url) {
+async function handleHealthHistory(wallet, env, url, request) {
   if (!/^0x[a-fA-F0-9]{40}$/.test(wallet)) {
     return json({ success: false, error: "Invalid wallet address" }, 400);
   }
-  const limit = Number(url.searchParams.get("limit")) || 30;
-  const history = await fetchHistory(env, wallet.toLowerCase(), limit);
-  return json({ success: true, wallet: wallet.toLowerCase(), history, count: history.length });
+  // T6.5 — tier-gate the depth of historical data.
+  // Anonymous callers get the free-tier window (`history.days`); signed-in
+  // callers get whatever their current subscription tier allows. We clamp
+  // by row count (one row per fresh compute) which is a close proxy for
+  // days for users who scan at most a few times a day.
+  let tier = "free";
+  try {
+    const sess = await optionalSession(request, env);
+    if (sess && sess.user) {
+      const sub = await getSubscription(env, sess.user.id);
+      tier = sub.tier || "free";
+    }
+  } catch { /* fall through as free */ }
+  const tierCap = tierLimit(tier, "history.days") || 7;
+  // Caller may opt for either a time window (?days=) or a row cap (?limit=).
+  // Whichever they supply we clamp to the tier's history.days entitlement.
+  // Default behaviour: 30-day window (or the tier cap if smaller). Time-
+  // based clamping is fairer than a row cap for users who scan many times
+  // in one day and would otherwise see a "history" of just today.
+  const requestedDays = Number(url.searchParams.get("days")) || Math.min(30, tierCap);
+  const days = Math.min(requestedDays, tierCap);
+  const history = await fetchHistoryByDays(env, wallet.toLowerCase(), days);
+  return json({
+    success: true,
+    wallet: wallet.toLowerCase(),
+    history,
+    count: history.length,
+    tier,
+    days_applied: days,
+    tier_cap_days: tierCap,
+  });
 }
 
 /* --------------------------------- Watchlists ------------------------------ */
@@ -2276,13 +2348,22 @@ export default {
       );
     }
   },
-  // Phase 4 — Cron Trigger handler. Configured in wrangler.jsonc as
-  // `triggers.crons: ["17 3 * * *"]` (daily 03:17 UTC). Prunes raw event
-  // rows older than DATA_RETENTION_DAYS (default 180); aggregated rollups
-  // in `intel_daily_aggregates` are kept indefinitely per the data
-  // retention policy.
+  // Cron Trigger handler. Configured in wrangler.jsonc `triggers.crons`:
+  //   "17 3 * * *"    — daily 03:17 UTC: runRetentionPrune (Phase 4)
+  //   "*/5 * * * *"   — every 5 min: scanAlertRules (T6)
+  // We dispatch by event.cron so a missed/added trigger doesn't accidentally
+  // run the wrong job.
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(runRetentionPrune(env));
+    if (event.cron === "17 3 * * *") {
+      ctx.waitUntil(runRetentionPrune(env));
+      return;
+    }
+    if (event.cron === "*/5 * * * *") {
+      ctx.waitUntil(scanAlertRules(env, ctx));
+      return;
+    }
+    // Unknown cron — log and bail rather than guessing.
+    console.warn("[scheduled] unknown cron pattern:", event.cron);
   },
 };
 
@@ -2575,7 +2656,7 @@ async function dispatch(request, env, peekedAddr) {
     }
     if (request.method === "GET" && url.pathname.startsWith("/api/health-score/") && url.pathname.endsWith("/history")) {
       const wallet = url.pathname.slice("/api/health-score/".length, -"/history".length);
-      return handleHealthHistory(wallet, env, url);
+      return handleHealthHistory(wallet, env, url, request);
     }
 
     if (url.pathname === "/api/gas" && request.method === "GET") {
@@ -2594,6 +2675,77 @@ async function dispatch(request, env, peekedAddr) {
       if (request.method === "GET")    return handleWatchlistGet(wallet, env);
       if (request.method === "PUT")    return handleWatchlistPut(wallet, request, env);
       if (request.method === "DELETE") return handleWatchlistDelete(wallet, env);
+    }
+
+    // -----------------------------------------------------------------------
+    // T6.5 — SIWE authentication.
+    //   GET  /api/auth/nonce   — mint a 5-minute single-use nonce
+    //   POST /api/auth/verify  — consume nonce, set ds_session cookie
+    //   POST /api/auth/logout  — destroy session + clear cookie
+    //   GET  /api/auth/me      — current session's user + subscription tier
+    // -----------------------------------------------------------------------
+    if (url.pathname === "/api/auth/nonce"  && request.method === "GET")  return handleAuthNonce(request, env);
+    if (url.pathname === "/api/auth/verify" && request.method === "POST") return handleAuthVerify(request, env);
+    if (url.pathname === "/api/auth/logout" && request.method === "POST") return handleAuthLogout(request, env);
+    if (url.pathname === "/api/auth/me"     && request.method === "GET")  return handleAuthMe(request, env);
+
+    // -----------------------------------------------------------------------
+    // T6.5 — Multi-wallet linking.
+    //   GET    /api/wallets               list linked wallets
+    //   POST   /api/wallets/link          attach a new wallet via SIWE
+    //   DELETE /api/wallets/{address}     unlink a non-primary wallet
+    // -----------------------------------------------------------------------
+    if (url.pathname === "/api/wallets" && request.method === "GET") return handleWalletsList(request, env);
+    if (url.pathname === "/api/wallets/link" && request.method === "POST") return handleWalletLink(request, env);
+    if (url.pathname.startsWith("/api/wallets/") && request.method === "DELETE") {
+      const addr = url.pathname.slice("/api/wallets/".length).replace(/\/$/, "");
+      return handleWalletUnlink(request, env, addr);
+    }
+
+    // -----------------------------------------------------------------------
+    // T6.5 — Stripe billing.
+    //   GET  /api/billing/config       publishable key + price IDs (public)
+    //   POST /api/billing/checkout     create checkout session (auth required)
+    //   POST /api/billing/portal       open customer portal (auth required)
+    //   POST /api/webhooks/stripe      idempotent subscription sync (signed)
+    // -----------------------------------------------------------------------
+    if (url.pathname === "/api/billing/config"   && request.method === "GET")  return handleBillingConfig(request, env);
+    if (url.pathname === "/api/billing/checkout" && request.method === "POST") return handleBillingCheckout(request, env);
+    if (url.pathname === "/api/billing/portal"   && request.method === "POST") return handleBillingPortal(request, env);
+    if (url.pathname === "/api/webhooks/stripe"  && request.method === "POST") return handleStripeWebhook(request, env);
+
+    // -----------------------------------------------------------------------
+    // T6 — Alert rules + channels + delivery audit log.
+    //   /api/alerts/rules              GET list, POST create
+    //   /api/alerts/rules/{id}         PUT update, DELETE remove
+    //   /api/alerts/channels           GET list, POST create
+    //   /api/alerts/channels/{id}      DELETE remove
+    //   /api/alerts/channels/{id}/verify   POST (with token) marks verified
+    //   /api/alerts/deliveries         GET recent audit log
+    // -----------------------------------------------------------------------
+    if (url.pathname === "/api/alerts/rules") {
+      if (request.method === "GET")  return handleAlertRulesList(request, env);
+      if (request.method === "POST") return handleAlertRuleCreate(request, env);
+    }
+    if (url.pathname.startsWith("/api/alerts/rules/")) {
+      const id = url.pathname.slice("/api/alerts/rules/".length).replace(/\/$/, "");
+      if (request.method === "PUT")    return handleAlertRuleUpdate(request, env, id);
+      if (request.method === "DELETE") return handleAlertRuleDelete(request, env, id);
+    }
+    if (url.pathname === "/api/alerts/channels") {
+      if (request.method === "GET")  return handleAlertChannelsList(request, env);
+      if (request.method === "POST") return handleAlertChannelCreate(request, env);
+    }
+    if (url.pathname.startsWith("/api/alerts/channels/") && url.pathname.endsWith("/verify")) {
+      const id = url.pathname.slice("/api/alerts/channels/".length, -"/verify".length);
+      if (request.method === "POST") return handleAlertChannelVerify(request, env, id);
+    }
+    if (url.pathname.startsWith("/api/alerts/channels/") && request.method === "DELETE") {
+      const id = url.pathname.slice("/api/alerts/channels/".length).replace(/\/$/, "");
+      return handleAlertChannelDelete(request, env, id);
+    }
+    if (url.pathname === "/api/alerts/deliveries" && request.method === "GET") {
+      return handleAlertDeliveriesList(request, env);
     }
 
     if (request.method === "POST" && (url.pathname === "/" || url.pathname === "/profile" || url.pathname === "/api/profile")) {

@@ -162,3 +162,89 @@ the legacy `POST /api/health-score` (Eth-only, used by `dashboard.js` and
 
 Existing endpoints `POST /api/health-score`, `GET /api/score/:protocol`,
 `POST /api/exposure` — all unchanged.
+
+## Worker Module Layout (T6 + T6.5 — May 2026)
+
+T6 + T6.5 ship the paywall + alerts in one sprint. The dashboard becomes a
+real product (sign-in, tiers, recurring revenue, server-side notifications)
+without breaking any existing T1–T5 endpoint for anonymous callers.
+
+**Pricing (USD/month):** Free $0 / Pro $15 / Plus $49 / Enterprise custom.
+Tier matrix and per-tier quotas live in `worker/lib/tiers.js`.
+
+### New schema (`migrations/0006_auth_subscriptions.sql`, `0007_alerts.sql`)
+- `users`, `sessions`, `wallet_connections`, `subscriptions`, `tier_quotas`,
+  `siwe_nonces` — auth + billing state.
+- `alert_rules`, `alert_channels`, `alert_deliveries` — alerts state +
+  audit trail (used for dedupe and the user-facing "recent triggers" view).
+
+### New worker libs (`worker/lib/`)
+- `auth.js` — SIWE (EIP-4361) verify via `@noble/curves/secp256k1` +
+  `@noble/hashes/sha3` (audited, ~14kB). HMAC-SHA256-signed `ds_session`
+  cookie (HttpOnly, Secure, SameSite=Lax). Exports `requireSession()`
+  and `optionalSession()` — the latter is what enables free vs. signed-in
+  branches on otherwise-public endpoints.
+- `tiers.js` — `TIERS` constant, `requireTier(userId, minTier, env)`,
+  `tierLimit(tier, key)`, `consumeQuota()` (atomic check-and-increment
+  in `tier_quotas`). One source of truth for entitlements.
+- `email.js` — Gmail API send via Google service-account JWT (RS256,
+  signed with `WebCrypto.subtle`, exchanged for an OAuth bearer token,
+  token cached in `PROFILE_CACHE` for 50min). Impersonates `GMAIL_SENDER`.
+- `telegram.js` — Bot API `sendMessage` wrapper. No-op + clear log when
+  `TELEGRAM_BOT_TOKEN` is missing.
+- `stripe.js` — REST client (no SDK), HMAC-SHA256 webhook signature verify
+  with 5-min replay window. Wraps `checkout.sessions.create`,
+  `billing_portal.sessions.create`, `customers.create`, `subscriptions.retrieve`.
+- `alerts.js` — pure-function rule evaluator. Supports `health_factor.lt`,
+  `score.lt`, `score.gt`, `price.lt`, `price.gt`, `approval.changed`. No
+  I/O — takes wallet-state snapshots in, emits delivery intents out.
+
+### New handlers (`worker/handlers/`)
+- `auth-siwe.js`  — `GET /api/auth/{nonce,me}`, `POST /api/auth/{verify,logout}`.
+- `wallets.js`    — `GET /api/wallets`, `POST /api/wallets/link`,
+                    `DELETE /api/wallets/{address}`. Each link requires a
+                    fresh SIWE signature *from the wallet being added*.
+- `billing.js`    — `GET /api/billing/config`, `POST /api/billing/{checkout,portal}`,
+                    `POST /api/webhooks/stripe`. Webhook is idempotent
+                    (dedupes on `stripe_evt:<id>` rows in `siwe_nonces`).
+- `alerts.js`     — CRUD on `/api/alerts/{rules,channels,deliveries}`.
+                    Pro+ required to create rules; Plus required for
+                    Telegram channels.
+- `cron.js`       — `scanAlertRules(env, ctx)`. Paginates active rules,
+                    pulls live wallet state via the T1–T5 endpoints,
+                    evaluates, and dispatches deliveries through `email.js`
+                    + `telegram.js`. Per-rule failures isolated.
+
+### Wiring (`worker/index.js`)
+- Imports the 5 handler modules + `optionalSession` + `getSubscription` +
+  `tierLimit`.
+- `corsHeadersFor()` now sets `Access-Control-Allow-Credentials: true`
+  whenever it echoes a specific origin (required for cookie auth — the
+  browser refuses to honor credentials together with `Origin: *`).
+- `scheduled()` dispatches by `event.cron`:
+    - `"17 3 * * *"` → `runRetentionPrune()` (Phase 4, unchanged)
+    - `"*/5 * * * *"` → `scanAlertRules()` (T6 alerts)
+- Routes added below the watchlist block: auth, wallets, billing,
+  alerts. Webhook `POST /api/webhooks/stripe` is unauthenticated by
+  design (Stripe signs the body).
+- `handleHealthHistory()` now reads the caller's session via
+  `optionalSession` and clamps `?limit=` to the tier's `history.days`
+  (free=7, pro=30, plus=365, enterprise=∞). Anonymous callers stay on
+  the 7-day free window — no breaking change for the existing dashboard.
+
+### `wrangler.jsonc`
+- `triggers.crons` now `["17 3 * * *", "*/5 * * * *"]`.
+- All new secrets documented inline (Stripe price IDs, Gmail SA, Telegram
+  token, session HMAC key, Turnstile + WC keys for T7).
+
+### Graceful degradation
+Every handler that depends on a not-yet-provisioned secret returns a clear
+`503 { error: "service_not_configured", missing: "STRIPE_SECRET_KEY" }`
+instead of crashing. So the build passes and unrelated endpoints keep
+working while the operator (you) provisions Stripe / Gmail / Telegram.
+
+### npm dependencies
+- `@noble/curves` ^1.x — secp256k1 SIWE verify
+- `@noble/hashes` ^1.x — keccak256, hmac-sha256
+
+Both are pure ESM, dependency-free, and routinely audited.
