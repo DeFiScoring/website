@@ -63,10 +63,10 @@
     // requires controlling the private key. Living in `vars` (not as a
     // secret) means we have one fewer secret to rotate / mis-place.
     //
-    // ⚠️ Paste your admin wallet address here BEFORE merging this commit,
-    //    then run `wrangler secret delete ADMIN_BOOTSTRAP_ADDRESS` once
-    //    the deploy lands. See SECRETS.md → "Migration steps".
-    "ADMIN_BOOTSTRAP_ADDRESS": "0x0000000000000000000000000000000000000000"
+    // After first deploy lands, run:
+    //   npx wrangler secret delete ADMIN_BOOTSTRAP_ADDRESS
+    // to remove the now-redundant secret. See SECRETS.md → "Migration steps".
+    "ADMIN_BOOTSTRAP_ADDRESS": "0x1003EAAf88a7Ab1af230029FA9531584e3f217b0"
   },
   // Cron Triggers — see worker/index.js scheduled() handler:
   //   "17 3 * * *"   — daily 03:17 UTC: runRetentionPrune() (Phase 4)
