@@ -45,6 +45,11 @@ jobs:
 
       - name: Deploy Worker (runs jekyll build via wrangler.jsonc build.command)
         uses: cloudflare/wrangler-action@v3
+        env:
+          # Also expose as env var so the inline build.command subprocess
+          # in wrangler.jsonc inherits it. The action's `apiToken:` input
+          # alone isn't enough when wrangler spawns a child build process.
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           command: deploy
