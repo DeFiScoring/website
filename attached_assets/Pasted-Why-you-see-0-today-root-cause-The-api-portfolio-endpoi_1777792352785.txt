@@ -1,0 +1,54 @@
+Why you see $0 today (root cause)
+The /api/portfolio endpoint already scans all 11 chains including Polygon (worker/handlers/portfolio.js:93 defaults to all CHAINS), and worker/lib/chains.js:48-55 lists Polygon as Tier 1 with proper Alchemy/Moralis/CoinGecko IDs. The infrastructure is there. So the $0 comes from one or more of these failing silently:
+
+The Polygon ERC-20 scan (getErc20Balances in worker/lib/providers.js:167) requires either ALCHEMY_KEY or MORALIS_KEY — neither is in your secrets list. Without them, the scan returns [] for every chain. That alone would zero out RENDER, GRT, USDC.E, MATIC, POL.
+POL (the new Polygon native) only prices via CoinGecko ID polygon-ecosystem-token — that's wired but if CoinGecko free-tier is rate-limited the whole chain row goes to $0.
+USDC.E (bridged USDC) has a different contract than native USDC — token discovery has to actually find it from your wallet, not look it up in a hard-coded registry.
+The label "across Phase 1 chains" is also stale UI copy — the scan already covers all 11 chains, the front-end just hasn't been updated.
+
+Task breakdown — 5 tasks, ordered by dependency
+P1 — Wire a token-discovery provider key (blocks all the others)
+The current code has full plumbing for Alchemy and Moralis but neither key is set. Without one, getErc20Balances silently returns empty on every chain. This is the single change that turns your $0 into a real number — RENDER, GRT, USDC.E, MATIC will all surface immediately because Alchemy's alchemy_getTokenBalances returns every ERC-20 the wallet holds without you having to know contracts in advance.
+
+Provision Alchemy key (free tier is plenty: 300M CU/mo) → set as Worker secret
+Verify against your wallet 0x1003…17b0 on Polygon
+Add a /api/portfolio/_diag route that returns per-chain {provider, ok, count} so failures stop being invisible
+P2 — Surface per-chain / per-token errors in the UI
+Right now if Polygon's RPC times out you see "$0" with no explanation. The handler already returns {error} per chain (line 108) — the dashboard just throws it away.
+
+dashboard-home.js: when portfolio.total_value_usd === 0, show the chain-by-chain table from chainSummaries/chains with green/red status per chain
+Replace "across Phase 1 chains" with "across N chains · M tokens" driven by the activeChains / totalTokens fields the API already returns
+Add a "Refresh" button bypassing the 30s cache-control: max-age=30
+P3 — Show the full token table (the breakdown you asked for)
+Today the home overview shows only the dollar total. The data is already in the positions[] array — just no UI for it.
+
+New collapsible "Holdings" card on the home dashboard listing each token: logo, symbol, amount, fiat price, fiat value, chain badge
+Sort by value desc, group by chain (matches what your wallet app shows)
+Tap a row → opens the explorer page on that chain (uses chain.explorer from chains.js)
+P4 — Provenance: where each token came from
+This is the harder one. For each held token we trace the last incoming transfer (and optionally the funding source — bridge, CEX, swap, airdrop). Etherscan v2 already gives us tokentx per chain (we use it in worker/index.js:584). We just need to:
+
+For each (chain, contract) tuple in your portfolio, find the most recent inbound tokentx to your wallet
+Classify the from address: known bridge contract → "Bridged from X", known DEX router → "Swapped on Uniswap", known CEX deposit → "Withdrawn from Coinbase", else → "Received from 0xabc…"
+Cache per (wallet, chain, contract) for 1h in KV
+Surface as a small "Source: …" sub-line under each token in the holdings table from P3
+Maintain a small JSON registry of routers/bridges/CEX deposit prefixes (Uniswap v2/v3, 1inch, Cowswap, Across, Stargate, Coinbase, Binance, Kraken hot wallets) — start with maybe 30 entries, expand as we see misses
+P5 — Multi-currency display (CHF support)
+Your wallet shows CHF — DeFi Scoring shows USD only. priceTokens() already accepts a fiat param and CoinGecko supports chf/eur/gbp/usd/etc. for free. The plumbing is there (line 85: fiat = url.searchParams.get('fiat')), the front-end never asks for anything but USD.
+
+User preference: fiat dropdown in the topbar (USD, EUR, CHF, GBP, JPY)
+Store in localStorage + sync to D1 user row
+All fmtUsd calls become fmtFiat(amount, currency) reading the pref
+Pass ?fiat=CHF through to /api/portfolio
+Dependency graph
+P1 (Alchemy key)  ──►  P2 (error surfacing)  ──►  P3 (holdings table)  ──►  P4 (provenance)
+                                                                       └──►  P5 (CHF/EUR/GBP)
+
+P1 alone fixes the $0 number. P2-3 make it trustworthy. P4 is the provenance feature you specifically asked for. P5 is the CHF-display nice-to-have.
+
+What I need from you to formalize these
+These belong in your tracked task queue, but I can only create those in Plan mode. A couple of options:
+
+Switch me to Plan mode and I'll write each of P1-P5 into .local/tasks/ so they show up in your task list and you can hand individual ones to the isolated task agent (parallel execution where they're independent — P3 and P5 can run concurrently after P2 ships, for example).
+Stay in Build mode and I'll just start on P1 right now — the Alchemy key is the only thing that needs your action (you'd add it as a Replit secret named ALCHEMY_KEY), then I deploy and verify the $0 becomes a real number against your wallet. The rest of P1's coding work is small (the diag endpoint).
+One question for option 2: do you want me to also fold in the two pending deploys from Sprint 1 (CORS PATCH fix + the mobile wallet fix from a moment ago) into the same wrangler deploy? They're both code-only and ready.

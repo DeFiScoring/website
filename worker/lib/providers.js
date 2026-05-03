@@ -79,8 +79,19 @@ async function etherscanCall(chain, env, params) {
   const res = await fetch(url.toString());
   if (!res.ok) throw new Error(`etherscan http ${res.status}`);
   const data = await res.json();
-  if (data.status === '0' && data.message !== 'No transactions found') {
-    throw new Error('etherscan: ' + (data.result || data.message));
+  // Etherscan v2 returns status='0' for both real errors AND benign
+  // "no data for this query" cases. The exact message varies by module:
+  //   - account/txlist:    "No transactions found"
+  //   - account/tokentx:   "No token transfers found"
+  //   - account/tokennfttx:"No NFT transfers found"
+  //   - logs/getLogs:      "No records found"
+  // Treat all of those as empty-but-OK; only throw on real errors like
+  // rate-limit / invalid key / NOTOK so the caller can degrade gracefully.
+  if (data.status === '0') {
+    const msg = String(data.message || '');
+    const isEmptyOk = /^No\s.*found$/i.test(msg) || msg === 'No records found';
+    if (isEmptyOk) return [];
+    throw new Error('etherscan: ' + (data.result || data.message || 'unknown'));
   }
   return data.result;
 }

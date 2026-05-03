@@ -26,9 +26,18 @@ const ADDR_RE = /^0x[a-fA-F0-9]{40}$/;
 const isAddress = (a) => ADDR_RE.test(a || '');
 
 async function scanChain(chain, env, address, fiat, nativePxMap) {
+  // Capture per-source errors so we can surface "Polygon: rate limited" in
+  // the UI instead of the user staring at $0 with no explanation.
+  const errors = [];
   const [native, tokens] = await Promise.all([
-    getNativeBalance(chain, env, address).catch(() => 0),
-    getErc20Balances(chain, env, address).catch(() => []),
+    getNativeBalance(chain, env, address).catch((e) => {
+      errors.push({ source: 'native', message: String(e.message || e) });
+      return 0;
+    }),
+    getErc20Balances(chain, env, address).catch((e) => {
+      errors.push({ source: 'erc20', message: String(e.message || e) });
+      return [];
+    }),
   ]);
 
   const tokenContracts = tokens.map((t) => t.contract).filter(Boolean);
@@ -68,6 +77,10 @@ async function scanChain(chain, env, address, fiat, nativePxMap) {
   }] : [];
 
   const allTokens = [...nativeRow, ...tokenRows];
+  // Pick the most informative source label for the chain: alchemy/moralis
+  // beats etherscan beats native-only. Useful for the diag UI so the user
+  // can see "Polygon scanned via etherscan" when their plan limits us.
+  const sources = new Set(allTokens.map((t) => t.source).filter(Boolean));
   return {
     chain: chain.id,
     chainName: chain.name,
@@ -75,6 +88,8 @@ async function scanChain(chain, env, address, fiat, nativePxMap) {
     tier: chain.tier,
     tokens: allTokens.sort((a, b) => (b.valueFiat || 0) - (a.valueFiat || 0)),
     totalFiat: allTokens.reduce((s, t) => s + (t.valueFiat || 0), 0),
+    sources: Array.from(sources),
+    errors: errors.length ? errors : null,
   };
 }
 
@@ -106,9 +121,21 @@ export async function handlePortfolio(request, env, baseHeaders = {}) {
   const perChain = await Promise.all(chainsToScan.map((c) =>
     scanChain(c, env, address, fiat, nativePxMap).catch((err) => ({
       chain: c.id, chainName: c.name, chainId: c.chainId, tier: c.tier,
-      tokens: [], totalFiat: 0, error: String(err.message || err),
+      tokens: [], totalFiat: 0, sources: [],
+      errors: [{ source: 'scan', message: String(err.message || err) }],
     }))
   ));
+
+  // Diagnostic header: which providers answered, and which chains had
+  // partial failures. Lets the front-end show a banner like
+  //   "5 of 11 chains scanned · 2 rate-limited · upgrade for full coverage"
+  // without it having to inspect every chain row.
+  const providerHealth = {};
+  for (const row of perChain) {
+    for (const src of (row.sources || [])) {
+      providerHealth[src] = (providerHealth[src] || 0) + 1;
+    }
+  }
 
   const portfolioFiat = perChain.reduce((s, c) => s + (c.totalFiat || 0), 0);
   const activeChains = perChain.filter((c) => (c.totalFiat || 0) > 0).length;
@@ -118,6 +145,10 @@ export async function handlePortfolio(request, env, baseHeaders = {}) {
   const positions = [];
   const legacyChains = [];
   for (const row of perChain) {
+    // Surface the first error message in the legacy `error` field so the
+    // current dashboard renders a useful tooltip; full structured errors
+    // are on the new `chains[]` rows.
+    const firstErr = row.errors && row.errors[0];
     legacyChains.push({
       chain: row.chain,
       chainName: row.chainName,
@@ -125,7 +156,7 @@ export async function handlePortfolio(request, env, baseHeaders = {}) {
       tier: row.tier,
       total_value_usd: row.totalFiat,
       token_count: row.tokens.length,
-      error: row.error || null,
+      error: firstErr ? `${firstErr.source}: ${firstErr.message}` : null,
     });
     for (const t of row.tokens) {
       positions.push({
@@ -153,6 +184,7 @@ export async function handlePortfolio(request, env, baseHeaders = {}) {
     activeChains,
     totalTokens,
     chains: perChain,
+    providerHealth, // { alchemy: 5, etherscan: 6, native: 1, ... }
 
     // Legacy fields (kept until T7 SPA rewrite lands):
     wallet: address,
