@@ -1,0 +1,134 @@
+~/workspace$ wrangler deploy
+
+ ⛅️ wrangler 3.114.17 (update available 4.87.0)
+---------------------------------------------------------
+
+▲ [WARNING] The version of Wrangler you are using is now out-of-date.
+
+  Please update to the latest version to prevent critical errors.
+  Run `npm install --save-dev wrangler@4` to update to the latest version.
+  After installation, run Wrangler with `npx wrangler`.
+
+
+[custom build] Running: bundle exec jekyll build 2>/dev/null || true
+[custom build] Configuration file: /home/runner/workspace/_config.yml
+[custom build] 
+[custom build]             Source: /home/runner/workspace
+[custom build]        Destination: /home/runner/workspace/_site
+[custom build] 
+[custom build]  Incremental build: disabled. Enable with --incremental
+[custom build]       Generating... 
+[custom build] 
+[custom build]        Jekyll Feed: Generating feed for posts
+[custom build] 
+[custom build]          AutoPages: Disabled/Not configured in site.config.
+[custom build] 
+[custom build]         Pagination: Disabled in site.config.
+[custom build] 
+[custom build]                     done in 1.426 seconds.
+[custom build] 
+[custom build]  Auto-regeneration: disabled. Use --watch to enable.
+[custom build] 
+🌀 Building list of assets...
+🌀 Starting asset upload...
+🌀 Found 43 new or modified static assets to upload. Proceeding with upload...
++ /feed.xml
++ /404.html
++ /badge/index.html
++ /dashboard/rwa-asset-score/index.html
++ /dashboard/legal-compliance/index.html
++ /dashboard/yield-risk-adjusted/index.html
++ /dashboard/score/index.html
++ /dashboard/approvals/index.html
++ /terms/index.html
++ /audits/compound-v3-openzeppelin/index.html
++ /audits/aave-v3-trail-of-bits/index.html
++ /dashboard/risk-chatbot/index.html
++ /dashboard/alerts/index.html
++ /index.html
++ /dashboard/audits/index.html
++ /sitemap.xml
++ /dashboard/risk-profiler.html
++ /account/privacy/index.html
++ /dashboard/custody-por/index.html
++ /dashboard/issuer-due-diligence/index.html
++ /dashboard/portfolio-rwa-exposure/index.html
++ /dashboard/audit-toolkit/index.html
++ /disclaimer/index.html
++ /audits/compound-v3-chainsecurity/index.html
++ /audits/aave-v3-openzeppelin/index.html
++ /dashboard/report-issue/index.html
++ /methodology/index.html
++ /dashboard/index.html
++ /dashboard/market-intel/index.html
++ /assets/data/protocols.json
++ /account/index.html
++ /pricing/index.html
++ /dashboard/oracle-integrity/index.html
++ /dashboard/liquidity-redemption/index.html
++ /dashboard/portfolio/index.html
++ /dashboard/rwa-chatbot/index.html
++ /dashboard/scanner/index.html
++ /audits/uniswap-v3-trail-of-bits/index.html
++ /audits/uniswap-v3-abdk/index.html
++ /privacy/index.html
++ /audits/index.html
++ /dashboard/risk-profiler/index.html
++ /api/index.html
+Uploaded 14 of 43 assets
+Uploaded 28 of 43 assets
+Uploaded 43 of 43 assets
+✨ Success! Uploaded 43 files (2201 already uploaded) (1.47 sec)
+
+Total Upload: 339.07 KiB / gzip: 83.64 KiB
+Worker Startup Time: 28 ms
+Your worker has access to the following bindings:
+- KV Namespaces:
+  - PROFILE_CACHE: 5ff718ea7c8d4df1b23b2924dec9bf91
+  - DEFI_CACHE: c2559e9a326f458591367b20d0457cf7
+- D1 Databases:
+  - HEALTH_DB: defi_health (ceeb038c-2c61-40f7-9c36-350473236a59)
+- AI:
+  - Name: AI
+- Vars:
+  - CACHE_TTL_SECONDS: "600"
+  - SCORE_CACHE_TTL_SECONDS: "21600"
+  - PROTOCOL_CATALOG_URL: "https://defiscoring.com/assets/data/p..."
+  - PROTOCOL_CATALOG_TTL_SECONDS: "3600"
+  - EXPOSURE_CACHE_TTL_SECONDS: "600"
+  - AUDIT_CACHE_TTL_SECONDS: "2592000"
+  - AUDIT_MAX_SOURCE_CHARS: "28000"
+  - HEALTH_CACHE_TTL_SECONDS: "1800"
+  - ETH_RPC_URL: "https://ethereum-rpc.publicnode.com"
+  - SNAPSHOT_API_URL: "https://hub.snapshot.org/graphql"
+  - ALLOWED_ORIGINS: "https://defiscoring.com,https://www.d..."
+  - GITHUB_REPO_OWNER: "DeFiScoring"
+  - GITHUB_REPO_NAME: "website"
+  - DATA_RETENTION_DAYS: "180"
+  - DSAR_CONTACT_EMAIL: "privacy@defiscoring.com"
+Uploaded defiscoring (9.46 sec)
+Deployed defiscoring triggers (0.39 sec)
+  https://defiscoring.guillaumelauzier.workers.dev
+  schedule: 17 3 * * *
+  schedule: */5 * * * *
+Current Version ID: 9e3d887a-88c9-47c4-93b0-ce4dfc141f9e
+~/workspace$ wrangler d1 execute HEALTH_DB --file migrations/0008_address_book.sql
+
+ ⛅️ wrangler 3.114.17 (update available 4.87.0)
+---------------------------------------------------------
+
+▲ [WARNING] The version of Wrangler you are using is now out-of-date.
+
+  Please update to the latest version to prevent critical errors.
+  Run `npm install --save-dev wrangler@4` to update to the latest version.
+  After installation, run Wrangler with `npx wrangler`.
+
+
+🌀 Executing on local database HEALTH_DB (ceeb038c-2c61-40f7-9c36-350473236a59) from .wrangler/state/v3/d1:
+🌀 To execute on your remote database, add a --remote flag to your wrangler command.
+
+✘ [ERROR] no such table: wallet_connections: SQLITE_ERROR
+
+
+🪵  Logs were written to "/home/runner/workspace/.config/.wrangler/logs/wrangler-2026-05-03_07-01-14_556.log"
+~/workspace$ 
