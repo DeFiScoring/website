@@ -94,6 +94,7 @@
   <script src="{{ '/assets/js/defi-onchain.js' | relative_url }}"></script>
   <script src="{{ '/assets/js/dashboard.js' | relative_url }}"></script>
   <script src="{{ '/assets/js/quota-widget.js' | relative_url }}?v={{ site.time | date: '%s' }}" defer></script>
+  <script src="{{ '/assets/js/fiat-pref.js' | relative_url }}?v={{ site.time | date: '%s' }}" defer></script>
   {% if page.dashboard_section == 'score' %}<script src="{{ '/assets/js/dashboard-score.js' | relative_url }}"></script>
   <script src="{{ '/assets/js/score-breakdown.js' | relative_url }}?v={{ site.time | date: '%s' }}" defer></script>{% endif %}
   {% if page.dashboard_section == 'portfolio' %}<script src="{{ '/assets/js/dashboard-portfolio.js' | relative_url }}"></script>{% endif %}

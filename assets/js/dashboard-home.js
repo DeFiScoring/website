@@ -383,4 +383,8 @@
   // wallet-picker.js dispatches this when the user switches the active wallet
   // from the dropdown without changing the connected EIP-1193 account.
   window.addEventListener("defi:wallet-picked", refresh);
+  // P5 — re-fetch the portfolio so prices/totals come back in the new
+  // currency. fmtFiat already reads localStorage on each call, so any
+  // values rendered locally update on next paint.
+  document.addEventListener("defi:fiat-changed", refresh);
 })();
