@@ -142,11 +142,19 @@
     if (!address || !/^0x[0-9a-fA-F]{40}$/.test(address)) throw new Error("invalid_address");
     if (typeof signFn !== "function") throw new Error("missing_sign_fn");
 
-    var nonceResp = await api("/api/auth/nonce");
+    // Pass ?address= so the worker returns the EIP-55 checksum form. Strict
+    // wallets (Coinbase Wallet) reject SIWE messages with a lowercase address
+    // line even though they themselves return lowercase from eth_requestAccounts.
+    var nonceResp = await api("/api/auth/nonce?address=" + encodeURIComponent(address));
     if (!nonceResp.success) throw new Error("nonce_failed:" + nonceResp.error);
 
+    // Use checksummed form in the message body, but keep `address` (whatever
+    // the wallet returned) as params[1] of personal_sign — wallets reject
+    // mismatches between params[1] and the account they're authorized for.
+    var addrInMessage = nonceResp.address_checksum || address;
+
     var message = buildSiweMessage({
-      address: address,
+      address: addrInMessage,
       nonce: nonceResp.nonce,
       domain: (opts && opts.domain) || global.location.host,
       uri: (opts && opts.uri) || (global.location.origin + "/"),
@@ -179,11 +187,13 @@
     if (!address || !/^0x[0-9a-fA-F]{40}$/.test(address)) throw new Error("invalid_address");
     if (typeof signFn !== "function") throw new Error("missing_sign_fn");
 
-    var nonceResp = await api("/api/auth/nonce");
+    var nonceResp = await api("/api/auth/nonce?address=" + encodeURIComponent(address));
     if (!nonceResp.success) throw new Error("nonce_failed:" + nonceResp.error);
 
+    var addrInMessage = nonceResp.address_checksum || address;
+
     var message = buildSiweMessage({
-      address: address, nonce: nonceResp.nonce,
+      address: addrInMessage, nonce: nonceResp.nonce,
       statement: "Link this wallet to your DeFi Scoring account.",
     });
 

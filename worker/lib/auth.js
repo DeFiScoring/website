@@ -272,6 +272,29 @@ export async function verifySiwe(env, { message, signature, expectedDomains }) {
   return { ok: true, address: recovered.toLowerCase(), parsed, messageHash };
 }
 
+/* ---------- EIP-55 checksum address ----------
+ *
+ * Coinbase Wallet (and other strict-per-spec wallets) reject SIWE messages
+ * whose address line isn't EIP-55 checksummed, even though `eth_requestAccounts`
+ * itself returns lowercase. The frontend has no keccak handy, so we expose
+ * checksum encoding through the nonce endpoint and have the client paste it
+ * into the SIWE message line 2.
+ */
+export function toChecksumAddress(addr) {
+  if (typeof addr !== "string") return null;
+  const clean = addr.toLowerCase().replace(/^0x/, "");
+  if (!/^[0-9a-f]{40}$/.test(clean)) return null;
+  const hashHex = bytesToHex(keccak_256(utf8(clean)));
+  let out = "0x";
+  for (let i = 0; i < 40; i++) {
+    const c = clean[i];
+    if (/[0-9]/.test(c)) { out += c; continue; }
+    // Hex digit of the hash at position i; ≥8 → uppercase letter.
+    out += parseInt(hashHex[i], 16) >= 8 ? c.toUpperCase() : c;
+  }
+  return out;
+}
+
 /* ---------- nonce minting ---------- */
 
 export async function mintNonce(env) {

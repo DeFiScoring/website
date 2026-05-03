@@ -9,7 +9,7 @@
 import {
   mintNonce, verifySiwe, findOrCreateUser, createSession, destroySession,
   buildSessionCookie, buildLogoutCookie, signSessionToken,
-  requireSession, readCookie, verifySessionToken,
+  requireSession, readCookie, verifySessionToken, toChecksumAddress,
 } from "../lib/auth.js";
 import { getSubscription } from "../lib/tiers.js";
 
@@ -36,7 +36,16 @@ export async function handleAuthNonce(request, env) {
   if (!env.HEALTH_DB) return json({ success: false, error: "db_unavailable" }, 503);
   try {
     const { nonce, expiresAt } = await mintNonce(env);
-    return json({ success: true, nonce, expires_at: expiresAt });
+    // Optional ?address= lets the client receive the EIP-55 checksum form
+    // for the SIWE message line. Strict wallets (Coinbase Wallet) reject
+    // lowercase addresses, even though eth_requestAccounts returns them
+    // lowercase — so we always do this server-side rather than bundling
+    // keccak on the frontend.
+    const url = new URL(request.url);
+    const rawAddr = url.searchParams.get("address");
+    let addressChecksum = null;
+    if (rawAddr) addressChecksum = toChecksumAddress(rawAddr);
+    return json({ success: true, nonce, expires_at: expiresAt, address_checksum: addressChecksum });
   } catch (e) {
     return json({ success: false, error: "nonce_mint_failed", detail: e.message }, 500);
   }
