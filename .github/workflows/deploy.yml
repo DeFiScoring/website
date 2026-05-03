@@ -1,0 +1,50 @@
+name: Deploy to Cloudflare
+
+# Auto-deploys the Worker (and bundled static site) on every push to main.
+# The Jekyll build runs inside `wrangler deploy` thanks to the build.command
+# in wrangler.jsonc, so we just need Ruby + Node available.
+#
+# Required GitHub Actions secret:
+#   CLOUDFLARE_API_TOKEN  — scoped token with "Edit Cloudflare Workers"
+#                           permission on the defiscoring account.
+#                           Create at: https://dash.cloudflare.com/profile/api-tokens
+#
+# Account ID is not a secret (already in wrangler.jsonc).
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Node deps
+        run: npm ci
+
+      - name: Deploy Worker (runs jekyll build via wrangler.jsonc build.command)
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: deploy
