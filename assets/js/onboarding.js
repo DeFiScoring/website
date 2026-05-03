@@ -169,16 +169,39 @@
     document.getElementById("ob-signin").addEventListener("click", async function () {
       var btn = this;
       if (window.DefiAuth.snapshot().isSignedIn) { renderStep(2); return; }
-      btn.disabled = true; btn.textContent = "Signing…";
+      btn.disabled = true; btn.textContent = "Connecting…";
       try {
-        if (!window.ethereum) throw new Error("Install MetaMask or another EIP-1193 wallet first.");
-        var addr = await window.DefiAuth.ensureMetamaskAccount();
-        await window.DefiAuth.signIn(addr, window.DefiAuth.metamaskSign);
+        // Route through the wallet modal — on desktop it shows the wallet
+        // picker (MetaMask, Coinbase, Trust, Phantom, Rabby, …); on mobile
+        // Safari/Chrome it deeplinks into the wallet's in-app dApp browser
+        // where window.ethereum is then injected. Without this we'd hit
+        // "no_wallet_extension" on every iOS user since Safari has no
+        // extensions.
+        if (!window.DefiWallet || typeof window.DefiWallet.connect !== "function") {
+          throw new Error("Wallet picker is still loading — try again in a moment.");
+        }
+        var addr = await window.DefiWallet.connect();
+        if (!addr) {
+          // User closed the modal or rejected the request — silently reset
+          // the button instead of throwing.
+          btn.disabled = false; btn.textContent = "Connect wallet →";
+          return;
+        }
+        btn.textContent = "Signing…";
+        // Use the picked provider's signer (falls back to window.ethereum
+        // if the modal wasn't used, e.g. in-app browser auto-connect).
+        var signFn = (window.DefiWallet && window.DefiWallet.signMessage) ||
+                     window.DefiAuth.metamaskSign;
+        await window.DefiAuth.signIn(addr, signFn);
         renderStep(2);
       } catch (e) {
         btn.disabled = false; btn.textContent = "Connect wallet →";
         var msg = (e && e.message) || "Sign-in failed";
-        alert("Couldn't sign in: " + msg);
+        // Filter out the noisy user-rejected case — modal already showed
+        // the error inline if relevant.
+        if (!/user_rejected|user denied|cancel/i.test(msg)) {
+          alert("Couldn't sign in: " + msg);
+        }
       }
     });
   }

@@ -137,12 +137,25 @@
     bindProviderEvents(window.ethereum);
   }
 
+  // SIWE / personal_sign helper. Prefers the provider the user just picked
+  // via the modal so multi-wallet setups (MetaMask + Rabby + Coinbase all
+  // injected) sign with the right wallet. Falls back to window.ethereum
+  // when no provider has been selected yet (covers in-app browsers that
+  // don't go through the modal).
+  async function signMessage(message, address) {
+    var provider = state.selectedProvider || window.ethereum;
+    if (!provider) throw new Error("no_wallet_provider");
+    return provider.request({ method: "personal_sign", params: [message, address] });
+  }
+
   window.DefiWallet = {
     connect,
     connectWith,
     disconnect,
     shorten,
+    signMessage,
     get address() { return state.address; },
+    get selectedProvider() { return state.selectedProvider; },
     get providers() { return state.providers.slice(); },
     on(evt, cb) {
       if (!listeners[evt]) listeners[evt] = [];
