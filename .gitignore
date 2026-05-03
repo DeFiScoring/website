@@ -12,7 +12,30 @@ vendor/
 node_modules/
 .wrangler/
 .dev.vars
+.dev.vars.*
+
+# Secrets — defense in depth. We do not use .env files (Cloudflare Worker
+# secrets are the source of truth, see SECRETS.md), but block them here
+# in case anyone ever creates one locally.
+.env
+.env.*
+*.env
+secrets.*
+*.pem
+*.key
+!package.json
+!package-lock.json
+*_rsa
+*_dsa
+*_ecdsa
+*_ed25519
+id_rsa*
+google-credentials*.json
+service-account*.json
+firebase-adminsdk-*.json
 
 # OS / editor noise
 .DS_Store
 *.log
+.idea/
+.vscode/
