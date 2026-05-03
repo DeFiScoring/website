@@ -29,9 +29,13 @@ sitemap: false
       <div class="defi-card__delta" id="stat-band">—</div>
     </div>
     <div class="defi-card">
-      <div class="defi-card__title">Portfolio Value</div>
+      <div class="defi-card__title" style="display:flex;justify-content:space-between;align-items:center">
+        <span>Portfolio Value</span>
+        <button id="portfolio-refresh-btn" class="defi-btn defi-btn--ghost" type="button"
+                style="font-size:11px;padding:3px 8px" title="Bypass cache and rescan">↻</button>
+      </div>
       <div class="defi-card__value" id="stat-value">—</div>
-      <div class="defi-card__delta">across Phase&nbsp;1 chains</div>
+      <div class="defi-card__delta" id="stat-value-meta">across all supported chains</div>
     </div>
     <div class="defi-card">
       <div class="defi-card__title">Open Positions</div>
@@ -71,6 +75,27 @@ sitemap: false
     <div class="defi-card__title">Score trend (12 months)</div>
     <div style="height:280px"><canvas id="score-trend"></canvas></div>
     <div id="score-trend-note" class="defi-empty" style="display:none;margin-top:8px"></div>
+  </div>
+
+  <!-- Per-chain scan status. Shown automatically when portfolioFiat = 0
+       so the user understands "your wallet was scanned across N chains
+       but no balances were found" vs "scan failed on some chains". -->
+  <div id="defi-portfolio-status" class="defi-card" style="margin-bottom:18px;display:none">
+    <div class="defi-card__title" style="display:flex;justify-content:space-between;align-items:center">
+      <span>Scan status by chain</span>
+      <span id="defi-portfolio-status-summary" style="font-size:11px;color:var(--defi-text-dim);font-weight:400"></span>
+    </div>
+    <div id="defi-portfolio-status-rows" style="margin-top:10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px"></div>
+    <div id="defi-portfolio-status-hint" style="margin-top:10px;font-size:12px;color:var(--defi-text-dim)"></div>
+  </div>
+
+  <!-- Holdings — collapsible token table populated from portfolio.positions[]. -->
+  <div id="defi-holdings" class="defi-card" style="margin-bottom:18px;display:none">
+    <div class="defi-card__title" style="display:flex;justify-content:space-between;align-items:center">
+      <span>Holdings</span>
+      <span id="defi-holdings-count" style="font-size:11px;color:var(--defi-text-dim);font-weight:400"></span>
+    </div>
+    <div id="defi-holdings-rows" style="margin-top:10px"></div>
   </div>
 
   <div id="home-status" class="defi-card__delta" style="margin-top:14px;font-size:12px;color:var(--defi-text-dim);display:none"></div>

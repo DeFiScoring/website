@@ -2513,6 +2513,58 @@ async function dispatch(request, env, peekedAddr) {
       return handlePortfolio(request, env, corsHeadersFor(request, env));
     }
 
+    // P1 — diagnostic snapshot for /api/portfolio. Returns provider keys
+    // status + per-chain success/failure summary so we can verify after
+    // ALCHEMY_KEY rotation without exposing balances or PII. The route is
+    // public-safe: it accepts an `address` query param, runs the standard
+    // scan, but only returns the diagnostic fields (no token list, no
+    // amounts). Lets us answer "did Polygon scan succeed via Alchemy or
+    // fall back to Etherscan?" with one curl.
+    if (request.method === "GET" && url.pathname === "/api/portfolio/_diag") {
+      const blockedIp = await rateLimit(request, env, "/api/portfolio/_diag", 6, 60); // 6/min/IP
+      if (blockedIp) return blockedIp;
+      const diagAddr = (url.searchParams.get("address") || url.searchParams.get("wallet") || "").toLowerCase();
+      if (!/^0x[a-fA-F0-9]{40}$/.test(diagAddr)) {
+        return new Response(JSON.stringify({ success: false, error: "address required" }),
+          { status: 400, headers: { "content-type": "application/json", ...corsHeadersFor(request, env) } });
+      }
+      // Reuse the live scan so the diag matches what real callers see.
+      const r = await handlePortfolio(
+        new Request(url.origin + "/api/portfolio?address=" + diagAddr +
+                    "&fiat=" + (url.searchParams.get("fiat") || "USD"),
+                    { method: "GET", headers: request.headers }),
+        env, corsHeadersFor(request, env)
+      );
+      const body = await r.json().catch(() => ({}));
+      const summary = {
+        success: !!body.success,
+        address: diagAddr,
+        keys_present: {
+          ALCHEMY_KEY: !!env.ALCHEMY_KEY,
+          MORALIS_KEY: !!env.MORALIS_KEY,
+          ETHERSCAN_API_KEY: !!env.ETHERSCAN_API_KEY,
+          COINGECKO_KEY: !!env.COINGECKO_KEY,
+        },
+        providerHealth: body.providerHealth || {},
+        chains: (body.chains || []).map((c) => ({
+          chain: c.chain,
+          ok: !c.errors,
+          tokenCount: (c.tokens || []).length,
+          totalFiat: c.totalFiat || 0,
+          sources: c.sources || [],
+          errors: c.errors || null,
+        })),
+        portfolioFiat: body.portfolioFiat || 0,
+        activeChains: body.activeChains || 0,
+        totalTokens: body.totalTokens || 0,
+      };
+      return new Response(JSON.stringify(summary, null, 2), {
+        status: 200,
+        headers: { "content-type": "application/json", "cache-control": "no-store",
+                   ...corsHeadersFor(request, env) },
+      });
+    }
+
     // T4 — DeFi positions handler. Reads Aave V3 / Compound V3 / Uni V3 LP
     // counts via eth_call across every chain in parallel. Same rate-limit
     // posture as /api/portfolio because each scan fans out to ~3 RPC calls

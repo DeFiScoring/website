@@ -197,7 +197,18 @@
 
     async getPortfolio(wallet) {
       try {
-        const real = await apiGet("/api/portfolio?wallet=" + encodeURIComponent(wallet));
+        // P5 — pass the user's fiat preference so CoinGecko quotes in the
+        // requested currency directly (no client-side FX conversion). The
+        // worker accepts any 3-letter ISO code CoinGecko supports.
+        let fiat = "USD";
+        try { fiat = (localStorage.getItem("defi.fiat") || "USD").toUpperCase(); } catch (_e) {}
+        if (!/^[A-Z]{3}$/.test(fiat)) fiat = "USD";
+        // Cache-buster on the click of the rescan button — simplest way to
+        // bypass the 30s `cache-control: max-age=30` edge cache without
+        // touching the worker.
+        const cb = "&_t=" + Date.now();
+        const real = await apiGet("/api/portfolio?wallet=" + encodeURIComponent(wallet) +
+                                  "&fiat=" + encodeURIComponent(fiat) + cb);
         if (real) return real;
       } catch (e) { console.warn("remote portfolio unavailable, using on-chain native balances:", e.message); }
       const snap = await getSnapshot(wallet);
