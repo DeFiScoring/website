@@ -17,6 +17,8 @@
 // the project already has, and silently upgrades when richer keys are added.
 // ----------------------------------------------------------------------------
 
+import { dropSpamTokens } from './spam-filter.js';
+
 const ETHERSCAN_V2 = 'https://api.etherscan.io/v2/api';
 const ERC20_BALANCE_OF_SELECTOR = '0x70a08231';
 
@@ -150,19 +152,24 @@ export function abiEncodeSingleAddr(selector, addr) {
 // ============================================================================
 
 export async function getNativeBalance(chain, env, address) {
+  // Each tier records its own failure reason. If ALL tiers fail we throw
+  // so the handler can surface the chain's `errors[]` instead of silently
+  // showing a 0 balance that's actually "we couldn't read this chain".
+  const failures = [];
+
   // Tier 1 — Alchemy
   if (chain.alchemy && env.ALCHEMY_KEY) {
     try {
       const hex = await alchemyRpc(chain, env, 'eth_getBalance', [address, 'latest']);
       return Number(hexToBigIntSafe(hex)) / 1e18;
-    } catch { /* fall through */ }
+    } catch (e) { failures.push(`alchemy: ${e.message || e}`); }
   }
   // Tier 2 — Moralis
   if (chain.moralis && env.MORALIS_KEY) {
     try {
       const j = await moralisGet(chain, env, `/${address}/balance`);
       return Number(j.balance || 0) / 1e18;
-    } catch { /* fall through */ }
+    } catch (e) { failures.push(`moralis: ${e.message || e}`); }
   }
   // Tier 3 — Etherscan v2
   try {
@@ -170,12 +177,18 @@ export async function getNativeBalance(chain, env, address) {
       module: 'account', action: 'balance', address, tag: 'latest',
     });
     return Number(BigInt(r)) / 1e18;
-  } catch {
-    return 0;
+  } catch (e) {
+    failures.push(`etherscan: ${e.message || e}`);
+    throw new Error(failures.join(' | '));
   }
 }
 
 export async function getErc20Balances(chain, env, address) {
+  // Each tier records its own failure reason (see getNativeBalance).
+  // Spam filter is applied to the SUCCESSFUL tier's output — we don't want
+  // to waste price-API budget on tokens whose name says "visit t.me/...".
+  const failures = [];
+
   // Tier 1 — Alchemy: returns balances + metadata in 1+N calls
   if (chain.alchemy && env.ALCHEMY_KEY) {
     try {
@@ -200,8 +213,8 @@ export async function getErc20Balances(chain, env, address) {
           source: 'alchemy',
         };
       }));
-      return enriched.filter((t) => t.amount > 0);
-    } catch { /* fall through */ }
+      return dropSpamTokens(enriched.filter((t) => t.amount > 0), chain.chainId);
+    } catch (e) { failures.push(`alchemy: ${e.message || e}`); }
   }
   // Tier 2 — Moralis
   if (chain.moralis && env.MORALIS_KEY) {
@@ -220,32 +233,32 @@ export async function getErc20Balances(chain, env, address) {
           source: 'moralis',
         };
       }).filter((t) => t.contract && t.amount > 0);
-      // Same 100/chain cap as the Alchemy branch — bounds CPU + downstream
-      // CoinGecko URL length on dust-airdropped wallets, and prevents Moralis
-      // pagination edge cases from blowing past the worker's CPU budget.
-      // Sort by raw amount as a coarse priority; we don't have prices yet, so
-      // this can't be value-sorted, but it does push known-zero/spam to the tail.
-      return mapped
+      const cleaned = dropSpamTokens(mapped, chain.chainId)
         .sort((a, b) => (b.amount || 0) - (a.amount || 0))
         .slice(0, 100);
-    } catch { /* fall through */ }
+      return cleaned;
+    } catch (e) { failures.push(`moralis: ${e.message || e}`); }
   }
   // Tier 3 — Etherscan v2: derive token list from tokentx history, then
   // balanceOf via proxy eth_call. Sequential (free-tier 5 rps cap) — slow
   // but works on every chain with just the existing ETHERSCAN_API_KEY.
-  return etherscanErc20Balances(chain, env, address);
+  try {
+    const out = await etherscanErc20Balances(chain, env, address);
+    return dropSpamTokens(out, chain.chainId);
+  } catch (e) {
+    failures.push(`etherscan: ${e.message || e}`);
+    throw new Error(failures.join(' | '));
+  }
 }
 
 async function etherscanErc20Balances(chain, env, address) {
-  let tokTxs;
-  try {
-    tokTxs = await etherscanCall(chain, env, {
-      module: 'account', action: 'tokentx', address,
-      page: 1, offset: 1000, sort: 'desc',
-    });
-  } catch {
-    return [];
-  }
+  // tokentx now propagates errors instead of silently returning [], so the
+  // caller's failures[] gets a real reason ("etherscan: rate-limited") when
+  // the chain truly fails.
+  const tokTxs = await etherscanCall(chain, env, {
+    module: 'account', action: 'tokentx', address,
+    page: 1, offset: 1000, sort: 'desc',
+  });
   const tokArr = Array.isArray(tokTxs) ? tokTxs : [];
   const catalog = new Map();
   for (const t of tokArr) {
@@ -258,9 +271,14 @@ async function etherscanErc20Balances(chain, env, address) {
       decimals: Number(t.tokenDecimal) || 18,
     });
   }
-  // Cap discovered tokens to 50/chain — anything beyond is almost always
-  // airdrop spam, and we don't want to do 500 eth_calls on a single wallet.
-  const candidates = Array.from(catalog.values()).slice(0, 50);
+  // Pre-filter spam at the catalog level so we don't waste a balanceOf
+  // eth_call (and free-tier rate-limit budget) on every airdropped scam
+  // token. Then cap to 8 actual on-chain reads per chain — a single
+  // Worker invocation has only ~50 subrequests on the free CF plan, so
+  // a 5-chain scan must stay under ~10 calls/chain to fit under budget.
+  const allCandidates = Array.from(catalog.values());
+  const cleanCandidates = dropSpamTokens(allCandidates, chain.chainId);
+  const candidates = cleanCandidates.slice(0, 8);
   const data = ERC20_BALANCE_OF_SELECTOR + pad32Hex(address);
   const out = [];
   for (const t of candidates) {

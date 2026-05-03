@@ -20,7 +20,7 @@
 
 import { CHAINS, CHAINS_BY_ID, TIER1_IDS } from '../lib/chains.js';
 import { getNativeBalance, getErc20Balances } from '../lib/providers.js';
-import { priceTokens, priceMultipleNatives } from '../lib/prices.js';
+import { priceTokensWithFallback, priceMultipleNatives } from '../lib/prices.js';
 
 const ADDR_RE = /^0x[a-fA-F0-9]{40}$/;
 const isAddress = (a) => ADDR_RE.test(a || '');
@@ -40,9 +40,10 @@ async function scanChain(chain, env, address, fiat, nativePxMap) {
     }),
   ]);
 
-  const tokenContracts = tokens.map((t) => t.contract).filter(Boolean);
-  const tokenPxs = tokenContracts.length
-    ? await priceTokens(chain, env, tokenContracts, fiat).catch(() => ({}))
+  // 3-tier pricing: CoinGecko by-contract → CoinGecko by-symbol → DefiLlama.
+  // The new pricer needs the full token objects (it uses .symbol for tier 2).
+  const tokenPxs = tokens.length
+    ? await priceTokensWithFallback(chain, env, tokens, fiat).catch(() => ({}))
     : {};
 
   const fiatLow = fiat.toLowerCase();
@@ -99,7 +100,12 @@ export async function handlePortfolio(request, env, baseHeaders = {}) {
   const address = (url.searchParams.get('address') || url.searchParams.get('wallet') || '').toLowerCase();
   const fiat = (url.searchParams.get('fiat') || 'USD').toUpperCase();
   const chainFilter = url.searchParams.get('chains'); // optional CSV
-  const tier1Only = url.searchParams.get('tier') === '1';
+  // Default to Tier 1 chains (Ethereum, OP, Arb, Base, Polygon — 5 chains).
+  // Cloudflare Workers free tier caps a single invocation at 50 subrequests;
+  // a full 11-chain scan blows past that budget and randomly truncates the
+  // later chains. Users who really want every chain pass `?tier=all`.
+  const tierParam = url.searchParams.get('tier');
+  const tier1Only = tierParam !== 'all';
 
   if (!isAddress(address)) {
     return jsonRes({ success: false, error: 'invalid wallet address' }, 400, baseHeaders);
