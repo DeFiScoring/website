@@ -368,6 +368,35 @@ Six quick-win items shipped on top of T7:
 - D1 migration to apply after deploy:
   `wrangler d1 execute HEALTH_DB --file migrations/0008_address_book.sql`
 
+### P5 — Multi-fiat dropdown (May 2026)
+
+User-selectable display currency (USD/EUR/GBP/CHF/JPY/AUD/CAD).
+Worker side already accepts `?fiat=<ISO4217>` and asks CoinGecko to quote
+in that currency directly — no client-side FX is performed.
+
+- `assets/js/fiat-pref.js` (new) — renders a `<select>` into the
+  `#defi-fiat-pref` slot, persists choice in `localStorage["defi.fiat"]`,
+  dispatches `document` event `defi:fiat-changed` with `{ fiat }` detail.
+  Exposes `window.DefiFiat.get()` / `set(code)` for programmatic use.
+- `_includes/dashboard/wallet-bar.html` — added the mount slot.
+- `_layouts/dashboard.html` — registered the script with cache-busting.
+- `assets/js/dashboard-home.js` — listens for `defi:fiat-changed` and
+  re-fetches portfolio in the new currency.
+- `assets/js/dashboard-portfolio.js` — replaced `fmtUsd` with
+  `fmtFiat`, also subscribes to `defi:fiat-changed`.
+
+**Not yet currency-aware** (still hardcode `$` — out of P5 scope, follow up
+when those modules get next touch): `assets/js/market-strip.js`,
+`assets/js/rwa-asset-score.js`, `assets/js/portfolio-rwa-exposure.js`,
+`assets/js/data-aggregation.js`, `assets/js/issuer-due-diligence.js`,
+`assets/js/dashboard-risk.js`. They will display dollar-denominated
+numbers regardless of the selected currency.
+
+**Deferred:** D1 sync of the preference (migration 0009 + new
+`user.preferred_fiat` column). LocalStorage already meets the acceptance
+criterion; D1 sync only matters for cross-device persistence and can ship
+when there's other migration work.
+
 ### Sprint 2 / 3 backlog
 
 See `.local/session_plan.md` for the full Sprint 2 (status page, OFAC API,

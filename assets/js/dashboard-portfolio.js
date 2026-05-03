@@ -5,7 +5,25 @@
     const hue = (1 - t) * 130;
     return "hsl(" + hue + ", 70%, 65%)";
   }
-  function fmtUsd(n) { return "$" + (Math.round((n || 0) * 100) / 100).toLocaleString(); }
+  // P5 — fiat-aware formatter. Reads the same localStorage key as
+  // dashboard-home.js / dashboard.js so all dashboards agree on the user's
+  // selected currency. Falls back to USD for older browsers / private mode.
+  function fiatPref() {
+    try {
+      const v = (localStorage.getItem("defi.fiat") || "USD").toUpperCase();
+      return /^[A-Z]{3}$/.test(v) ? v : "USD";
+    } catch (_e) { return "USD"; }
+  }
+  function fmtFiat(n, currency) {
+    const ccy = (currency || fiatPref()).toUpperCase();
+    try {
+      return new Intl.NumberFormat(undefined, {
+        style: "currency", currency: ccy, maximumFractionDigits: 2,
+      }).format(n || 0);
+    } catch (_e) {
+      return ccy + " " + (Math.round((n || 0) * 100) / 100).toLocaleString();
+    }
+  }
   function fmtAmt(n, sym) { return (Math.round(n * 10000) / 10000) + " " + sym; }
 
   function setNotice(id, text) {
@@ -25,7 +43,13 @@
     setNotice("port-notice", "Loading on-chain balances…");
     try {
       const data = await window.DefiAPI.getPortfolio(wallet);
-      document.getElementById("port-total").textContent = fmtUsd(data.total_value_usd);
+      // The handler returns `portfolioFiat` in the requested currency; fall
+      // back to legacy `total_value_usd` for the snapshot path which still
+      // emits dollar-denominated numbers from public RPC reads.
+      const total = Number(data.portfolioFiat != null ? data.portfolioFiat
+                                                       : data.total_value_usd || 0);
+      const fiat = (data.fiat || fiatPref() || "USD").toUpperCase();
+      document.getElementById("port-total").textContent = fmtFiat(total, fiat);
       document.getElementById("port-count").textContent = data.positions.length;
 
       const heat = document.getElementById("port-heatmap");
@@ -35,7 +59,7 @@
         heat.innerHTML = data.positions.map((p) =>
           '<div class="defi-heat-cell" style="background:' + colorForRisk(p.risk) + '">' +
             '<div class="defi-heat-cell__name">' + p.name + '</div>' +
-            '<div class="defi-heat-cell__val">' + p.chain + ' · ' + fmtUsd(p.value_usd) + '</div>' +
+            '<div class="defi-heat-cell__val">' + p.chain + ' · ' + fmtFiat(p.value_usd, fiat) + '</div>' +
             '<div class="defi-heat-cell__val">' + fmtAmt(p.amount, p.symbol) + '</div>' +
           '</div>'
         ).join("");
@@ -48,7 +72,7 @@
           '<tr>' +
             '<td>' + p.name + '</td>' +
             '<td>' + p.chain + '</td>' +
-            '<td>' + fmtUsd(p.value_usd) + '</td>' +
+            '<td>' + fmtFiat(p.value_usd, fiat) + '</td>' +
             '<td>' + (p.risk != null ? p.risk + ' / 100' : '—') + '</td>' +
           '</tr>'
         ).join("");
@@ -63,4 +87,6 @@
   document.addEventListener("DOMContentLoaded", refresh);
   document.addEventListener("defi:wallet-changed", refresh);
   document.addEventListener("defi:scan", refresh);
+  // P5 — re-fetch in the new currency when the topbar dropdown changes.
+  document.addEventListener("defi:fiat-changed", refresh);
 })();
