@@ -1,0 +1,196 @@
+---
+layout: dashboard
+title: Wallets & Billing
+permalink: /dashboard/settings/
+dashboard_section: settings
+dashboard_title: Settings
+dashboard_subtitle: Manage your linked wallets, subscription, and account preferences.
+description: "Manage linked wallets, billing, plan, and account settings on DeFi Scoring."
+sitemap: false
+---
+
+<style>
+  .ds-settings { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); margin-top: 8px; }
+  .ds-settings__card {
+    background: linear-gradient(180deg, rgba(0,245,255,.04), rgba(168,85,247,.03));
+    border: 1px solid rgba(0,245,255,.12);
+    border-radius: 14px;
+    padding: 20px;
+    display: flex; flex-direction: column; gap: 12px;
+    transition: border-color .15s, transform .15s;
+  }
+  .ds-settings__card:hover { border-color: rgba(0,245,255,.32); transform: translateY(-2px); }
+  .ds-settings__icon {
+    width: 38px; height: 38px; border-radius: 10px;
+    background: rgba(0,245,255,.08);
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #00f5ff;
+  }
+  .ds-settings__icon svg { width: 20px; height: 20px; }
+  .ds-settings__title { font-size: 16px; font-weight: 700; color: #f5f9ff; margin: 0; }
+  .ds-settings__desc { font-size: 13px; color: #9aa6cf; line-height: 1.55; margin: 0; flex: 1; }
+  .ds-settings__action {
+    align-self: flex-start;
+    padding: 8px 14px; border-radius: 9px;
+    background: rgba(0,245,255,.08);
+    color: #00f5ff; border: 1px solid rgba(0,245,255,.22);
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    text-decoration: none; display: inline-block;
+  }
+  .ds-settings__action:hover { background: rgba(0,245,255,.16); }
+  .ds-settings__action--primary {
+    background: linear-gradient(90deg, #00f5ff, #a855f7);
+    color: #0a0a0a; border-color: transparent;
+  }
+  .ds-settings__action--danger {
+    background: rgba(248, 113, 113, .08);
+    border-color: rgba(248, 113, 113, .25);
+    color: #f87171;
+  }
+  .ds-settings__action[disabled] { opacity: .5; cursor: not-allowed; }
+  .ds-settings__signed-out {
+    margin: 12px 0 24px; padding: 14px 18px;
+    background: rgba(250, 204, 21, .06);
+    border: 1px solid rgba(250, 204, 21, .22);
+    border-radius: 12px;
+    color: #facc15; font-size: 14px;
+  }
+  .ds-settings__signed-out[hidden] { display: none; }
+</style>
+
+<div id="ds-settings-signed-out" class="ds-settings__signed-out" hidden>
+  Sign in with your wallet to manage linked wallets, billing, and plan.
+</div>
+
+<div class="ds-settings">
+  <div class="ds-settings__card">
+    <span class="ds-settings__icon" aria-hidden="true"><i data-lucide="wallet"></i></span>
+    <h2 class="ds-settings__title">Linked wallets</h2>
+    <p class="ds-settings__desc">
+      Add or remove wallets linked to your account. Each wallet you add must
+      sign a fresh SIWE message to prove ownership.
+    </p>
+    <button type="button" class="ds-settings__action" data-action="open-wallet-picker">
+      Manage wallets
+    </button>
+  </div>
+
+  <div class="ds-settings__card">
+    <span class="ds-settings__icon" aria-hidden="true"><i data-lucide="credit-card"></i></span>
+    <h2 class="ds-settings__title">Billing &amp; subscription</h2>
+    <p class="ds-settings__desc">
+      Open the Stripe customer portal to update your card, download invoices,
+      or cancel your subscription.
+    </p>
+    <button type="button" class="ds-settings__action" id="ds-billing-portal-btn">
+      Open billing portal
+    </button>
+  </div>
+
+  <div class="ds-settings__card">
+    <span class="ds-settings__icon" aria-hidden="true"><i data-lucide="sparkles"></i></span>
+    <h2 class="ds-settings__title">Upgrade plan</h2>
+    <p class="ds-settings__desc">
+      Compare Free, Pro ($15/mo), Plus ($49/mo) and Enterprise. Upgrades take
+      effect immediately.
+    </p>
+    <a href="/pricing/" class="ds-settings__action ds-settings__action--primary">
+      Compare plans
+    </a>
+  </div>
+
+  <div class="ds-settings__card">
+    <span class="ds-settings__icon" aria-hidden="true"><i data-lucide="user"></i></span>
+    <h2 class="ds-settings__title">Account</h2>
+    <p class="ds-settings__desc">
+      Email for alerts, account deletion, and data export under GDPR / CCPA.
+    </p>
+    <a href="/account/" class="ds-settings__action">Open account</a>
+  </div>
+
+  <div class="ds-settings__card">
+    <span class="ds-settings__icon" aria-hidden="true"><i data-lucide="shield"></i></span>
+    <h2 class="ds-settings__title">Privacy preferences</h2>
+    <p class="ds-settings__desc">
+      Granular telemetry consent and data sharing toggles for your
+      DeFiScoring usage.
+    </p>
+    <a href="/account/privacy/" class="ds-settings__action">Manage privacy</a>
+  </div>
+
+  <div class="ds-settings__card">
+    <span class="ds-settings__icon" aria-hidden="true"><i data-lucide="log-out"></i></span>
+    <h2 class="ds-settings__title">Sign out</h2>
+    <p class="ds-settings__desc">
+      End the session for this browser. Your linked wallets remain on file
+      and you can sign back in anytime.
+    </p>
+    <button type="button" class="ds-settings__action ds-settings__action--danger" id="ds-signout-btn">
+      Sign out
+    </button>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var portalBtn = document.getElementById('ds-billing-portal-btn');
+    var signoutBtn = document.getElementById('ds-signout-btn');
+    var signedOutBanner = document.getElementById('ds-settings-signed-out');
+
+    function syncAuthState() {
+      var auth = window.DefiAuth;
+      var isSignedIn = !!(auth && auth.state && auth.state.user);
+      if (signedOutBanner) signedOutBanner.hidden = isSignedIn;
+      [portalBtn, signoutBtn].forEach(function (b) { if (b) b.disabled = !isSignedIn; });
+    }
+
+    if (window.DefiAuth && typeof window.DefiAuth.subscribe === 'function') {
+      window.DefiAuth.subscribe(syncAuthState);
+    }
+    document.addEventListener('DOMContentLoaded', syncAuthState);
+
+    // Open Stripe billing portal
+    if (portalBtn) {
+      portalBtn.addEventListener('click', async function () {
+        var workerUrl = window.DEFI_RISK_WORKER_URL;
+        if (!workerUrl) return;
+        portalBtn.disabled = true;
+        var prevText = portalBtn.textContent;
+        portalBtn.textContent = 'Opening…';
+        try {
+          var res = await fetch(workerUrl + '/api/billing/portal', {
+            method: 'POST', credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ return_url: window.location.href })
+          });
+          var data = await res.json().catch(function () { return {}; });
+          if (data && data.url) { window.location.href = data.url; return; }
+          alert(data && data.error ? data.error : 'Could not open billing portal.');
+        } catch (e) { alert('Network error opening billing portal.'); }
+        finally { portalBtn.textContent = prevText; portalBtn.disabled = false; }
+      });
+    }
+
+    // Sign out
+    if (signoutBtn) {
+      signoutBtn.addEventListener('click', async function () {
+        if (window.DefiAuth && typeof window.DefiAuth.signOut === 'function') {
+          await window.DefiAuth.signOut();
+        }
+        window.location.reload();
+      });
+    }
+
+    // Scroll to wallet picker when "Manage wallets" is clicked
+    var manageBtn = document.querySelector('[data-action="open-wallet-picker"]');
+    if (manageBtn) {
+      manageBtn.addEventListener('click', function () {
+        var toggle = document.getElementById('defi-wallet-picker-toggle');
+        if (toggle) {
+          toggle.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          setTimeout(function () { toggle.click(); }, 350);
+        }
+      });
+    }
+  })();
+</script>

@@ -3,9 +3,31 @@
   Driven by assets/js/wallet-picker.js, which subscribes to DefiAuth state.
   All elements are present in the DOM so the JS can show/hide them based on
   signed-in state without doing template-side branching.
+
+  Stream A: a "Section / Page" breadcrumb is rendered above the H1, derived
+  from `_data/nav.yml` by matching the current page.dashboard_section
+  against each item's `match`. Pure-Liquid; no JS required.
 {%- endcomment -%}
+{%- assign sec = page.dashboard_section -%}
+{%- assign crumb_section = '' -%}
+{%- assign crumb_page = '' -%}
+{%- for group in site.data.nav.groups -%}
+  {%- for item in group.items -%}
+    {%- if item.match == sec -%}
+      {%- assign crumb_section = group.label | default: 'Dashboard' -%}
+      {%- assign crumb_page = item.label -%}
+    {%- endif -%}
+  {%- endfor -%}
+{%- endfor -%}
 <header class="defi-topbar">
   <div class="defi-topbar__title">
+    {%- if crumb_section != '' -%}
+    <nav class="defi-breadcrumb" aria-label="Breadcrumb">
+      <span class="defi-breadcrumb__section">{{ crumb_section }}</span>
+      <span class="defi-breadcrumb__sep" aria-hidden="true">/</span>
+      <span class="defi-breadcrumb__page">{{ crumb_page }}</span>
+    </nav>
+    {%- endif -%}
     <h1>{{ page.dashboard_title | default: page.title }}</h1>
     {% if page.dashboard_subtitle %}<p>{{ page.dashboard_subtitle }}</p>{% endif %}
   </div>

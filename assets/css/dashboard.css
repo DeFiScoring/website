@@ -217,6 +217,11 @@ body.defi-market-open { --defi-market-strip-h: 96px; }
 .defi-topbar__title h1 { margin: 0; font-size: 20px; font-weight: 600; }
 .defi-topbar__title p { margin: 4px 0 0; color: var(--defi-text-dim); font-size: 13px; }
 .defi-topbar__title { min-width: 0; flex: 1 1 auto; }
+.defi-breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; margin: 0 0 6px; line-height: 1; color: var(--defi-text-dim); }
+.defi-breadcrumb__section { color: #00f5ff; }
+.defi-breadcrumb__sep { opacity: .5; }
+.defi-breadcrumb__page { color: var(--defi-text-dim); }
+@media (max-width: 700px) { .defi-breadcrumb { font-size: 10px; } }
 .defi-topbar__actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; flex-wrap: nowrap; }
 .defi-topbar__buttons { display: inline-flex; align-items: center; gap: 10px; flex-shrink: 0; }
 .defi-wallet-status {

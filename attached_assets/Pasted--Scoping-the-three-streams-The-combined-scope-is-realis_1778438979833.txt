@@ -1,0 +1,96 @@
+## Scoping the three streams
+
+The combined scope is realistically **3–5 weeks of work**. I'll outline each stream's plan and a sensible sequence; I'll wait for your go-ahead before writing code so we don't end up with 30 unrelated files in one branch.
+
+### Stream A — Consolidated dashboard (5 sections)
+
+Map the existing 21 pages without deleting URLs (preserve SEO/bookmarks):
+
+| Section | Pages it owns |
+|---|---|
+| **Overview** | `/dashboard/` (home), `score`, `portfolio`, `alerts`, `report` |
+| **Risk** | `risk-profiler`, `risk-chatbot`, `scanner`, `approvals`, `yield-risk-adjusted` |
+| **RWA** | `rwa-asset-score`, `rwa-chatbot`, `portfolio-rwa-exposure`, `audit-toolkit` |
+| **Audits** | `audits`, `oracle-integrity`, `custody-por`, `issuer-due-diligence`, `legal-compliance`, `liquidity-redemption`, `market-intel` |
+| **Settings** | `/account/`, `/account/privacy/`, billing/wallets (new) |
+
+**Implementation**: rewrite `_includes/dashboard/sidebar.html` (or wherever the nav lives) with collapsible sections, add a section breadcrumb in the topbar, keep existing page URLs. ~3 days.
+
+### Stream B — Full ops console at `/admin/`
+
+- New D1 migration `0009_admin.sql`: `admin_audit_log` (who/what/when), `admin_notes` table.
+- New worker handlers under `worker/handlers/admin/*`: `users.js` (list/suspend/role-change), `subscriptions.js` (refund/cancel via Stripe), `alerts.js` (replay delivery), `leads.js` (chatbot opt-out), `intel.js` (already exists), `retention.js` (run prune).
+- Frontend: a small Vite/React SPA under `/admin/` (Jekyll passes through). Auth via existing `ds_session` cookie + `is_admin` flag. ~1.5 weeks.
+
+### Stream C — Data capture (all four)
+
+**One D1 migration `0010_data_capture.sql`** with:
+- `wallet_telemetry` (extends `intel_events` schema with protocol/chain weights)
+- `chatbot_transcripts` (full turns; **requires updated consent text** — privacy gate)
+- `portfolio_snapshots` (daily cron: chain, protocol, token weights per signed-in user)
+- `alert_trigger_context` (foreign key to `alert_deliveries`, JSON of HF/oracle/gas at trigger time)
+
+Cron: extend the existing `17 3 * * *` job + add a daily 04:00 portfolio snapshot worker. ~1 week including consent-text update + privacy doc revision.
+
+**Privacy blocker**: chatbot transcripts and portfolio snapshots both require updated `/account/privacy/` text and the consent banner. I will not ship those tables without that copy in place.
+
+## Suggested sequence (3 PRs)
+
+1. **PR 1 (this branch, already committed)**: the 4 bug fixes — push it once you grant write access.
+2. **PR 2**: Stream A (UI regroup) — lowest risk, immediate UX win.
+3. **PR 3**: Stream C migration + telemetry endpoints (no admin UI yet).
+4. **PR 4**: Stream B admin SPA, which then surfaces the data Stream C is collecting.
+
+## Replit prompt
+
+You asked for a prompt to drive Replit. Paste this into Replit Agent / Ghostwriter for the next stream:
+
+```
+Repository: defiscoring/website (Jekyll + Cloudflare Worker monorepo).
+Branch off main: claude/dashboard-regroup-v1
+
+GOAL: Consolidate the 21 pages under /dashboard/ into 5 sections without
+removing any existing URLs. Sections are: Overview, Risk, RWA, Audits,
+Settings. Use the mapping below.
+
+OVERVIEW: dashboard/, score, portfolio, alerts, report
+RISK: risk-profiler, risk-chatbot, scanner, approvals, yield-risk-adjusted
+RWA: rwa-asset-score, rwa-chatbot, portfolio-rwa-exposure, audit-toolkit
+AUDITS: audits, oracle-integrity, custody-por, issuer-due-diligence,
+        legal-compliance, liquidity-redemption, market-intel
+SETTINGS: /account/, /account/privacy/, plus a new wallets+billing page
+
+CHANGES:
+1. Edit _includes/dashboard/sidebar.html (or _layouts/dashboard.html if
+   the nav is inline) to render collapsible sections with the mapping
+   above. Active section auto-expands based on the current URL.
+2. Add a topbar breadcrumb component "Section / Page" in the same layout.
+3. Add `dashboard_section` front-matter to every page in /dashboard/*.html
+   so the sidebar can highlight the correct section without URL parsing.
+4. Do NOT change any URLs or delete any HTML files.
+5. Do NOT touch /assets/js/*.js logic — sidebar is presentational only.
+6. Test by running `bundle exec jekyll serve` and clicking through every
+   sidebar entry.
+
+CONSTRAINTS: vanilla JS only, no new dependencies, must build with the
+existing Jekyll 4 + Ruby 3.3.5 stack. CSS goes in
+assets/css/dashboard.css (already exists).
+
+Open a draft PR titled "Consolidate dashboard into 5 sections" with a
+summary of which pages moved under which section.
+```
+
+## What I need from you
+
+1. **Push permission** for the Claude Code GitHub App on `defiscoring/website` so I can push branches and open draft PRs directly. Right now both `git push` and the GitHub MCP return 403.
+2. **Confirm sequencing** above (PR 1 → A → C → B), or tell me to reorder.
+3. For the **"pricing looks weird"** complaint: send a screenshot. Without it I'm guessing.
+4. For **"wallets only connect on certain wallets"**: which specific wallet/OS/browser combinations failed? The picker code looks correct so this is likely an environmental issue (popup blockers, in-app browser, mobile deeplink) I can only diagnose with a repro.
+
+The bug-fix commit is on local branch `claude/fix-wallet-connection-ui-yZ57b` (`ec188c9`), waiting on push permission.
+
+The push is genuinely blocked at the remote — `Permission to DeFiScoring/website.git denied to guillaumelauzier` (HTTP 403). The local commit `ec188c9` on `claude/fix-wallet-connection-ui-yZ57b` is ready, but I can't push it from this environment. The GitHub MCP integration also returns 403 on `create_branch` and `push_files`, so the credential simply doesn't have write access to the repo.
+
+You'll need to either:
+- Grant the Claude Code GitHub App write permission on `DeFiScoring/website`, then re-run, or
+- Pull the commit down locally (`git fetch` from this workspace) and push it from a machine with write access.
