@@ -124,6 +124,41 @@ export async function getSubscription(env, subscriptionId) {
   return stripeRequest(env, `/subscriptions/${subscriptionId}`, null, { method: "GET" });
 }
 
+/* ---------- admin actions: cancel + refund ---------- */
+
+/**
+ * Cancel a subscription. By default sets `cancel_at_period_end = true` so
+ * the user keeps access until the period ends (the friendly default for
+ * an admin-initiated cancel from /admin). Pass `{ atPeriodEnd: false }`
+ * to terminate immediately (use only for chargebacks / fraud).
+ */
+export async function cancelSubscription(env, subscriptionId, { atPeriodEnd = true } = {}) {
+  if (atPeriodEnd) {
+    return stripeRequest(env, `/subscriptions/${subscriptionId}`, {
+      cancel_at_period_end: "true",
+    });
+  }
+  return stripeRequest(env, `/subscriptions/${subscriptionId}`, null, { method: "DELETE" });
+}
+
+/**
+ * Issue a refund against a charge. `amountCents` is optional; omit for
+ * full refund. `reason` defaults to "requested_by_customer".
+ */
+export async function createRefund(env, { chargeId, amountCents, reason = "requested_by_customer" }) {
+  const params = { charge: chargeId, reason };
+  if (amountCents != null) params.amount = String(amountCents);
+  return stripeRequest(env, "/refunds", params);
+}
+
+/**
+ * List the most recent invoices for a customer (used by the admin sub
+ * detail view to find a charge id to refund against).
+ */
+export async function listInvoices(env, customerId, limit = 10) {
+  return stripeRequest(env, `/invoices?customer=${encodeURIComponent(customerId)}&limit=${limit}`, null, { method: "GET" });
+}
+
 /* ---------- webhook signature verification ---------- */
 
 /**

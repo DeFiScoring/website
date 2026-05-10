@@ -1,0 +1,199 @@
+---
+layout: null
+permalink: /admin/
+sitemap: false
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Admin · DeFi Scoring</title>
+  <link rel="stylesheet" href="{{ '/assets/css/admin.css' | relative_url }}?v={{ site.time | date: '%s' }}">
+</head>
+<body class="ds-admin">
+  <header class="ds-admin__topbar">
+    <div class="ds-admin__brand">
+      <span class="ds-admin__brand-mark">DS</span>
+      <span class="ds-admin__brand-text">Admin</span>
+    </div>
+    <nav class="ds-admin__tabs" id="admin-tabs">
+      <button class="ds-admin__tab is-active" data-tab="users">Users</button>
+      <button class="ds-admin__tab" data-tab="subscriptions">Subscriptions</button>
+      <button class="ds-admin__tab" data-tab="alerts">Alerts</button>
+      <button class="ds-admin__tab" data-tab="leads">Chatbot Leads</button>
+      <button class="ds-admin__tab" data-tab="retention">Retention</button>
+      <button class="ds-admin__tab" data-tab="audit">Audit Log</button>
+    </nav>
+    <div class="ds-admin__me" id="admin-me">
+      <span class="ds-admin__me-label">Loading…</span>
+    </div>
+  </header>
+
+  <main class="ds-admin__main">
+    <!-- Auth gate fills here while we resolve session -->
+    <section id="admin-gate" class="ds-admin__gate" hidden>
+      <div class="ds-admin__gate-card">
+        <h1 id="admin-gate-title">Sign in required</h1>
+        <p id="admin-gate-msg">You must be signed in with an admin wallet to access this dashboard.</p>
+        <a class="ds-admin__btn" href="/dashboard/" id="admin-gate-cta">Go to dashboard to sign in</a>
+      </div>
+    </section>
+
+    <!-- Tab panels -->
+    <section class="ds-admin__panel is-active" data-panel="users">
+      <header class="ds-admin__panel-head">
+        <h2>Users</h2>
+        <div class="ds-admin__filters">
+          <input type="search" id="users-q" placeholder="Search wallet, email or id…" autocomplete="off">
+          <button class="ds-admin__btn" id="users-refresh">Refresh</button>
+        </div>
+      </header>
+      <div class="ds-admin__table-wrap">
+        <table class="ds-admin__table" id="users-table">
+          <thead><tr>
+            <th>Wallet</th><th>Email</th><th>Tier</th><th>Status</th>
+            <th>Last login</th><th>Created</th><th>Admin</th><th>Suspended</th><th></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="ds-admin__panel" data-panel="subscriptions">
+      <header class="ds-admin__panel-head">
+        <h2>Subscriptions</h2>
+        <div class="ds-admin__filters">
+          <select id="subs-tier">
+            <option value="">All tiers</option>
+            <option value="free">Free</option>
+            <option value="pro">Pro</option>
+            <option value="plus">Plus</option>
+            <option value="enterprise">Enterprise</option>
+          </select>
+          <select id="subs-status">
+            <option value="">All statuses</option>
+            <option value="active">active</option>
+            <option value="trialing">trialing</option>
+            <option value="past_due">past_due</option>
+            <option value="canceled">canceled</option>
+            <option value="incomplete">incomplete</option>
+          </select>
+          <button class="ds-admin__btn" id="subs-refresh">Refresh</button>
+        </div>
+      </header>
+      <div class="ds-admin__table-wrap">
+        <table class="ds-admin__table" id="subs-table">
+          <thead><tr>
+            <th>Wallet</th><th>Email</th><th>Tier</th><th>Status</th>
+            <th>Period end</th><th>Cancel @ end</th><th>Stripe sub</th><th></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="ds-admin__panel" data-panel="alerts">
+      <header class="ds-admin__panel-head">
+        <h2>Alert deliveries</h2>
+        <div class="ds-admin__filters">
+          <select id="alerts-status">
+            <option value="">All statuses</option>
+            <option value="sent">sent</option>
+            <option value="failed">failed</option>
+            <option value="queued">queued</option>
+            <option value="suppressed">suppressed</option>
+          </select>
+          <button class="ds-admin__btn" id="alerts-refresh">Refresh</button>
+        </div>
+      </header>
+      <div class="ds-admin__table-wrap">
+        <table class="ds-admin__table" id="alerts-table">
+          <thead><tr>
+            <th>Fired</th><th>Wallet</th><th>Channel</th><th>Destination</th>
+            <th>Status</th><th>Error</th><th></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="ds-admin__panel" data-panel="leads">
+      <header class="ds-admin__panel-head">
+        <h2>Chatbot leads</h2>
+        <div class="ds-admin__filters">
+          <input type="search" id="leads-q" placeholder="Search email…" autocomplete="off">
+          <select id="leads-opted">
+            <option value="">All</option>
+            <option value="0">Subscribed</option>
+            <option value="1">Opted out</option>
+          </select>
+          <button class="ds-admin__btn" id="leads-refresh">Refresh</button>
+        </div>
+      </header>
+      <div class="ds-admin__table-wrap">
+        <table class="ds-admin__table" id="leads-table">
+          <thead><tr>
+            <th>Email</th><th>Source</th><th>Last seen</th><th>Sessions</th>
+            <th>Risk profile</th><th>Status</th><th></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="ds-admin__panel" data-panel="retention">
+      <header class="ds-admin__panel-head">
+        <h2>Data retention</h2>
+      </header>
+      <div class="ds-admin__card">
+        <p>
+          Manually run the retention prune. Deletes <code>intel_events</code> and
+          <code>health_scores</code> older than the configured
+          <code>DATA_RETENTION_DAYS</code> window (default 180 days).
+          Aggregates and other tables are not affected.
+        </p>
+        <button class="ds-admin__btn ds-admin__btn--danger" id="retention-run">Run prune now</button>
+        <pre id="retention-output" class="ds-admin__pre" hidden></pre>
+      </div>
+    </section>
+
+    <section class="ds-admin__panel" data-panel="audit">
+      <header class="ds-admin__panel-head">
+        <h2>Audit log</h2>
+        <div class="ds-admin__filters">
+          <input type="text" id="audit-action" placeholder="action (e.g. user.patch)" autocomplete="off">
+          <input type="text" id="audit-target" placeholder="target id" autocomplete="off">
+          <button class="ds-admin__btn" id="audit-refresh">Refresh</button>
+        </div>
+      </header>
+      <div class="ds-admin__table-wrap">
+        <table class="ds-admin__table" id="audit-table">
+          <thead><tr>
+            <th>When</th><th>Actor</th><th>Action</th><th>Target</th>
+            <th>Before</th><th>After</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal scaffolding (one shared dialog) -->
+  <div class="ds-admin__modal" id="admin-modal" hidden>
+    <div class="ds-admin__modal-bg" data-close></div>
+    <div class="ds-admin__modal-card">
+      <header>
+        <h3 id="modal-title">Modal</h3>
+        <button class="ds-admin__btn ds-admin__btn--ghost" data-close>×</button>
+      </header>
+      <div id="modal-body" class="ds-admin__modal-body"></div>
+    </div>
+  </div>
+
+  <div class="ds-admin__toast" id="admin-toast" hidden></div>
+
+  <script src="{{ '/assets/js/admin.js' | relative_url }}?v={{ site.time | date: '%s' }}" defer></script>
+</body>
+</html>

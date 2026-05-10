@@ -76,6 +76,16 @@ import {
 import { scanAlertRules } from "./handlers/cron.js";
 import { optionalSession } from "./lib/auth.js";
 import { getSubscription, tierLimit } from "./lib/tiers.js";
+// Stream B — admin SPA backend. Every handler is SIWE-gated via
+// requireAdmin (lib/admin.js) and writes to admin_audit_log. Distinct from
+// the legacy bearer-token ADMIN_TOKEN flow used by /api/intel/* and
+// /api/account/retention/run, which stays in place for ops scripts.
+import { handleAdminUsersList, handleAdminUserDetail, handleAdminUserPatch } from "./handlers/admin/users.js";
+import { handleAdminSubsList, handleAdminSubCancel, handleAdminSubRefund, handleAdminSubPatch } from "./handlers/admin/subscriptions.js";
+import { handleAdminAlertDeliveries, handleAdminAlertReplay } from "./handlers/admin/alerts.js";
+import { handleAdminLeadsList, handleAdminLeadPatch, handleAdminLeadDelete } from "./handlers/admin/leads.js";
+import { handleAdminAuditList } from "./handlers/admin/audit.js";
+import { handleAdminRetentionRun } from "./handlers/admin/retention.js";
 
 // ---------------------------------------------------------------------------
 // CORS — origin allowlist driven by env.ALLOWED_ORIGINS (comma-separated).
@@ -2821,6 +2831,56 @@ async function dispatch(request, env, peekedAddr) {
     }
     if (url.pathname === "/api/alerts/deliveries" && request.method === "GET") {
       return handleAlertDeliveriesList(request, env);
+    }
+
+    // -----------------------------------------------------------------------
+    // Stream B — Admin SPA endpoints. All under /api/admin/*. Every handler
+    // calls requireAdmin() internally (which wraps requireSession()), so
+    // they're SIWE-gated and require users.is_admin = 1 on the calling user.
+    // No bearer-token shortcut here — that's reserved for /api/intel/*.
+    // -----------------------------------------------------------------------
+    if (url.pathname === "/api/admin/users" && request.method === "GET") {
+      return handleAdminUsersList(request, env, url);
+    }
+    if (url.pathname.startsWith("/api/admin/users/")) {
+      const id = url.pathname.slice("/api/admin/users/".length).replace(/\/$/, "");
+      if (request.method === "GET")   return handleAdminUserDetail(request, env, id);
+      if (request.method === "PATCH") return handleAdminUserPatch(request, env, id);
+    }
+    if (url.pathname === "/api/admin/subscriptions" && request.method === "GET") {
+      return handleAdminSubsList(request, env, url);
+    }
+    if (url.pathname.startsWith("/api/admin/subscriptions/")) {
+      const rest = url.pathname.slice("/api/admin/subscriptions/".length).replace(/\/$/, "");
+      // {userId}/cancel | {userId}/refund | {userId} (PATCH)
+      const slash = rest.indexOf("/");
+      const userId = slash === -1 ? rest : rest.slice(0, slash);
+      const action = slash === -1 ? "" : rest.slice(slash + 1);
+      if (action === "cancel" && request.method === "POST") return handleAdminSubCancel(request, env, userId);
+      if (action === "refund" && request.method === "POST") return handleAdminSubRefund(request, env, userId);
+      if (action === ""       && request.method === "PATCH") return handleAdminSubPatch(request, env, userId);
+    }
+    if (url.pathname === "/api/admin/alerts/deliveries" && request.method === "GET") {
+      return handleAdminAlertDeliveries(request, env, url);
+    }
+    if (url.pathname.startsWith("/api/admin/alerts/deliveries/") && url.pathname.endsWith("/replay") && request.method === "POST") {
+      const id = url.pathname.slice("/api/admin/alerts/deliveries/".length, -"/replay".length);
+      return handleAdminAlertReplay(request, env, id);
+    }
+    if (url.pathname === "/api/admin/leads" && request.method === "GET") {
+      return handleAdminLeadsList(request, env, url);
+    }
+    if (url.pathname.startsWith("/api/admin/leads/")) {
+      const email = decodeURIComponent(url.pathname.slice("/api/admin/leads/".length).replace(/\/$/, ""));
+      if (request.method === "PATCH")  return handleAdminLeadPatch(request, env, email);
+      if (request.method === "DELETE") return handleAdminLeadDelete(request, env, email);
+    }
+    if (url.pathname === "/api/admin/audit" && request.method === "GET") {
+      return handleAdminAuditList(request, env, url);
+    }
+    if (url.pathname === "/api/admin/retention/run" && request.method === "POST") {
+      // Pass runRetentionPrune as a fn since it lives in this same file.
+      return handleAdminRetentionRun(request, env, runRetentionPrune);
     }
 
     if (request.method === "POST" && (url.pathname === "/" || url.pathname === "/profile" || url.pathname === "/api/profile")) {
