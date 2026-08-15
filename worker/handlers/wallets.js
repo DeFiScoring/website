@@ -121,7 +121,18 @@ export async function handleWalletLink(request, env) {
     return json({ success: false, error: "wallet_owned_by_another_user" }, 409);
   }
   if (owner && owner.user_id === auth.user.id) {
-    return json({ success: false, error: "wallet_already_linked" }, 200);
+    // Already ours. Linking is idempotent — returning success:false here made
+    // the client throw "link_failed:wallet_already_linked" for what is in
+    // fact the desired end state (the usual cause is a double-click, or a
+    // retry after a dropped response). Refresh last_seen_at and report
+    // success, flagged so the UI can skip the "wallet linked!" toast.
+    await env.HEALTH_DB.prepare(
+      "UPDATE wallet_connections SET last_seen_at = ? WHERE user_id = ? AND wallet_address = ?"
+    ).bind(Date.now(), auth.user.id, newWallet).run().catch(() => {});
+    return json({
+      success: true, already_linked: true,
+      wallet: { wallet_address: newWallet },
+    }, 200);
   }
 
   // Quota: how many wallets can this tier link?
@@ -144,12 +155,12 @@ export async function handleWalletLink(request, env) {
   if (!ins?.meta?.changes) {
     // Either we hit the cap or another concurrent request raced us in. Re-
     // read so we can return an accurate error to the user.
-    const { count } = await env.HEALTH_DB.prepare(
+    const row = await env.HEALTH_DB.prepare(
       "SELECT COUNT(*) as count FROM wallet_connections WHERE user_id = ?"
-    ).bind(auth.user.id).first();
+    ).bind(auth.user.id).first().catch(() => null);
     return json({
       success: false, error: "wallet_limit_reached",
-      current: count, limit: cap, current_tier: sub.tier, upgrade_url: "/pricing/",
+      current: row?.count ?? null, limit: cap, current_tier: sub.tier, upgrade_url: "/pricing/",
     }, 402);
   }
 
@@ -169,6 +180,20 @@ export async function handleWalletUnlink(request, env, walletAddress) {
   const res = await env.HEALTH_DB.prepare(
     "DELETE FROM wallet_connections WHERE user_id = ? AND wallet_address = ? AND is_primary = 0"
   ).bind(auth.user.id, target).run();
+  const removed = res?.meta?.changes || 0;
 
-  return json({ success: true, removed: res?.meta?.changes || 0 });
+  // alert_rules.wallet_address is a plain column, not a foreign key into
+  // wallet_connections, so unlinking a wallet used to leave its alert rules
+  // active — the 5-minute cron kept scanning and kept emailing about a wallet
+  // the user had explicitly disconnected. Deactivate rather than delete so the
+  // delivery log keeps its FK target and the audit trail stays intact.
+  let deactivatedRules = 0;
+  if (removed) {
+    const upd = await env.HEALTH_DB.prepare(
+      "UPDATE alert_rules SET is_active = 0, updated_at = ? WHERE user_id = ? AND wallet_address = ? AND is_active = 1"
+    ).bind(Date.now(), auth.user.id, target).run().catch(() => null);
+    deactivatedRules = upd?.meta?.changes || 0;
+  }
+
+  return json({ success: true, removed, deactivated_alert_rules: deactivatedRules });
 }

@@ -60,6 +60,33 @@ async function alchemyRpc(chain, env, method, params) {
   return j.result;
 }
 
+// JSON-RPC batch: one HTTP request carrying N calls. Alchemy supports this and
+// it is the difference between a token-metadata sweep costing 1 subrequest and
+// costing N. A Cloudflare Worker invocation is capped at 50 subrequests on the
+// free plan, and a 5-chain portfolio scan that issued one metadata call per
+// token (up to 100 per chain) blew that budget on the first chain, leaving the
+// rest of the wallet's chains silently unscanned.
+async function alchemyRpcBatch(chain, env, calls) {
+  if (!chain.alchemy || !env.ALCHEMY_KEY) throw new Error('alchemy unavailable');
+  if (!calls.length) return [];
+  const url = `https://${chain.alchemy}.g.alchemy.com/v2/${env.ALCHEMY_KEY}`;
+  const body = calls.map((c, i) => ({ jsonrpc: '2.0', id: i, method: c.method, params: c.params }));
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error(`alchemy http ${r.status}`);
+  const j = await r.json();
+  // Responses may come back out of order — reassemble by id. A per-call error
+  // yields undefined for that slot rather than failing the whole batch.
+  const out = new Array(calls.length).fill(undefined);
+  for (const entry of (Array.isArray(j) ? j : [j])) {
+    if (entry && typeof entry.id === 'number' && !entry.error) out[entry.id] = entry.result;
+  }
+  return out;
+}
+
 // ----- Moralis ---------------------------------------------------------------
 
 async function moralisGet(chain, env, path) {
@@ -81,6 +108,21 @@ async function etherscanCall(chain, env, params) {
   const res = await fetch(url.toString());
   if (!res.ok) throw new Error(`etherscan http ${res.status}`);
   const data = await res.json();
+  // The `proxy` module speaks raw JSON-RPC ({jsonrpc, id, result|error}) and
+  // never sets `status`. Handling it with the status-envelope logic below
+  // meant a reverted or rate-limited eth_call fell through and returned
+  // `undefined` as if it were a successful empty result — so a failed
+  // balanceOf silently became "this wallet holds 0 of that token" instead of
+  // an error the caller could surface.
+  if (params && params.module === 'proxy') {
+    if (data && data.error) {
+      throw new Error('etherscan-rpc: ' + (data.error.message || JSON.stringify(data.error)));
+    }
+    if (typeof data?.result === 'undefined') {
+      throw new Error('etherscan-rpc: empty result');
+    }
+    return data.result;
+  }
   // Etherscan v2 returns status='0' for both real errors AND benign
   // "no data for this query" cases. The exact message varies by module:
   //   - account/txlist:    "No transactions found"
@@ -117,9 +159,37 @@ export async function ethCall(chain, env, to, data) {
     return await etherscanCall(chain, env, {
       module: 'proxy', action: 'eth_call', to, data, tag: 'latest',
     });
-  } catch {
-    return null;
+  } catch { /* fall through */ }
+  // Last resort: a plain public RPC. This tier exists so the EIP-1271 check
+  // in lib/auth.js (smart-contract wallet sign-in) still works on a
+  // deployment that has no Alchemy key and an Etherscan key that's out of
+  // quota — otherwise a Safe user's login would fail for a reason that has
+  // nothing to do with their signature.
+  const rpc = publicRpcFor(chain, env);
+  if (rpc) {
+    try {
+      const r = await fetch(rpc, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to, data }, 'latest'] }),
+      });
+      if (r.ok) {
+        const j = await r.json();
+        if (!j.error && typeof j.result === 'string') return j.result;
+      }
+    } catch { /* fall through */ }
   }
+  return null;
+}
+
+// Public JSON-RPC endpoint for a chain, when the operator configured one.
+// `ETH_RPC_URL` already exists in wrangler.jsonc vars; per-chain overrides
+// follow the RPC_URL_<chainId> convention so adding one needs no code change.
+function publicRpcFor(chain, env) {
+  const perChain = env[`RPC_URL_${chain.chainId}`];
+  if (perChain) return perChain;
+  if (chain.chainId === 1 && env.ETH_RPC_URL) return env.ETH_RPC_URL;
+  return null;
 }
 
 // ABI helpers — pulled out of lib/defi.js so any handler can decode return
@@ -197,9 +267,19 @@ export async function getErc20Balances(chain, env, address) {
         .filter((t) => t.tokenBalance && t.tokenBalance !== '0x0' && t.tokenBalance !== '0x');
       // Cap at 100 tokens per chain so we don't blow past CPU/time on dust farms.
       const capped = filtered.slice(0, 100);
-      const enriched = await Promise.all(capped.map(async (t) => {
-        const meta = await alchemyRpc(chain, env, 'alchemy_getTokenMetadata', [t.contractAddress])
-          .catch(() => ({}));
+      // Metadata for every token, batched 25 calls per HTTP request — see
+      // alchemyRpcBatch. Worst case: 100 tokens = 4 subrequests, not 100.
+      const metas = [];
+      for (let i = 0; i < capped.length; i += 25) {
+        const slice = capped.slice(i, i + 25);
+        const batch = await alchemyRpcBatch(
+          chain, env,
+          slice.map((t) => ({ method: 'alchemy_getTokenMetadata', params: [t.contractAddress] })),
+        ).catch(() => slice.map(() => undefined));
+        metas.push(...batch);
+      }
+      const enriched = capped.map((t, i) => {
+        const meta = metas[i] || {};
         const decimals = meta.decimals ?? 18;
         const raw = hexToBigIntSafe(t.tokenBalance);
         const amount = bigIntToAmount(raw, decimals);
@@ -212,7 +292,7 @@ export async function getErc20Balances(chain, env, address) {
           amount,
           source: 'alchemy',
         };
-      }));
+      });
       return dropSpamTokens(enriched.filter((t) => t.amount > 0), chain.chainId);
     } catch (e) { failures.push(`alchemy: ${e.message || e}`); }
   }

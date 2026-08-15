@@ -24,7 +24,13 @@ export async function handleWalletScore(request, env, baseHeaders = {}) {
   const address = (url.searchParams.get('address') || url.searchParams.get('wallet') || '').toLowerCase();
   const fiat = (url.searchParams.get('fiat') || 'USD').toUpperCase();
   const chainFilter = url.searchParams.get('chains');
-  const tier1Only = url.searchParams.get('tier') === '1';
+  // Match /api/portfolio's contract exactly: `?tier=all` means every chain,
+  // anything else (including absent) means Tier 1 only. This handler used to
+  // read `?tier=1` instead, so a default call scored DeFi positions across
+  // all 11 chains while the portfolio half of the same score only covered 5 —
+  // two pillars computed over different chain sets, and ~2x the subrequest
+  // budget the portfolio handler was carefully sized for.
+  const allChains = url.searchParams.get('tier') === 'all';
 
   if (!isAddress(address)) {
     return jsonRes({ success: false, error: 'invalid wallet address' }, 400, baseHeaders);
@@ -34,8 +40,11 @@ export async function handleWalletScore(request, env, baseHeaders = {}) {
   if (chainFilter) {
     const wanted = new Set(chainFilter.split(',').map((s) => s.trim()).filter(Boolean));
     chainsToScan = CHAINS.filter((c) => wanted.has(c.id));
-  } else if (tier1Only) {
+  } else if (!allChains) {
     chainsToScan = CHAINS.filter((c) => c.tier === 1);
+  }
+  if (!chainsToScan.length) {
+    return jsonRes({ success: false, error: 'no known chains in ?chains= filter' }, 400, baseHeaders);
   }
 
   // Run portfolio + defi scans in parallel — both are needed by the score
@@ -43,7 +52,8 @@ export async function handleWalletScore(request, env, baseHeaders = {}) {
   // and /api/defi handlers (this composite endpoint pays the same cost).
   const portfolioReq = new Request(
     `${url.origin}/api/portfolio?wallet=${address}&fiat=${fiat}` +
-    (chainFilter ? `&chains=${chainFilter}` : '') + (tier1Only ? '&tier=1' : ''),
+    (chainFilter ? `&chains=${encodeURIComponent(chainFilter)}` : '') +
+    (allChains ? '&tier=all' : ''),
     { method: 'GET' }
   );
   const [portfolioRes, defiByChain] = await Promise.all([
@@ -53,7 +63,45 @@ export async function handleWalletScore(request, env, baseHeaders = {}) {
   const portfolio = await portfolioRes.json();
 
   const result = await computeWalletScore(env, address, { portfolio, defiByChain });
+
+  // Persist so the wallet's score has a history and a badge. Only the legacy
+  // Ethereum-only POST /api/health-score wrote to health_scores, which meant
+  // scanning a wallet through this (newer, multi-chain) endpoint left
+  // /badge/{addr}.svg and /api/health-score/{addr}/history permanently empty.
+  // Best-effort: a write failure must never fail the score response.
+  await persistWalletScore(env, address, result);
+
   return jsonRes(result, 200, baseHeaders);
+}
+
+async function persistWalletScore(env, wallet, payload) {
+  if (!env.HEALTH_DB || !payload || !payload.pillars) return false;
+  try {
+    const p = payload.pillars;
+    await env.HEALTH_DB.prepare(
+      'INSERT INTO health_scores (wallet, score, loan_reliability, liquidity_provision, ' +
+      'governance, account_age, raw_h_s, source_json, computed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    ).bind(
+      wallet,
+      payload.score,
+      p.loan_reliability?.value ?? null,
+      p.liquidity_provision?.value ?? null,
+      p.governance?.value ?? null,
+      p.account_age?.value ?? null,
+      payload.raw_h_s ?? null,
+      JSON.stringify({
+        source: 'wallet-score',
+        score_band: payload.score_band,
+        adjustments: payload.adjustments || [],
+        portfolio_health: p.portfolio_health || null,
+      }),
+      Date.now(),
+    ).run();
+    return true;
+  } catch (e) {
+    console.warn('[wallet-score] persist failed:', e && e.message ? e.message : e);
+    return false;
+  }
 }
 
 function jsonRes(data, status, baseHeaders) {

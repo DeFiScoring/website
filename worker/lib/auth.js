@@ -18,6 +18,9 @@ import { keccak_256 } from "@noble/hashes/sha3";
 import { sha256 } from "@noble/hashes/sha256";
 import { hmac } from "@noble/hashes/hmac";
 
+import { CHAINS_BY_CHAINID } from "./chains.js";
+import { ethCall } from "./providers.js";
+
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 const NONCE_TTL_MS   = 5 * 60 * 1000;            // 5 minutes
 const COOKIE_NAME    = "ds_session";
@@ -82,67 +85,89 @@ export function newId() {
  */
 export function parseSiweMessage(raw) {
   if (typeof raw !== "string" || raw.length > 4096) return null;
-  const lines = raw.split("\n");
-  // line 0: "<domain> wants you to sign in with your Ethereum account:"
-  // line 1: "0x...."
-  // line 2: ""
-  // optional statement line(s)
-  // empty line
-  // key/value lines: "Key: value"
-  if (lines.length < 6) return null;
+  // Wallets that round-trip the message through a textarea (and some mobile
+  // deep-link bridges) normalise LF to CRLF. The signature is over the exact
+  // bytes we were handed, so we only normalise for *parsing* — never for
+  // hashing, which always uses `raw`.
+  const lines = raw.replace(/\r\n/g, "\n").split("\n");
+  // EIP-4361 ABNF, in order:
+  //   0  "<domain> wants you to sign in with your Ethereum account:"
+  //   1  "0x…"                       (address)
+  //   2  ""                          (mandatory blank)
+  //   3  [statement]                 (optional, single line)
+  //   4  ""                          (mandatory blank)
+  //   5+ "URI: …" then the rest of the key/value block, optional "Resources:"
+  //
+  // When the statement is omitted lines 3 and 4 collapse into a single blank
+  // line, so the field block can start at index 3 or 4. We locate it by the
+  // mandatory "URI: " line rather than by counting, and we parse key/value
+  // pairs ONLY from that block. Scanning the whole message (as an earlier
+  // revision did) let a "Nonce: …"-shaped statement inject fields — the
+  // statement is the one part of the message a third-party dapp fully
+  // controls, so it must never be able to shadow a real field.
+  if (lines.length < 5) return null;
 
-  const m0 = /^([^\s]+) wants you to sign in with your Ethereum account:$/.exec(lines[0]);
+  const m0 = /^(?:[a-zA-Z][a-zA-Z0-9+.-]*:\/\/)?([^\s/]+) wants you to sign in with your Ethereum account:$/
+    .exec(lines[0]);
   if (!m0) return null;
   const domain = m0[1];
 
   const address = lines[1].trim();
   if (!/^0x[0-9a-fA-F]{40}$/.test(address)) return null;
+  if (lines[2] !== "") return null;
 
-  // Find the URI/Version/Chain ID/Nonce/Issued At block
+  const uriIdx = lines.findIndex((l, i) => i >= 3 && l.startsWith("URI: "));
+  if (uriIdx === -1) return null;
+  // The field block is always preceded by a blank line.
+  if (lines[uriIdx - 1] !== "") return null;
+
+  // Everything between the address block and that blank line is the statement.
+  const statementLines = lines.slice(3, uriIdx - 1);
+  const statement = statementLines.length ? statementLines.join("\n") : null;
+
+  // Fields run from the URI line to "Resources:" (exclusive) or end of message.
+  const resourcesIdx = lines.findIndex((l, i) => i >= uriIdx && l === "Resources:");
+  const fieldEnd = resourcesIdx === -1 ? lines.length : resourcesIdx;
   const fields = {};
-  for (let i = 2; i < lines.length; i++) {
+  for (let i = uriIdx; i < fieldEnd; i++) {
     const line = lines[i];
     const idx = line.indexOf(": ");
     if (idx === -1) continue;
     const key = line.slice(0, idx).trim();
     const value = line.slice(idx + 2).trim();
-    if (key && value) fields[key] = value;
+    // First occurrence wins — a duplicated key is a malformed message, not a
+    // licence to overwrite an already-parsed field.
+    if (key && value && !(key in fields)) fields[key] = value;
   }
 
   if (!fields.URI || !fields.Version || !fields["Chain ID"] || !fields.Nonce || !fields["Issued At"]) {
     return null;
   }
   if (fields.Version !== "1") return null;
+  const chainId = parseInt(fields["Chain ID"], 10);
+  if (!Number.isFinite(chainId) || chainId <= 0) return null;
 
   return {
     domain,
     address: address.toLowerCase(),
-    statement: extractStatement(lines),
+    statement,
     uri: fields.URI,
     version: fields.Version,
-    chainId: parseInt(fields["Chain ID"], 10),
+    chainId,
     nonce: fields.Nonce,
     issuedAt: fields["Issued At"],
     expirationTime: fields["Expiration Time"] || null,
     notBefore: fields["Not Before"] || null,
     requestId: fields["Request ID"] || null,
-    resources: extractResources(lines),
+    resources: extractResources(lines, resourcesIdx),
   };
 }
 
-function extractStatement(lines) {
-  // Statement (if any) sits between blank lines after the address line.
-  // Layout: address \n "" \n [statement \n ""]
-  if (lines[2] === "" && lines[3] !== "" && lines[4] === "") {
-    return lines[3];
-  }
-  return null;
-}
-function extractResources(lines) {
-  const idx = lines.findIndex((l) => l === "Resources:");
-  if (idx === -1) return [];
+function extractResources(lines, resourcesIdx) {
+  if (resourcesIdx === undefined) resourcesIdx = lines.indexOf("Resources:");
+  if (resourcesIdx === -1) return [];
   const out = [];
-  for (let i = idx + 1; i < lines.length; i++) {
+  for (let i = resourcesIdx + 1; i < lines.length; i++) {
     if (lines[i].startsWith("- ")) out.push(lines[i].slice(2));
     else break;
   }
@@ -159,24 +184,44 @@ function extractResources(lines) {
  * personal_sign hashes "\x19Ethereum Signed Message:\n<len>" + msg with
  * keccak256 before signing.
  */
+export function eip191Bytes(message) {
+  // EIP-191 prefix: "\x19Ethereum Signed Message:\n" + ascii(byteLength)
+  const msgBytes = typeof message === "string" ? utf8(message) : message;
+  const prefix = utf8(`\x19Ethereum Signed Message:\n${msgBytes.length}`);
+  const prefixed = new Uint8Array(prefix.length + msgBytes.length);
+  prefixed.set(prefix, 0);
+  prefixed.set(msgBytes, prefix.length);
+  return prefixed;
+}
+
+export function eip191Digest(message) {
+  return keccak_256(eip191Bytes(message));
+}
+
 export function recoverPersonalSignAddress(message, signatureHex) {
   try {
     const sig = hexToBytes(signatureHex);
-    if (sig.length !== 65) return null;
+    const digest = eip191Digest(message);
 
-    // EIP-191 prefix: "\x19Ethereum Signed Message:\n" + ascii(byteLength)
-    const msgBytes = typeof message === "string" ? utf8(message) : message;
-    const prefix = utf8(`\x19Ethereum Signed Message:\n${msgBytes.length}`);
-    const prefixed = new Uint8Array(prefix.length + msgBytes.length);
-    prefixed.set(prefix, 0);
-    prefixed.set(msgBytes, prefix.length);
-    const digest = keccak_256(prefixed);
-
-    const r = sig.slice(0, 32);
-    const s = sig.slice(32, 64);
-    let v = sig[64];
-    // Normalize v: legacy wallets send 27/28; some EIP-155 wallets send 0/1.
-    if (v >= 27) v -= 27;
+    let r, s, v;
+    if (sig.length === 65) {
+      r = sig.slice(0, 32);
+      s = sig.slice(32, 64);
+      v = sig[64];
+      // Normalize v: legacy wallets send 27/28; some EIP-155 wallets send 0/1.
+      if (v >= 27) v -= 27;
+    } else if (sig.length === 64) {
+      // EIP-2098 compact representation: the recovery bit rides in the top
+      // bit of `s`, which is always 0 for a canonical (low-s) signature.
+      // viem's `signMessage` and several hardware-wallet bridges emit this
+      // form, and a 64-byte signature used to be rejected outright.
+      r = sig.slice(0, 32);
+      s = sig.slice(32, 64).slice();
+      v = (s[0] & 0x80) >> 7;
+      s[0] &= 0x7f;
+    } else {
+      return null;
+    }
     if (v !== 0 && v !== 1) return null;
 
     // EIP-2 / SIWE: reject the high-s half of the curve and normalize so
@@ -200,6 +245,90 @@ export function recoverPersonalSignAddress(message, signatureHex) {
   }
 }
 
+/* ---------- EIP-1271: smart-contract wallet signatures ----------
+ *
+ * Safe, Argent, Coinbase Smart Wallet, Ambire and every ERC-4337 account
+ * are contracts, not EOAs: there is no private key to recover an address
+ * from, so `recoverPersonalSignAddress` can never validate them. Instead
+ * the contract itself is the authority — we call `isValidSignature` on it
+ * and check for the ERC-1271 magic return value.
+ *
+ * Two ABIs exist in the wild:
+ *   • EIP-1271 final:  isValidSignature(bytes32 hash, bytes sig)
+ *                      → returns 0x1626ba7e
+ *   • Pre-final draft: isValidSignature(bytes data, bytes sig)
+ *                      → returns 0x20c13b0b   (older Safe / Argent deploys)
+ * We try the modern one first and fall back, so both generations work.
+ */
+
+const SEL_IS_VALID_SIGNATURE_HASH  = "0x1626ba7e"; // isValidSignature(bytes32,bytes)
+const SEL_IS_VALID_SIGNATURE_BYTES = "0x20c13b0b"; // isValidSignature(bytes,bytes)
+
+function abiWordHex(bytes32OrBigInt) {
+  if (typeof bytes32OrBigInt === "bigint") {
+    return bytes32OrBigInt.toString(16).padStart(64, "0");
+  }
+  return bytesToHex(bytes32OrBigInt).padStart(64, "0");
+}
+
+// ABI-encode a dynamic `bytes` payload: 32-byte length + right-padded data.
+function abiEncodeBytes(bytes) {
+  const len = abiWordHex(BigInt(bytes.length));
+  const body = bytesToHex(bytes);
+  const padded = body.padEnd(Math.ceil(body.length / 64) * 64, "0");
+  return len + padded;
+}
+
+function abiEncodedByteLength(bytes) {
+  // one length word + the padded body, in bytes
+  return 32 + Math.ceil(bytes.length / 32) * 32;
+}
+
+/**
+ * Ask the contract at `address` whether `signature` is a valid signature of
+ * `message` (EIP-191 personal_sign framing) on chain `chainId`.
+ * Returns true only on an explicit magic-value match — any RPC failure,
+ * revert, or non-contract address returns false.
+ */
+export async function verifyErc1271Signature(env, { address, message, signature, chainId }) {
+  const chain = CHAINS_BY_CHAINID[chainId] || CHAINS_BY_CHAINID[1];
+  if (!chain) return false;
+
+  let sigBytes;
+  try { sigBytes = hexToBytes(signature); } catch { return false; }
+  if (!sigBytes.length) return false;
+
+  const digest = eip191Digest(message);
+  const prefixed = eip191Bytes(message);
+
+  // --- modern: isValidSignature(bytes32 hash, bytes signature) -------------
+  const modernData =
+    SEL_IS_VALID_SIGNATURE_HASH +
+    abiWordHex(digest) +                       // arg0: hash
+    abiWordHex(BigInt(64)) +                   // arg1: offset to `signature`
+    abiEncodeBytes(sigBytes);
+  const modern = await ethCall(chain, env, address, modernData);
+  if (typeof modern === "string" && modern.slice(2, 10).toLowerCase() === "1626ba7e") {
+    return true;
+  }
+
+  // --- legacy draft: isValidSignature(bytes data, bytes signature) ---------
+  const dataOffset = 64;
+  const sigOffset = dataOffset + abiEncodedByteLength(prefixed);
+  const legacyData =
+    SEL_IS_VALID_SIGNATURE_BYTES +
+    abiWordHex(BigInt(dataOffset)) +
+    abiWordHex(BigInt(sigOffset)) +
+    abiEncodeBytes(prefixed) +
+    abiEncodeBytes(sigBytes);
+  const legacy = await ethCall(chain, env, address, legacyData);
+  if (typeof legacy === "string" && legacy.slice(2, 10).toLowerCase() === "20c13b0b") {
+    return true;
+  }
+
+  return false;
+}
+
 function bytesToBigInt(bytes) {
   let v = 0n;
   for (const b of bytes) v = (v << 8n) | BigInt(b);
@@ -219,13 +348,19 @@ function bytesToBigInt(bytes) {
  */
 export async function verifySiwe(env, { message, signature, expectedDomains }) {
   if (!message || !signature) return { ok: false, error: "missing_message_or_signature" };
+  if (typeof signature !== "string" || !/^(0x)?[0-9a-fA-F]+$/.test(signature)) {
+    return { ok: false, error: "malformed_signature" };
+  }
 
   const parsed = parseSiweMessage(message);
   if (!parsed) return { ok: false, error: "malformed_siwe_message" };
 
-  // Domain check — accept any of the configured allowlisted domains.
-  const allowed = (expectedDomains || []).map((d) => d.toLowerCase());
-  if (allowed.length && !allowed.includes(parsed.domain.toLowerCase())) {
+  // Domain check — accept any of the configured allowlisted domains. Both
+  // sides are normalised to a bare host so "https://defiscoring.com" (some
+  // wallet SDKs put the full origin in the domain slot) matches the
+  // "defiscoring.com" we derive from ALLOWED_ORIGINS.
+  const allowed = (expectedDomains || []).map(normalizeDomain).filter(Boolean);
+  if (allowed.length && !allowed.includes(normalizeDomain(parsed.domain))) {
     return { ok: false, error: "domain_mismatch" };
   }
 
@@ -245,31 +380,59 @@ export async function verifySiwe(env, { message, signature, expectedDomains }) {
     return { ok: false, error: "stale_or_future_issued_at" };
   }
 
-  // Nonce check + atomic consume
+  // Nonce claim. This is a single DELETE guarded on expiry, so exactly one
+  // caller can ever win it: the row is the lock. The previous SELECT-then-
+  // verify-then-DELETE sequence left a window where two concurrent
+  // /api/auth/verify calls carrying the same nonce both passed the SELECT
+  // and both minted a session — which is precisely the replay the nonce
+  // exists to prevent.
+  //
+  // Consuming *before* signature verification means a bad signature burns
+  // the nonce and the client has to fetch a fresh one. That is the intended
+  // trade: it also removes any ability to grind signatures against a single
+  // live nonce.
   if (!env.HEALTH_DB) return { ok: false, error: "db_unavailable" };
-  const row = await env.HEALTH_DB
-    .prepare("SELECT expires_at FROM siwe_nonces WHERE nonce = ?")
-    .bind(parsed.nonce).first();
-  if (!row) return { ok: false, error: "unknown_or_consumed_nonce" };
-  if (row.expires_at < now) {
-    await env.HEALTH_DB.prepare("DELETE FROM siwe_nonces WHERE nonce = ?")
-      .bind(parsed.nonce).run().catch(() => {});
-    return { ok: false, error: "nonce_expired" };
+  let claimed;
+  try {
+    const res = await env.HEALTH_DB
+      .prepare("DELETE FROM siwe_nonces WHERE nonce = ? AND expires_at > ?")
+      .bind(parsed.nonce, now).run();
+    claimed = (res?.meta?.changes || 0) === 1;
+  } catch (e) {
+    return { ok: false, error: "nonce_lookup_failed" };
   }
+  if (!claimed) return { ok: false, error: "unknown_or_expired_nonce" };
 
-  // Recover address from signature
+  // Recover address from signature (EOA path).
   const recovered = recoverPersonalSignAddress(message, signature);
+  let method = "eoa";
   if (!recovered || recovered.toLowerCase() !== parsed.address.toLowerCase()) {
-    return { ok: false, error: "signature_address_mismatch" };
+    // Not a matching EOA signature. Before rejecting, ask the address
+    // itself — smart-contract wallets (Safe, Argent, Coinbase Smart Wallet,
+    // every ERC-4337 account) sign via EIP-1271 and have no recoverable
+    // key. Without this branch those wallets can never sign in at all.
+    const okContract = await verifyErc1271Signature(env, {
+      address: parsed.address,
+      message,
+      signature,
+      chainId: parsed.chainId,
+    }).catch(() => false);
+    if (!okContract) return { ok: false, error: "signature_address_mismatch" };
+    method = "eip1271";
   }
-
-  // Atomic-ish consume (D1 has no transactions across statements, but
-  // DELETE WHERE nonce = ? is a single statement and idempotent).
-  await env.HEALTH_DB.prepare("DELETE FROM siwe_nonces WHERE nonce = ?")
-    .bind(parsed.nonce).run().catch(() => {});
 
   const messageHash = "0x" + bytesToHex(keccak_256(utf8(message)));
-  return { ok: true, address: recovered.toLowerCase(), parsed, messageHash };
+  return { ok: true, address: parsed.address.toLowerCase(), parsed, messageHash, method };
+}
+
+/** Reduce "https://host:port/path" | "host:port" | "HOST" to a bare lowercase host[:port]. */
+function normalizeDomain(d) {
+  if (typeof d !== "string") return null;
+  let s = d.trim().toLowerCase();
+  if (!s) return null;
+  s = s.replace(/^[a-z][a-z0-9+.-]*:\/\//, "");  // strip scheme
+  s = s.split("/")[0];                            // strip path
+  return s || null;
 }
 
 /* ---------- EIP-55 checksum address ----------
@@ -329,21 +492,73 @@ export function verifySessionToken(token, hmacKey) {
   return diff === 0 ? sessionId : null;
 }
 
+/* ---------- cookie attributes ----------
+ *
+ * The dashboard is served from defiscoring.com while the API answers on the
+ * worker's own hostname (see site.defi.worker_url). Those are different
+ * registrable domains, which makes every `fetch(..., {credentials:"include"})`
+ * a cross-site request — and a `SameSite=Lax` cookie is NEVER sent on one.
+ * The practical effect was that /api/auth/verify set a cookie the browser
+ * then refused to send back, so /api/auth/me returned 401 immediately after
+ * a successful signature and no wallet could stay signed in.
+ *
+ * So the SameSite value has to follow the request: `None` (plus `Partitioned`
+ * for CHIPS, since Chrome's third-party cookie deprecation would otherwise
+ * drop it) when the caller is cross-site, and `Lax` when the site and API
+ * share an origin — which is the stronger default and the deployment we get
+ * when the worker serves the static assets itself.
+ *
+ * `SameSite=None` removes SameSite's incidental CSRF protection; the Origin
+ * check enforced on every state-changing /api/ route (worker/index.js) is
+ * what replaces it, and is required for this to be safe.
+ */
+export function isCrossSiteRequest(request) {
+  try {
+    const origin = request?.headers?.get?.("origin");
+    if (!origin) return false;                 // same-origin or non-browser
+    const originHost = new URL(origin).host.toLowerCase();
+    const selfHost = new URL(request.url).host.toLowerCase();
+    if (originHost === selfHost) return false;
+    // Treat "www.example.com" vs "example.com" as same-site.
+    return registrableish(originHost) !== registrableish(selfHost);
+  } catch {
+    return true; // unparseable Origin — assume the strictest case
+  }
+}
+
+function registrableish(host) {
+  const bare = host.split(":")[0];
+  return bare.replace(/^www\./, "");
+}
+
+function cookieAttrs(crossSite) {
+  return crossSite
+    ? ["Secure", "SameSite=None", "Partitioned"]
+    : ["Secure", "SameSite=Lax"];
+}
+
 export function buildSessionCookie(token, opts = {}) {
   const maxAge = Math.floor((opts.maxAgeMs || SESSION_TTL_MS) / 1000);
-  const flags = [
+  return [
     `${COOKIE_NAME}=${token}`,
     "Path=/",
     "HttpOnly",
-    "Secure",
-    "SameSite=Lax",
+    ...cookieAttrs(!!opts.crossSite),
     `Max-Age=${maxAge}`,
-  ];
-  return flags.join("; ");
+  ].join("; ");
 }
 
-export function buildLogoutCookie() {
-  return `${COOKIE_NAME}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`;
+// The delete cookie must carry the SAME attributes as the one it replaces or
+// the browser treats it as a different cookie and the session cookie survives
+// logout.
+export function buildLogoutCookie(opts = {}) {
+  return [
+    `${COOKIE_NAME}=`,
+    "Path=/",
+    "HttpOnly",
+    ...cookieAttrs(!!opts.crossSite),
+    "Max-Age=0",
+  ].join("; ");
 }
 
 export function readCookie(request, name = COOKIE_NAME) {

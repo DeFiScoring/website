@@ -10,6 +10,7 @@ import {
   mintNonce, verifySiwe, findOrCreateUser, createSession, destroySession,
   buildSessionCookie, buildLogoutCookie, signSessionToken,
   requireSession, readCookie, verifySessionToken, toChecksumAddress,
+  isCrossSiteRequest,
 } from "../lib/auth.js";
 import { getSubscription } from "../lib/tiers.js";
 
@@ -73,7 +74,7 @@ export async function handleAuthVerify(request, env) {
     request,
   });
   const token = signSessionToken(session.id, env.SESSION_HMAC_KEY);
-  const cookie = buildSessionCookie(token);
+  const cookie = buildSessionCookie(token, { crossSite: isCrossSiteRequest(request) });
 
   return json(
     {
@@ -84,6 +85,9 @@ export async function handleAuthVerify(request, env) {
         is_admin: !!user.is_admin,
         is_new: !!user.isNew,
       },
+      // Which signing scheme proved ownership: "eoa" (secp256k1) or
+      // "eip1271" (smart-contract wallet). Useful in support tickets.
+      auth_method: result.method || "eoa",
       session: { expires_at: session.expiresAt },
     },
     200,
@@ -97,7 +101,9 @@ export async function handleAuthLogout(request, env) {
     const sessionId = verifySessionToken(cookie, env.SESSION_HMAC_KEY || "");
     if (sessionId) await destroySession(env, sessionId);
   }
-  return json({ success: true }, 200, { "set-cookie": buildLogoutCookie() });
+  return json({ success: true }, 200, {
+    "set-cookie": buildLogoutCookie({ crossSite: isCrossSiteRequest(request) }),
+  });
 }
 
 export async function handleAuthMe(request, env) {
