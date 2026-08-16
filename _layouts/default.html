@@ -6,23 +6,39 @@
   <link rel="stylesheet" href="{{ '/assets/css/footer.css' | relative_url }}?v={{ site.time | date: '%s' }}">
 </head>
 <body>
-  <header class="nav">
-    <div class="nav-inner">
-      <a class="brand" href="/">
-        <span class="brand-mark"><img src="{{ '/assets/defiscoring-logo-white-100x100.png' | relative_url }}" alt="DeFi Scoring logo" width="32" height="32"></span>
-        <span class="brand-text">DeFi Scoring</span>
+  {%- comment -%}
+    Same ds-nav component the landing page uses (index.html). This layout
+    previously used `.nav` / `.nav-inner` / `.brand` / `.btn btn-primary`
+    classes that exist in NO stylesheet this layout loads (they were
+    Bootstrap-era leftovers), so every default-layout page — /pricing/,
+    /methodology/, /terms/, /privacy/, /api/, /account/ — rendered a bare
+    unstyled header. Keep this markup in lockstep with index.html's nav.
+  {%- endcomment -%}
+  <header class="ds-nav">
+    <div class="ds-nav__inner">
+      <a class="ds-brand" href="/">
+        <span class="ds-brand__mark">
+          <img src="{{ '/assets/defiscoring-logo-white-100x100.png' | relative_url }}" alt="DeFi Scoring logo" width="32" height="32">
+        </span>
+        <span class="ds-brand__text">DeFi <span class="ds-brand__accent">Scoring</span></span>
       </a>
-      <nav class="nav-links">
-        <a class="nav-link" href="/pricing/" style="margin-right:18px;color:var(--ds-text);text-decoration:none;font-weight:600;font-size:14px">Pricing</a>
-        <a class="btn btn-primary" href="/dashboard/">Open Dashboard</a>
+      <nav class="ds-nav__links" aria-label="Primary">
+        <a href="/#features">Features</a>
+        <a href="/methodology/">Methodology</a>
+        <a href="/pricing/">Pricing</a>
+        <a class="ds-btn ds-btn--ghost-sm" href="/dashboard/">Open App →</a>
       </nav>
+      <button class="ds-nav__toggle" type="button" aria-label="Open menu" aria-expanded="false" data-ds-menu-toggle>
+        <span></span><span></span><span></span>
+      </button>
     </div>
   </header>
-  <main id="main" class="container" style="padding:80px 24px">
+  <main id="main" class="ds-container" style="padding-top:64px;padding-bottom:80px">
     {{ content }}
   </main>
   {% include site-footer.html %}
   {% include dashboard/intel-consent.html %}
   <script>window.DEFI_RISK_WORKER_URL = window.DEFI_RISK_WORKER_URL || "{{ site.defi.worker_url | default: 'https://defiscoring.guillaumelauzier.workers.dev' }}";</script>
+  <script src="{{ '/assets/js/landing.js' | relative_url }}?v={{ site.time | date: '%s' }}" defer></script>
 </body>
 </html>

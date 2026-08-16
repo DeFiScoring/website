@@ -76,6 +76,10 @@ export async function handleWalletScore(request, env, baseHeaders = {}) {
 
 async function persistWalletScore(env, wallet, payload) {
   if (!env.HEALTH_DB || !payload || !payload.pillars) return false;
+  // Unscored results (no on-chain footprint / all providers down) carry no
+  // number worth charting — persisting them would pollute the trend and the
+  // badge with nulls.
+  if (payload.scored === false) return false;
   try {
     const p = payload.pillars;
     await env.HEALTH_DB.prepare(

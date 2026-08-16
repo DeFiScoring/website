@@ -6,6 +6,7 @@ import worker from "../worker/index.js";
 
 const ORIGIN = "https://defiscoring.com";
 const WALLET = "0x00000000000000000000000000000000000000aa";
+const EMPTY_WALLET = "0x00000000000000000000000000000000000000ee";
 
 const results = [];
 function check(name, cond, detail) {
@@ -31,6 +32,18 @@ globalThis.fetch = async (input, init) => {
     calls.etherscan++;
     const q = new URL(u).searchParams;
     const action = q.get("action");
+    // EMPTY_WALLET: a brand-new address with zero footprint everywhere.
+    // For eth_call the wallet is ABI-encoded inside `data`, not in the
+    // `address` query param — match both places.
+    const target = (q.get("address") || "").toLowerCase();
+    const callData = (q.get("data") || "").toLowerCase();
+    const emptyInCalldata = callData.includes(EMPTY_WALLET.slice(2));
+    if (target === EMPTY_WALLET || emptyInCalldata) {
+      if (action === "balance") return J({ status: "1", message: "OK", result: "0" });
+      if (action === "tokentx") return J({ status: "0", message: "No token transfers found", result: [] });
+      if (action === "txlist")  return J({ status: "0", message: "No transactions found", result: [] });
+      if (action === "eth_call") return J({ jsonrpc: "2.0", id: 1, result: "0x" + "0".repeat(64 * 6) });
+    }
     if (action === "balance") return J({ status: "1", message: "OK", result: "1500000000000000000" });
     if (action === "tokentx") {
       return J({ status: "1", message: "OK", result: [{
@@ -122,6 +135,21 @@ async function call(path) {
 
   const bad = await call("/api/wallet-score?wallet=0xnope");
   check("invalid address rejected", bad.status === 400, bad.json);
+
+  // ---- honest unscored state for a wallet with no footprint
+  const rowsBefore = (await env.HEALTH_DB
+    .prepare("SELECT COUNT(*) c FROM health_scores").first()).c;
+  const es = await call("/api/wallet-score?wallet=" + EMPTY_WALLET);
+  check("empty wallet returns scored:false (not a fabricated number)",
+    es.json.success && es.json.scored === false && es.json.score === null &&
+    es.json.reason === "no_onchain_history", es.json);
+  check("unscored payload still explains what was checked",
+    !!es.json.explanation && Object.keys(es.json.pillars || {}).length === 5,
+    { explanation: es.json.explanation });
+  const rowsAfter = (await env.HEALTH_DB
+    .prepare("SELECT COUNT(*) c FROM health_scores").first()).c;
+  check("unscored result is not persisted to health_scores",
+    rowsAfter === rowsBefore, { rowsBefore, rowsAfter });
 
   globalThis.fetch = realFetch;
   const failed = results.filter((r) => !r.ok);

@@ -165,6 +165,12 @@ sitemap: false
           });
           var data = await res.json().catch(function () { return {}; });
           if (data && data.url) { window.location.href = data.url; return; }
+          if (data && (data.error === 'no_billing_account' || data.error === 'no_stripe_customer')) {
+            // Free tier — no Stripe customer exists, so there is no portal to
+            // open. Send them to pricing to start a subscription instead.
+            window.location.href = '/pricing/';
+            return;
+          }
           alert(data && data.error ? data.error : 'Could not open billing portal.');
         } catch (e) { alert('Network error opening billing portal.'); }
         finally { portalBtn.textContent = prevText; portalBtn.disabled = false; }
