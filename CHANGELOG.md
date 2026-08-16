@@ -1,5 +1,83 @@
 # Changelog
 
+## Unreleased — Wallet backend fixes
+
+Bug-fix pass over the wallet path: SIWE sign-in, sessions, multi-wallet
+linking, and the wallet-scoped scoring endpoints.
+
+**Sign-in was broken end to end in the deployed topology**
+
+- `ds_session` was always issued `SameSite=Lax`. The dashboard is served from
+  `defiscoring.com` and calls the worker on its own hostname, so every API
+  call is cross-site — and a Lax cookie is never sent on one. `/api/auth/verify`
+  set a cookie the browser then refused to return, so `/api/auth/me` 401'd
+  immediately after a valid signature and no wallet could stay signed in. The
+  cookie now follows the request: `SameSite=None; Partitioned` when the caller
+  is cross-site, `Lax` when the worker also serves the site. The logout cookie
+  carries matching attributes so it actually clears the session.
+- New: Origin allowlist check on every mutating `/api/` request. `SameSite=None`
+  gives up SameSite's incidental CSRF protection; this replaces it. Requests
+  with no Origin (curl, the Stripe webhook) are unaffected.
+
+**Wallets that could never sign in**
+
+- Smart-contract wallets — Safe, Argent, Coinbase Smart Wallet, every ERC-4337
+  account — are contracts with no recoverable key, so ECDSA recovery could
+  never validate them. Added EIP-1271 verification (`isValidSignature`, both
+  the final `bytes32` ABI and the pre-final `bytes` ABI used by older Safe and
+  Argent deploys) as a fallback when recovery doesn't match.
+- 64-byte EIP-2098 compact signatures were rejected outright; now accepted.
+- `ethCall` gained a public-RPC tier (`ETH_RPC_URL` / `RPC_URL_<chainId>`) so
+  contract-wallet sign-in still works without an Alchemy key.
+
+**SIWE message parsing**
+
+- Key/value pairs were scanned across the whole message, including the
+  statement — the one field a calling dapp fully controls — so a
+  `Nonce: …`-shaped statement could shadow real fields. Parsing is now scoped
+  to the field block proper, located by the mandatory `URI:` line.
+- Fixes along the way: multi-line statements, messages with no statement at
+  all (the wagmi/rainbowkit default), a `Resources:` block, scheme-prefixed
+  domains (`https://defiscoring.com wants you to…`), and CRLF line endings.
+- Nonce consumption is now a single guarded `DELETE`, so two concurrent
+  `/api/auth/verify` calls carrying the same nonce can no longer both mint a
+  session.
+
+**Wallet data + linking**
+
+- Native-coin prices had no fallback: one CoinGecko 429 (routine on the
+  keyless free tier) priced ETH at 0, reported the wallet as $0, and silently
+  dropped the portfolio pillar — 25% of the score — to a neutral 50. Added the
+  DefiLlama tier that ERC-20s already had.
+- `/api/wallet-score` read `?tier=1` while `/api/portfolio` reads `?tier=all`,
+  so a default call scored DeFi positions over 11 chains and the portfolio over
+  5 — two pillars computed on different chain sets, at ~2× the intended
+  subrequest budget. Both now share one contract.
+- Alchemy token metadata was fetched one subrequest per token (up to 100 per
+  chain), blowing the 50-subrequest Worker limit on the first chain and leaving
+  the rest of a wallet's chains unscanned. Batched 25 per request.
+- Etherscan's `proxy` module speaks raw JSON-RPC and never sets `status`, so a
+  reverted or rate-limited `eth_call` returned `undefined` as though it were a
+  successful empty result — a failed `balanceOf` became "holds 0 of that token".
+- `/api/wallet-score` now persists to `health_scores`, so `/badge/{addr}.svg`
+  and the score history are populated by the endpoint the dashboard actually
+  calls (previously only the legacy Ethereum-only `POST /api/health-score` wrote).
+- Re-linking an already-linked wallet returns success instead of an error — it
+  is the desired end state, and a double-click surfaced as "link_failed".
+- Unlinking a wallet now deactivates its alert rules. `alert_rules.wallet_address`
+  is not a foreign key, so the 5-minute cron kept scanning and emailing about
+  wallets the user had explicitly disconnected.
+- `POST /api/account/delete` (DSAR erasure) was hard-wired to a 503 saying it
+  needed SIWE proof of ownership. SIWE has shipped, so it is implemented:
+  session-gated, erases the user and every wallet they have proved ownership of.
+- The daily retention cron never pruned `siwe_nonces` or expired `sessions`;
+  both grew unbounded on the hot path of every signed-in request.
+
+**Tests**
+
+- `npm test` — four suites booting the real worker against a `node:sqlite`-backed
+  D1 shim running the real `migrations/`. Requires Node >= 22.5.
+
 ## Unreleased — DeFiScoring Overhaul
 
 The overhaul is being shipped in numbered phases. Each phase lands as one or

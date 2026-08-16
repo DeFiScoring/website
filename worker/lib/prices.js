@@ -156,7 +156,31 @@ async function priceBySymbols(env, tokens, fiat) {
   } catch { return {}; }
 }
 
-async function priceByLlama(chain, tokens, fiat) {
+// USD→<fiat> cross-rate, cached. DefiLlama quotes in USD only, so every
+// non-USD portfolio needs one. This used to be refetched on every call (and
+// with a `cacheGet` whose result was assigned to an unused variable), which
+// meant an 11-chain scan in EUR spent 11 subrequests re-asking CoinGecko for
+// the same number.
+async function usdToFiatRate(env, fiatLow) {
+  if (fiatLow === 'usd') return 1;
+  const ck = `px:fx:usd:${fiatLow}`;
+  const cached = await cacheGet(env, ck);
+  if (typeof cached === 'number' && cached > 0) return cached;
+  try {
+    const r = await fetch(`${cgBase(env)}/simple/price?ids=usd-coin&vs_currencies=${fiatLow}`,
+      { headers: cgHeaders(env) });
+    if (!r.ok) return 1;
+    const j = await r.json();
+    const rate = Number(j['usd-coin']?.[fiatLow]) || 0;
+    if (rate > 0) {
+      await cacheSet(env, ck, rate, 600);
+      return rate;
+    }
+  } catch { /* fall through */ }
+  return 1;
+}
+
+async function priceByLlama(chain, env, tokens, fiat) {
   if (!chain.defillama || !tokens.length) return {};
   const fiatLow = String(fiat).toLowerCase();
   const keys = tokens.map((t) => `${chain.defillama}:${t.contract.toLowerCase()}`);
@@ -166,28 +190,33 @@ async function priceByLlama(chain, tokens, fiat) {
     if (!r.ok) return {};
     const j = await r.json();
     const coins = j.coins || {};
+    const usdToFiat = await usdToFiatRate(env, fiatLow);
     const out = {};
-    // DefiLlama returns USD only. If the user asked for non-USD, convert via
-    // the cached USD→fiat rate (stored alongside the natives batch — the
-    // portfolio handler always primes priceMultipleNatives first so the
-    // CoinGecko free tier already gave us the right cross-rate).
-    let usdToFiat = 1;
-    if (fiatLow !== 'usd') {
-      // Get USD→fiat from a one-shot cached lookup. Cheap & idempotent.
-      const ck = `px:fx:usd:${fiatLow}`;
-      let rate = await cacheGet(null, ck); // null is fine; cache.js no-ops without env
-      // We don't have env here, so just refetch. CG /simple/price for usd in <fiat>
-      // is one call and cached for 60s by the worker layer's KV when env is wired.
-      try {
-        const rr = await fetch(`${CG_FREE}/simple/price?ids=usd-coin&vs_currencies=${fiatLow}`);
-        const jj = rr.ok ? await rr.json() : {};
-        usdToFiat = Number(jj['usd-coin']?.[fiatLow]) || 1;
-      } catch { usdToFiat = 1; }
-    }
     for (const [k, v] of Object.entries(coins)) {
       const contract = k.split(':')[1]?.toLowerCase();
       if (!contract || typeof v?.price !== 'number') continue;
       out[contract] = { [fiatLow]: v.price * usdToFiat };
+    }
+    return out;
+  } catch { return {}; }
+}
+
+// Native-coin prices from DefiLlama, keyed by CoinGecko id. Same shape as the
+// CoinGecko /simple/price response so it can be merged straight in.
+async function nativesByLlama(env, fiatLow, ids) {
+  if (!ids.length) return {};
+  const url = `${LLAMA_PRICES}/${ids.map((id) => `coingecko:${id}`).join(',')}`;
+  try {
+    const r = await fetch(url);
+    if (!r.ok) return {};
+    const j = await r.json();
+    const coins = j.coins || {};
+    const usdToFiat = await usdToFiatRate(env, fiatLow);
+    const out = {};
+    for (const [k, v] of Object.entries(coins)) {
+      const id = k.slice('coingecko:'.length);
+      if (!id || typeof v?.price !== 'number') continue;
+      out[id] = { [fiatLow]: v.price * usdToFiat };
     }
     return out;
   } catch { return {}; }
@@ -209,7 +238,7 @@ export async function priceTokensWithFallback(chain, env, tokens, fiat) {
   // Tier 3 — DefiLlama for what's still missing.
   const merged2 = { ...tier1, ...tier2 };
   const missing3 = tokens.filter((t) => t.contract && !(merged2[t.contract.toLowerCase()] && Number(merged2[t.contract.toLowerCase()][fiatLow]) > 0));
-  const tier3 = missing3.length ? await priceByLlama(chain, missing3, fiat).catch(() => ({})) : {};
+  const tier3 = missing3.length ? await priceByLlama(chain, env, missing3, fiat).catch(() => ({})) : {};
 
   return { ...tier1, ...tier2, ...tier3 };
 }
@@ -224,16 +253,29 @@ export async function priceMultipleNatives(env, fiat, ids) {
   // showing $0 for the chain header — strictly worse than refetching.
   if (cached && Object.keys(cached).length > 0) return cached;
 
+  let out = {};
   const url = `${cgBase(env)}/simple/price?ids=${idList.join(',')}&vs_currencies=${fiatLow}`;
   try {
     const r = await fetch(url, { headers: cgHeaders(env) });
-    if (!r.ok) return {};
-    const j = await r.json();
-    if (j && Object.keys(j).length > 0) {
-      await cacheSet(env, cacheKey, j, PRICE_TTL);
+    if (r.ok) {
+      const j = await r.json();
+      if (j && typeof j === 'object') out = j;
     }
-    return j || {};
-  } catch {
-    return {};
+  } catch { /* fall through to the DefiLlama tier */ }
+
+  // ERC-20s already had a three-tier price fallback; native coins had none, so
+  // a single CoinGecko 429 (routine on the keyless free tier) priced ETH at 0
+  // and the whole wallet reported $0 — which then made the portfolio_health
+  // pillar report `real: false` and quietly dropped 25% of the score to a
+  // neutral 50. Fill whatever CoinGecko missed from DefiLlama.
+  const missing = idList.filter((id) => !(Number(out[id]?.[fiatLow]) > 0));
+  if (missing.length) {
+    const llama = await nativesByLlama(env, fiatLow, missing).catch(() => ({}));
+    out = { ...out, ...llama };
   }
+
+  if (Object.keys(out).length > 0) {
+    await cacheSet(env, cacheKey, out, PRICE_TTL);
+  }
+  return out;
 }

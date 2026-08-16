@@ -193,8 +193,14 @@ by TVL+audits+profile-bucket weight × score-band tolerance.
 Migrations `0006_auth_subscriptions.sql`, `0007_alerts.sql`. Added
 `worker/lib/{auth,tiers,email,telegram,stripe,alerts}.js` and handlers
 `auth-siwe.js`, `wallets.js`, `billing.js`, `alerts.js`, `cron.js`. SIWE
-via `@noble/curves` + `@noble/hashes`. HMAC-signed `ds_session` cookie
-(HttpOnly, Secure, SameSite=Lax). Stripe checkout/portal + webhook
+via `@noble/curves` + `@noble/hashes`, with an EIP-1271 fallback so
+smart-contract wallets (Safe, Argent, Coinbase Smart Wallet, ERC-4337
+accounts) can sign in too. HMAC-signed `ds_session` cookie (HttpOnly,
+Secure; `SameSite=Lax` when the dashboard and API share an origin,
+`SameSite=None; Partitioned` when they don't — a Lax cookie is never sent
+on the cross-site fetch the deployed dashboard makes). CSRF is enforced by
+an Origin allowlist check on every mutating `/api/` route.
+Stripe checkout/portal + webhook
 (idempotent, 5-min replay window). Tier matrix: Free $0 / Pro $15 /
 Plus $49 / Enterprise. Per-tier quotas in `tier_quotas`. Alerts cron
 every 5min with email/telegram delivery + `alert_deliveries` audit log.

@@ -74,7 +74,7 @@ import {
   handleAlertDeliveriesList,
 } from "./handlers/alerts.js";
 import { scanAlertRules } from "./handlers/cron.js";
-import { optionalSession } from "./lib/auth.js";
+import { optionalSession, requireSession, buildLogoutCookie, isCrossSiteRequest } from "./lib/auth.js";
 import { getSubscription, tierLimit } from "./lib/tiers.js";
 // Stream B — admin SPA backend. Every handler is SIWE-gated via
 // requireAdmin (lib/admin.js) and writes to admin_audit_log. Distinct from
@@ -2447,6 +2447,110 @@ async function handleAccountExport(request, env, url) {
   return json({ ...out, disclaimer: DISCLAIMER_TEXT });
 }
 
+// Phase 4 — DSAR erasure. This endpoint used to fail closed with a 503
+// ("shipping in Phase 2") because there was no way to prove that the caller
+// controlled the address they wanted erased. SIWE now provides exactly that
+// proof, so the block no longer applies: we erase the signed-in user and every
+// wallet they have proved ownership of, and nothing else.
+//
+// Deletes run in dependency order rather than relying on ON DELETE CASCADE, so
+// the outcome does not depend on whether foreign-key enforcement is on for the
+// D1 instance. Each statement is independent — a failure on one table is
+// reported in the response instead of aborting the erasure half-done.
+async function handleAccountDelete(request, env) {
+  const auth = await requireSession(request, env);
+  if (auth instanceof Response) return auth;
+  if (!env.HEALTH_DB) return json({ success: false, error: "HEALTH_DB binding unavailable" }, 503);
+
+  const userId = auth.user.id;
+  const { results: walletRows } = await env.HEALTH_DB
+    .prepare("SELECT wallet_address FROM wallet_connections WHERE user_id = ?")
+    .bind(userId).all().catch(() => ({ results: [] }));
+  const wallets = (walletRows || []).map((r) => r.wallet_address).filter(Boolean);
+  if (auth.user.primary_wallet && !wallets.includes(auth.user.primary_wallet)) {
+    wallets.push(auth.user.primary_wallet);
+  }
+
+  const deleted = {};
+  const errors = {};
+  const skipped = [];
+  const run = async (label, sql, binds) => {
+    try {
+      const r = await env.HEALTH_DB.prepare(sql).bind(...binds).run();
+      deleted[label] = (deleted[label] || 0) + ((r && r.meta && r.meta.changes) || 0);
+    } catch (e) {
+      errors[label] = e && e.message ? e.message : String(e);
+    }
+  };
+
+  // User-scoped rows, children first.
+  await run("alert_deliveries", "DELETE FROM alert_deliveries WHERE user_id = ?", [userId]);
+  await run("alert_rules",      "DELETE FROM alert_rules WHERE user_id = ?",      [userId]);
+  await run("alert_channels",   "DELETE FROM alert_channels WHERE user_id = ?",   [userId]);
+  await run("tier_quotas",      "DELETE FROM tier_quotas WHERE user_id = ?",      [userId]);
+  await run("subscriptions",    "DELETE FROM subscriptions WHERE user_id = ?",    [userId]);
+  await run("sessions",         "DELETE FROM sessions WHERE user_id = ?",         [userId]);
+  await run("wallet_connections", "DELETE FROM wallet_connections WHERE user_id = ?", [userId]);
+
+  // Wallet-scoped rows. These tables predate the user model and key on the
+  // address itself, so they have to be erased per proven-owned wallet.
+  for (const w of wallets) {
+    await run("health_scores",   "DELETE FROM health_scores WHERE wallet = ?",   [w]);
+    await run("watchlists",      "DELETE FROM watchlists WHERE wallet = ?",      [w]);
+    await run("community_votes", "DELETE FROM community_votes WHERE wallet = ?", [w]);
+  }
+
+  // intel_events is keyed by HMAC-SHA256(sha256(addr), INTEL_SALT) and cannot
+  // be located without the salt — mirror handleAccountExport's derivation.
+  if (env.INTEL_SALT) {
+    for (const w of wallets) {
+      try {
+        const inner = await sha256(w);
+        const keyBuf = await crypto.subtle.importKey(
+          "raw", new TextEncoder().encode(env.INTEL_SALT),
+          { name: "HMAC", hash: "SHA-256" }, false, ["sign"],
+        );
+        const sig = await crypto.subtle.sign("HMAC", keyBuf, new TextEncoder().encode(inner));
+        const hashed = Array.from(new Uint8Array(sig))
+          .map((b) => b.toString(16).padStart(2, "0")).join("");
+        await run("intel_events", "DELETE FROM intel_events WHERE hashed_wallet = ?", [hashed]);
+      } catch (e) {
+        errors.intel_events = e && e.message ? e.message : String(e);
+      }
+    }
+  } else {
+    // No salt configured means no intel_events were ever written under a
+    // resolvable key, so there is nothing to erase. That is a deployment
+    // note, not a failed erasure — reporting it as an error would tell the
+    // user their deletion request only partly succeeded when it fully did.
+    skipped.push("intel_events: INTEL_SALT unset, no hashed rows to resolve");
+  }
+
+  // The user row last, so a partial failure above still leaves an account the
+  // caller can sign back into and retry with.
+  await run("users", "DELETE FROM users WHERE id = ?", [userId]);
+
+  const body = {
+    success: Object.keys(errors).length === 0,
+    deleted,
+    wallets_erased: wallets,
+    notes: [
+      "Aggregated, non-identifying rollups (intel_daily_aggregates) are retained",
+      "by design and contain no wallet address — see /privacy/.",
+    ],
+  };
+  if (skipped.length) body.skipped = skipped;
+  if (Object.keys(errors).length) body.errors = errors;
+
+  return new Response(JSON.stringify(body), {
+    status: body.success ? 200 : 207,
+    headers: {
+      "Content-Type": "application/json",
+      "set-cookie": buildLogoutCookie({ crossSite: isCrossSiteRequest(request) }),
+    },
+  });
+}
+
 async function runRetentionPrune(env) {
   if (!env.HEALTH_DB) return { ok: false, reason: "no HEALTH_DB binding" };
   const days = parseInt(env.DATA_RETENTION_DAYS || "180", 10);
@@ -2475,7 +2579,92 @@ async function runRetentionPrune(env) {
     summary.ok = false;
     summary.health_scores_error = e && e.message ? e.message : String(e);
   }
+  // Auth garbage collection. Neither table was ever pruned: siwe_nonces grows
+  // by one row per wallet-connect click that the user then abandons (the row
+  // is only deleted when a signature actually lands), and sessions keep rows
+  // for 30 days past expiry with no reaper at all. Both are pure garbage once
+  // `expires_at` has passed, and both are on the hot path of every signed-in
+  // request, so letting them grow unbounded is a slow leak into wallet
+  // sign-in latency.
+  const nowMs = Date.now();
+  try {
+    const r = await env.HEALTH_DB
+      .prepare("DELETE FROM siwe_nonces WHERE expires_at < ?")
+      .bind(nowMs)
+      .run();
+    summary.deleted.siwe_nonces = (r && r.meta && r.meta.changes) || 0;
+  } catch (e) {
+    summary.ok = false;
+    summary.siwe_nonces_error = e && e.message ? e.message : String(e);
+  }
+  try {
+    const r = await env.HEALTH_DB
+      .prepare("DELETE FROM sessions WHERE expires_at < ?")
+      .bind(nowMs)
+      .run();
+    summary.deleted.sessions = (r && r.meta && r.meta.changes) || 0;
+  } catch (e) {
+    summary.ok = false;
+    summary.sessions_error = e && e.message ? e.message : String(e);
+  }
   return summary;
+}
+
+// ---------------------------------------------------------------------------
+// CSRF guard for state-changing API calls.
+//
+// The session cookie is sent with SameSite=None when the dashboard and the
+// worker live on different hosts (see worker/lib/auth.js → cookieAttrs), which
+// is what makes wallet sign-in work at all in the deployed topology. SameSite
+// is therefore no longer doing any CSRF work, so the Origin header has to.
+//
+// A cross-site attacker can forge a `POST /api/account/delete` from their own
+// page — the browser will attach the cookie — but it cannot forge the Origin
+// header. So: any mutating /api/ request that arrives with an Origin we don't
+// recognise is refused before it reaches a handler.
+//
+// Exempt: requests with no Origin at all (curl, server-to-server, the Stripe
+// webhook — which authenticates by signature, not cookie). A browser always
+// sends Origin on cross-origin requests, so "no Origin" is never the attack.
+// ---------------------------------------------------------------------------
+const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
+function csrfBlocked(request, env, url) {
+  if (!MUTATING_METHODS.has(request.method)) return null;
+  if (!url.pathname.startsWith("/api/")) return null;
+
+  const origin = request.headers.get("Origin");
+  if (!origin) {
+    // No Origin. Modern browsers always send one cross-site, but honour
+    // Sec-Fetch-Site when it's present and says otherwise.
+    const site = request.headers.get("Sec-Fetch-Site");
+    if (site && site !== "same-origin" && site !== "none") {
+      return forbidden(request, env, "cross_site_request_blocked");
+    }
+    return null;
+  }
+
+  let originHost;
+  try { originHost = new URL(origin).host.toLowerCase(); } catch {
+    return forbidden(request, env, "invalid_origin");
+  }
+  if (originHost === url.host.toLowerCase()) return null;   // same-origin
+
+  const allowed = parseAllowedOrigins(env);
+  if (allowed.includes("*")) return null;                   // dev/transitional
+  const allowedHosts = allowed.map((o) => {
+    try { return new URL(o).host.toLowerCase(); } catch { return null; }
+  }).filter(Boolean);
+  if (allowedHosts.includes(originHost)) return null;
+
+  return forbidden(request, env, "origin_not_allowed");
+}
+
+function forbidden(request, env, reason) {
+  return new Response(
+    JSON.stringify({ success: false, error: "forbidden", reason }),
+    { status: 403, headers: { "Content-Type": "application/json", ...corsHeadersFor(request, env) } },
+  );
 }
 
 async function dispatch(request, env, peekedAddr) {
@@ -2483,6 +2672,9 @@ async function dispatch(request, env, peekedAddr) {
       return new Response(null, { status: 204, headers: corsHeadersFor(request, env) });
     }
     const url = new URL(request.url);
+
+    const blockedCsrf = csrfBlocked(request, env, url);
+    if (blockedCsrf) return blockedCsrf;
 
     if (url.pathname === "/health") {
       return json({
@@ -2913,10 +3105,9 @@ async function dispatch(request, env, peekedAddr) {
     //
     //   GET  /api/account/export?address=0x…   → JSON dump of every row tied
     //                                            to that address (read-only).
-    //   POST /api/account/delete                → fail-closed 503 until SIWE
-    //                                            (Phase 2) ships, because we
-    //                                            cannot prove ownership of
-    //                                            the requested address yet.
+    //   POST /api/account/delete                → erase the signed-in user and
+    //                                            every wallet they have proved
+    //                                            ownership of via SIWE.
     //   POST /api/account/retention/run         → admin-only on-demand prune,
     //                                            same logic as the cron.
     //
@@ -2929,11 +3120,7 @@ async function dispatch(request, env, peekedAddr) {
       return handleAccountExport(request, env, url);
     }
     if (request.method === "POST" && url.pathname === "/api/account/delete") {
-      return json({
-        success: false,
-        error: "DSAR delete requires signed-in proof of wallet ownership (SIWE), shipping in Phase 2. " +
-               "For an immediate manual deletion, email privacy@defiscoring.com from a wallet you control.",
-      }, 503);
+      return handleAccountDelete(request, env);
     }
     if (request.method === "POST" && url.pathname === "/api/account/retention/run") {
       // Admin-only manual trigger. Gated by ADMIN_TOKEN (set via wrangler
