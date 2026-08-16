@@ -97,11 +97,54 @@
   }
 
   function bandFor(score) {
-    if (score == null) return "Unknown";
+    if (score == null) return "Unscored";
     if (score >= 750) return "Excellent";
     if (score >= 670) return "Good";
     if (score >= 580) return "Fair";
     return "Poor";
+  }
+
+  // Map the /api/wallet-score payload (5 pillars, weights 35/25/15/10/15)
+  // into the factor shape every dashboard renderer consumes. Carries the
+  // `scored:false` state through untouched so the UI can render an honest
+  // "no history yet" instead of a number.
+  function mapWalletScore(wallet, data) {
+    const p = data.pillars || {};
+    const pct = (pl) => (pl && pl.value != null) ? Math.max(0, Math.min(100, Math.round(pl.value))) : null;
+    const mk = (pl, name) => ({
+      name,
+      value: pct(pl),
+      weight: pl && pl.weight != null ? Math.round(pl.weight * 100) : 0,
+      real: pl ? pl.real !== false : false,
+      detail: pl && (pl.rationale || pl.finding) || "",
+    });
+    const factors = [
+      mk(p.loan_reliability,    "Loan reliability (Aave V3, all chains)"),
+      mk(p.portfolio_health,    "Portfolio health (size + diversification)"),
+      mk(p.liquidity_provision, "Liquidity provision (Uniswap V3 LP)"),
+      mk(p.governance,          "Governance participation (Snapshot)"),
+      mk(p.account_age,         "Account age (Ethereum first tx)"),
+    ];
+    const notes = [];
+    if (Array.isArray(data.adjustments) && data.adjustments.length) {
+      notes.push("Adjustments: " + data.adjustments.map(function (a) {
+        return typeof a === "string" ? a : ((a.delta > 0 ? "+" : "") + a.delta + " " + (a.reason || a.name));
+      }).join("; "));
+    }
+    if (data.scored === false && data.explanation) notes.push(data.explanation);
+    return {
+      wallet,
+      scored: data.scored !== false,
+      score: data.score,
+      band: data.scored === false ? "Unscored" : bandFor(data.score),
+      reason: data.reason || null,
+      explanation: data.explanation || null,
+      preliminary: false,
+      updated_at: data.timestamp || new Date().toISOString(),
+      factors,
+      history: [],
+      notice: notes.join(" • "),
+    };
   }
 
   window.DefiAPI = {
@@ -109,8 +152,28 @@
     isMock: false,
 
     async getScore(wallet) {
-      // Primary path: Cloudflare Worker /api/health-score (Aave V3 + Uniswap V3 +
-      // Snapshot + Etherscan). All four pillars use real on-chain / API data.
+      // Primary path: the multi-chain 5-pillar engine. GET /api/wallet-score
+      // composes the T3 portfolio scan + T4 DeFi positions (Aave V3, Compound
+      // V3, Uni V3 across every Tier-1 chain) + Snapshot governance +
+      // Ethereum first-tx age — the full service surface, not the Eth-only
+      // legacy model. It is also the only endpoint honest enough to say
+      // "unscored" for a wallet with no on-chain footprint instead of
+      // inventing a number.
+      if (API_BASE) {
+        try {
+          const res = await fetch(API_BASE + "/api/wallet-score?wallet=" + encodeURIComponent(wallet),
+            { headers: { "Accept": "application/json" } });
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.success) return mapWalletScore(wallet, data);
+          } else {
+            console.warn("wallet-score HTTP " + res.status);
+          }
+        } catch (e) {
+          console.warn("wallet-score call failed, trying legacy health-score:", e.message);
+        }
+      }
+      // Fallback #2: legacy Ethereum-only health-score endpoint.
       if (API_BASE) {
         try {
           const res = await fetch(API_BASE + "/api/health-score", {
@@ -185,13 +248,18 @@
       const s = window.DefiOnchain.preliminaryScore(snap);
       return {
         wallet,
+        scored: s.scored !== false,
         score: s.score,
         band: s.band,
+        reason: s.reason,
+        explanation: s.explanation,
         preliminary: true,
         updated_at: snap.fetched_at,
         factors: s.factors,
         history: [],
-        notice: "Preliminary score derived from public RPC reads only. The full health-score backend was unreachable.",
+        notice: s.scored === false
+          ? (s.explanation || "This wallet has no on-chain history yet — nothing to score.")
+          : "Preliminary score derived from public RPC reads only. The full score backend was unreachable.",
       };
     },
 

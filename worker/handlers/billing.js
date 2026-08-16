@@ -81,7 +81,19 @@ export async function handleBillingPortal(request, env) {
   const sub = await env.HEALTH_DB.prepare(
     "SELECT stripe_customer_id FROM subscriptions WHERE user_id = ?"
   ).bind(auth.user.id).first();
-  if (!sub?.stripe_customer_id) return json({ success: false, error: "no_stripe_customer" }, 400);
+  if (!sub?.stripe_customer_id) {
+    // Free-tier accounts have never been through Checkout, so there is no
+    // Stripe customer to open a portal for. This is an expected state, not a
+    // failure — tell the caller what to do about it instead of the bare
+    // "no_stripe_customer" that used to surface verbatim in the UI.
+    return json({
+      success: false,
+      error: "no_billing_account",
+      message: "This account has no paid subscription yet.",
+      upgrade_url: "/pricing/",
+      checkout_endpoint: "/api/billing/checkout",
+    }, 409);
+  }
 
   const origin = request.headers.get("origin") || "https://defiscoring.com";
   try {

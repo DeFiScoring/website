@@ -10,6 +10,22 @@
     const el = document.getElementById("score-circle");
     const valueEl = document.getElementById("score-value");
     const bandEl = document.getElementById("score-band");
+    if (score == null) {
+      // Unscored — empty track, an em-dash, and an honest label. No number
+      // exists for a wallet with no on-chain history, so none is drawn.
+      el.innerHTML =
+        '<svg width="220" height="220" viewBox="0 0 220 220">' +
+          '<circle cx="110" cy="110" r="90" stroke="rgba(255,255,255,0.08)" stroke-width="14" fill="none"/>' +
+        '</svg>' +
+        '<div class="defi-score-circle__inner">' +
+          '<div class="defi-score-circle__value">—</div>' +
+          '<div class="defi-score-circle__label">unscored</div>' +
+          '<span class="defi-score-band" style="color:var(--defi-text-dim,#8b8b99)">No on-chain history</span>' +
+        '</div>';
+      valueEl && (valueEl.textContent = "—");
+      bandEl && (bandEl.textContent = "Unscored");
+      return;
+    }
     const min = 300, max = 850;
     const pct = Math.max(0, Math.min(1, (score - min) / (max - min)));
     const r = 90, c = 2 * Math.PI * r;
@@ -82,7 +98,7 @@
     setNotice("score-notice", "Computing on-chain score…");
     try {
       const data = await window.DefiAPI.getScore(wallet);
-      drawGauge(data.score, data.preliminary);
+      drawGauge(data.scored === false ? null : data.score, data.preliminary);
       drawFactors(data.factors);
       const updated = document.getElementById("score-updated");
       if (updated) updated.textContent = "Last updated " + new Date(data.updated_at).toLocaleString();

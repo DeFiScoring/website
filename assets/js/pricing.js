@@ -66,8 +66,16 @@
     var pill = document.getElementById("pr-current-plan");
     if (pill) {
       var label = tier.charAt(0).toUpperCase() + tier.slice(1);
-      pill.innerHTML = "You're on the <strong>" + label + "</strong> plan." +
-        ' <a href="#" data-pr-portal>Manage subscription</a>';
+      // Free tier has no Stripe customer, so the Customer Portal cannot open
+      // for it ("no_stripe_customer"). The only meaningful billing action on
+      // Free is upgrading — link to the Pro card instead of the portal.
+      if (tier === "free") {
+        pill.innerHTML = "You're on the <strong>Free</strong> plan." +
+          ' <a href="#" data-pr-upgrade>Upgrade for alerts & more wallets</a>';
+      } else {
+        pill.innerHTML = "You're on the <strong>" + label + "</strong> plan." +
+          ' <a href="#" data-pr-portal>Manage subscription</a>';
+      }
       pill.hidden = false;
     }
   }
@@ -122,7 +130,15 @@
         window.location.href = r.url;
         return;
       }
-      toast("Couldn't open billing portal: " + (r.error || "unknown"), "bad");
+      if (r.__status === 401) {
+        toast("Sign in with your wallet first, then come back.", "warn");
+      } else if (r.error === "no_billing_account" || r.error === "no_stripe_customer") {
+        // Shouldn't happen from this page any more (free tier links to
+        // upgrade, not the portal) — but keep the message honest if it does.
+        toast("No paid subscription on this account yet — pick a plan below to start one.", "warn");
+      } else {
+        toast("Couldn't open billing portal: " + (r.error || "unknown"), "bad");
+      }
       linkEl.textContent = "Manage subscription";
     });
   }
@@ -157,6 +173,13 @@
       if (portal) {
         ev.preventDefault();
         openPortal(portal);
+        return;
+      }
+      var upgrade = ev.target.closest("[data-pr-upgrade]");
+      if (upgrade) {
+        ev.preventDefault();
+        var proCard = document.querySelector('.pr-tier[data-tier="pro"]');
+        if (proCard) proCard.scrollIntoView({ behavior: "smooth", block: "center" });
       }
       return;
     }

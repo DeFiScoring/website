@@ -178,6 +178,29 @@
     const uniqContracts = snapshot.total_unique_contracts || 0;
     const uniqTokens = snapshot.total_unique_tokens || 0;
 
+    // A wallet with no transactions, no balances, and no token history has
+    // no footprint to score. This function used to hand such a wallet
+    // 322 · "Poor" — entirely from the `hasBalance ? 70 : 20` floor below,
+    // which awards 20 liquidity points for HOLDING NOTHING. A thin file is
+    // unscorable, not poor; say so instead of inventing a number.
+    if (tx === 0 && !hasBalance && uniqContracts === 0 && uniqTokens === 0) {
+      return {
+        scored: false,
+        score: null,
+        band: "Unscored",
+        preliminary: true,
+        reason: "no_onchain_history",
+        explanation: "This wallet has no on-chain activity yet — no transactions, " +
+          "balances, or token history on the chains we scanned. There is nothing " +
+          "to score until it's used.",
+        factors: [
+          { name: "On-chain activity",  weight: 0, value: null, real: true, detail: "0 transactions found" },
+          { name: "Balances",           weight: 0, value: null, real: true, detail: "No native or token balances" },
+          { name: "Wallet age",         weight: 0, value: null, real: hasHistory, detail: hasHistory ? "No first transaction found" : "History service unreachable" },
+        ],
+      };
+    }
+
     // Component scores (0–100)
     const activity = Math.min(100, Math.round(Math.log10(Math.max(1, tx)) * 33));
     const diversity = Math.round((activeChains / 3) * 100);
@@ -213,6 +236,7 @@
     }
     const score = Math.round(300 + (composite / 100) * 550);
     return {
+      scored: true,
       score,
       band: score >= 750 ? "Excellent" : score >= 670 ? "Good" : score >= 580 ? "Fair" : "Poor",
       preliminary: !hasHistory,

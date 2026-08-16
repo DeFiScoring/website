@@ -255,6 +255,64 @@ export async function computeWalletScore(env, wallet, { portfolio, defiByChain }
     pillarAccountAge(env, wallet),
   ]);
 
+  // ---- Honest-score gate -----------------------------------------------
+  //
+  // Two situations must NOT produce a 300-850 number, because any number we
+  // emit for them is fabricated:
+  //
+  //   1. `no_onchain_history` — the wallet has no footprint at all: zero
+  //      portfolio value, zero DeFi positions, zero governance votes, zero
+  //      Ethereum transactions. A fresh address used to come out around
+  //      the low 500s here (every empty pillar defaults to a neutral 50),
+  //      and the client-side fallback famously minted "322 · Poor" from
+  //      nothing but a `hasBalance ? 70 : 20` floor. Credit bureaus solved
+  //      this decades ago: a thin file is "unscorable", not "poor".
+  //
+  //   2. `data_unavailable` — every data source failed (RPC outage, rate
+  //      limits, missing keys). Scoring on zero real signals would grade
+  //      our infrastructure, not the wallet.
+  //
+  // Callers get `scored:false` + a machine-readable reason and the pillar
+  // detail so the UI can explain exactly what was checked.
+  const anyRealSignal = [Lr, Ph, Lp, Gv, Ag].some((p) => p.real);
+  const hasFootprint =
+    (Ph.real && (Ph.totalUsd || 0) > 0) ||
+    // Tokens found but none priced (every price tier down) is still a real
+    // footprint — don't let a pricing outage demote a wallet to "unscored".
+    ((portfolio?.totalTokens || 0) > 0) ||
+    Lr.real || Lp.real ||
+    (Gv.real && (Gv.voteCount || 0) > 0) ||
+    // firstTxAt (not ageDays) is the history signal: a wallet whose first
+    // transaction was today has ageDays === 0 but very much has a footprint.
+    (Ag.real && (Ag.firstTxAt != null || (Ag.ageDays || 0) > 0));
+
+  if (!anyRealSignal || !hasFootprint) {
+    const reason = anyRealSignal ? "no_onchain_history" : "data_unavailable";
+    return {
+      success: true,
+      wallet,
+      scored: false,
+      score: null,
+      score_band: "unscored",
+      reason,
+      explanation: reason === "no_onchain_history"
+        ? "This wallet has no on-chain footprint yet — no transactions, balances, " +
+          "DeFi positions, or governance votes were found on any scanned chain. " +
+          "A score would be meaningless; use the wallet and re-scan."
+        : "None of our data sources responded for this wallet, so no score can " +
+          "be computed right now. Try again shortly.",
+      pillars: {
+        loan_reliability:    { weight: 0.35, ...Lr },
+        portfolio_health:    { weight: 0.25, ...Ph },
+        liquidity_provision: { weight: 0.15, ...Lp },
+        governance:          { weight: 0.10, ...Gv },
+        account_age:         { weight: 0.15, ...Ag },
+      },
+      adjustments: [],
+      timestamp: new Date().toISOString(),
+    };
+  }
+
   // Weighted composite. Weights chosen to match the original 4-pillar
   // model (Lr 0.4, LPv 0.3, Gv 0.2, Ag 0.1) but rebalanced to make room
   // for the new portfolio_health pillar at 0.25.
@@ -292,6 +350,7 @@ export async function computeWalletScore(env, wallet, { portfolio, defiByChain }
   return {
     success: true,
     wallet,
+    scored: true,
     score,
     score_band,
     raw_h_s: Number(Hs.toFixed(2)),

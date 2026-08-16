@@ -182,6 +182,14 @@
   function renderMiniGauge(score) {
     const el = document.getElementById("score-mini-circle");
     if (!el) return;
+    if (score == null) {
+      // Unscored wallet — draw the empty track only, no fill and no number.
+      el.innerHTML =
+        '<svg width="96" height="96" viewBox="0 0 96 96">' +
+          '<circle cx="48" cy="48" r="38" stroke="rgba(255,255,255,0.08)" stroke-width="8" fill="none"/>' +
+        '</svg>';
+      return;
+    }
     const min = 300, max = 850;
     const pct = Math.max(0, Math.min(1, (score - min) / (max - min)));
     const r = 38, c = 2 * Math.PI * r;
@@ -295,10 +303,18 @@
         window.DefiAPI.getAlerts(wallet),
       ]);
 
-      document.getElementById("stat-score").textContent = score.score;
+      const unscored = score.scored === false || score.score == null;
+      document.getElementById("stat-score").textContent = unscored ? "—" : score.score;
       const bandEl = document.getElementById("stat-band");
-      bandEl.textContent = score.band + (score.preliminary ? " (preliminary)" : "");
-      bandEl.className = "defi-card__delta defi-band--" + score.band;
+      if (unscored) {
+        bandEl.textContent = "No on-chain history yet";
+        bandEl.className = "defi-card__delta";
+        bandEl.style.color = "var(--defi-text-dim, #8b8b99)";
+      } else {
+        bandEl.textContent = score.band + (score.preliminary ? " (preliminary)" : "");
+        bandEl.className = "defi-card__delta defi-band--" + score.band;
+        bandEl.style.color = "";
+      }
 
       // P2 — fiat-aware total + meta line driven by the API's structured
       // fields. Falls back to legacy fmtUsd when the new fields aren't
@@ -326,13 +342,24 @@
       const miniVal = document.getElementById("score-mini-value");
       const miniBand = document.getElementById("score-mini-band");
       const miniMeta = document.getElementById("score-mini-meta");
-      if (miniVal) miniVal.textContent = score.score;
+      if (miniVal) miniVal.textContent = unscored ? "—" : score.score;
       if (miniBand) {
-        miniBand.textContent = score.band + (score.preliminary ? " · preliminary" : "");
-        miniBand.className = "defi-card__delta defi-band--" + score.band;
+        if (unscored) {
+          miniBand.textContent = "Unscored · no on-chain history";
+          miniBand.className = "defi-card__delta";
+          miniBand.style.color = "var(--defi-text-dim, #8b8b99)";
+        } else {
+          miniBand.textContent = score.band + (score.preliminary ? " · preliminary" : "");
+          miniBand.className = "defi-card__delta defi-band--" + score.band;
+          miniBand.style.color = "";
+        }
       }
-      if (miniMeta) miniMeta.textContent = "Updated " + new Date(score.updated_at).toLocaleTimeString();
-      renderMiniGauge(score.score);
+      if (miniMeta) {
+        miniMeta.textContent = unscored
+          ? (score.explanation || "Use this wallet on-chain, then re-scan to get a score.")
+          : "Updated " + new Date(score.updated_at).toLocaleTimeString();
+      }
+      renderMiniGauge(unscored ? null : score.score);
       renderBreakdown(score.factors);
 
       // Tier-aware history: ask the worker for the longest window the user's
