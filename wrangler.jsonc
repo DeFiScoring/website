@@ -11,8 +11,18 @@
     "not_found_handling": "single-page-application",
     "run_worker_first": true
   },
+  // Build the Jekyll site into ./_site (the assets.directory above).
+  //
+  // This used to be `bundle exec jekyll build 2>/dev/null || true`. Both
+  // halves discarded the outcome: stderr went to /dev/null and `|| true`
+  // swallowed a non-zero exit. A failed site build therefore looked like a
+  // success, `_site` was never written, and the deploy died several steps
+  // later on the genuinely confusing
+  //   ✘ The directory specified by the "assets.directory" field ... does not exist
+  // `_site` is gitignored, so it only ever exists if this command succeeds —
+  // there is no case where letting it fail silently helps.
   "build": {
-    "command": "bundle exec jekyll build 2>/dev/null || true"
+    "command": "bundle exec jekyll build"
   },
   "ai": {
     "binding": "AI"
