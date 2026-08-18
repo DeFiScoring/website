@@ -1,0 +1,44 @@
+name: Tests
+
+# Runs the worker integration suite on every PR and on every push to main.
+#
+# The suite boots the real worker/index.js against a node:sqlite-backed D1
+# shim running the real migrations/, so it exercises actual routing, actual
+# SQL, and actual signature verification — only third-party HTTP is stubbed.
+# It needs no secrets and no external services.
+#
+# Node 22.6+ is required: test/d1.mjs uses node:sqlite, which does not exist
+# in Node 20 (the version deploy.yml pins for wrangler).
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  worker-tests:
+    name: Worker integration suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # test/run.mjs exits non-zero when any suite fails, so this step alone
+      # is the gate — no extra assertion plumbing needed.
+      - name: Run test suites
+        run: npm test

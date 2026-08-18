@@ -24,7 +24,24 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Gate the production deploy on the worker integration suite. Previously
+  # every push to main deployed unverified — the suite existed but nothing
+  # ran it. Node 22 here (not the 20 below) because test/d1.mjs uses
+  # node:sqlite, which Node 20 does not ship.
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm test
+
   deploy:
+    needs: test
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
