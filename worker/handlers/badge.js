@@ -12,6 +12,8 @@
  * and makes it safe to put behind a 5-minute edge cache.
  */
 
+import { bandForScore } from "../lib/score.js";
+
 const BAND_COLOR = {
   excellent: "#2bd4a4",
   good:      "#00f5ff",
@@ -20,12 +22,14 @@ const BAND_COLOR = {
   unknown:   "#7c8a9b",
 };
 
+// bandFor used to redeclare the 720/660/580 thresholds inline, and drifted
+// out of sync with the dashboard's own copy (750/670/580) — the same wallet
+// could show a different band on its badge than on its dashboard. Now
+// delegates to worker/lib/score.js's bandForScore, the one canonical
+// definition; see the BANDS comment there for the full incident.
 function bandFor(score) {
   if (!Number.isFinite(score)) return "unknown";
-  if (score >= 720) return "excellent";
-  if (score >= 660) return "good";
-  if (score >= 580) return "fair";
-  return "poor";
+  return bandForScore(score);
 }
 
 function escapeXml(s) {

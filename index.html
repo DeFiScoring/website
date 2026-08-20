@@ -165,11 +165,16 @@ changefreq: "weekly"
           <div class="ds-gauge__grade" data-ds-gauge-grade>—</div>
         </div>
       </div>
+      <!-- Boundaries mirror worker/lib/score.js's exported BANDS (canonical:
+           720/660/580). Previously read 580–669/670–739/740–850 with a
+           "Great" top label — a stale set that predated the scoring
+           backend and disagreed with the real score/badge/dashboard. Keep
+           in sync with the copies in assets/js/{dashboard,landing,defi-onchain}.js. -->
       <div class="ds-gauge__bands">
         <span class="ds-gauge__band ds-gauge__band--poor">Poor<br><em>300–579</em></span>
-        <span class="ds-gauge__band ds-gauge__band--fair">Fair<br><em>580–669</em></span>
-        <span class="ds-gauge__band ds-gauge__band--good">Good<br><em>670–739</em></span>
-        <span class="ds-gauge__band ds-gauge__band--great">Great<br><em>740–850</em></span>
+        <span class="ds-gauge__band ds-gauge__band--fair">Fair<br><em>580–659</em></span>
+        <span class="ds-gauge__band ds-gauge__band--good">Good<br><em>660–719</em></span>
+        <span class="ds-gauge__band ds-gauge__band--great">Excellent<br><em>720–850</em></span>
       </div>
       <div class="ds-gauge__caption">Sample wallet · 0x7a…fB3e</div>
     </div>

@@ -34,9 +34,14 @@
   const TARGET = 782; // sample wallet score — tuned for an "excellent" look
   const CIRCUMFERENCE = 527.79; // 2πr for r=84
 
+  // Mirrors worker/lib/score.js's exported BANDS (canonical: 720/660/580).
+  // Previously 740/670/580 here — a different threshold set than the real
+  // scoring backend, so the landing page's own demo gauge disagreed with
+  // the product it was demonstrating. Keep this in sync with the copies in
+  // assets/js/dashboard.js and assets/js/defi-onchain.js if BANDS changes.
   function grade(score) {
-    if (score >= 740) return "Excellent · A";
-    if (score >= 670) return "Good · B";
+    if (score >= 720) return "Excellent · A";
+    if (score >= 660) return "Good · B";
     if (score >= 580) return "Fair · C";
     return "Poor · D";
   }
