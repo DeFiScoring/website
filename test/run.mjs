@@ -20,6 +20,7 @@ const SUITES = [
   ["flow2", "cookie scope, CSRF guard, signature encodings, EIP-1271, retention"],
   ["score", "portfolio scan, wallet score, price fallbacks, badge"],
   ["dsar",  "wallet-proved account erasure"],
+  ["alerts", "webhook delivery signing + SSRF guard, unsupported rule kinds"],
 ];
 
 const [maj, min] = process.versions.node.split(".").map(Number);

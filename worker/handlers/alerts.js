@@ -6,7 +6,9 @@
  *   DELETE /api/alerts/rules/{id}          → delete rule
  *
  *   GET    /api/alerts/channels            → list delivery channels
- *   POST   /api/alerts/channels            → add an email or telegram channel
+ *   POST   /api/alerts/channels            → add an email, telegram, or
+ *                                            webhook channel (webhook = Plus+;
+ *                                            returns its signing secret once)
  *   POST   /api/alerts/channels/{id}/verify → mark verified (token check)
  *   DELETE /api/alerts/channels/{id}       → remove a channel
  *
@@ -15,12 +17,36 @@
 
 import { requireSession, newId } from "../lib/auth.js";
 import { requireTier, tierLimit } from "../lib/tiers.js";
+import { validateWebhookUrl } from "../lib/webhook.js";
 
 const VALID_KINDS = new Set([
   "health_factor", "price", "score_change",
   "approval_change", "liquidation_risk", "protocol_event",
 ]);
-const VALID_CHANNELS = new Set(["email", "telegram"]); // webhook reserved for Plus+ later
+
+/* Kinds the schema accepts but that we cannot honestly evaluate yet.
+ *
+ * evaluateRule() has working evaluators for these, but the state they read
+ * (state.prices / state.approvals) is still an empty stub in the cron's
+ * fetchWalletState — no price feed and no approval scanner is wired up. A
+ * rule of either kind would therefore sit permanently at
+ * `not_ready:missing_price` / `no_new_approvals` and never fire, while the
+ * UI happily showed it as "armed".
+ *
+ * Refusing at creation is the honest behaviour: a user gets told now, rather
+ * than discovering months later that the alert they were relying on was
+ * inert. Delete an entry here the moment its evaluator has real inputs —
+ * nothing else needs to change.
+ */
+const UNSUPPORTED_KINDS = {
+  price: "Price alerts need a live price feed, which isn't wired into the alert scanner yet. " +
+         "Creating one now would leave you with a rule that can never fire.",
+  approval_change: "Approval alerts need the token-approval scanner, which isn't wired into the " +
+         "alert scanner yet. Creating one now would leave you with a rule that can never fire.",
+};
+
+const VALID_CHANNELS = new Set(["email", "telegram", "webhook"]);
+const WEBHOOK_MIN_TIER = "plus"; // matches the pricing table: Plus and Enterprise
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -61,6 +87,15 @@ export async function handleAlertRuleCreate(request, env) {
     return json({ success: false, error: "invalid_wallet_address" }, 400);
   }
   if (!VALID_KINDS.has(kind)) return json({ success: false, error: "invalid_kind" }, 400);
+  if (UNSUPPORTED_KINDS[kind]) {
+    return json({
+      success: false,
+      error: "kind_not_yet_supported",
+      kind,
+      message: UNSUPPORTED_KINDS[kind],
+      supported_kinds: [...VALID_KINDS].filter((k) => !UNSUPPORTED_KINDS[k]),
+    }, 400);
+  }
   if (!Array.isArray(channels) || !channels.length || !channels.every((c) => VALID_CHANNELS.has(c))) {
     return json({ success: false, error: "invalid_channels" }, 400);
   }
@@ -146,6 +181,8 @@ export async function handleAlertRuleDelete(request, env, id) {
 export async function handleAlertChannelsList(request, env) {
   const auth = await requireSession(request, env);
   if (auth instanceof Response) return auth;
+  // NB: `secret` is deliberately absent from this column list — a webhook
+  // signing secret is shown once at creation and never read back over the API.
   const { results } = await env.HEALTH_DB.prepare(
     `SELECT id, kind, destination, label, is_verified, created_at, verified_at
      FROM alert_channels WHERE user_id = ? ORDER BY created_at DESC`
@@ -163,7 +200,7 @@ export async function handleAlertChannelCreate(request, env) {
   let body; try { body = await request.json(); } catch { return json({ success: false, error: "invalid_json" }, 400); }
   const { kind, destination, label } = body || {};
   if (!VALID_CHANNELS.has(kind)) return json({ success: false, error: "invalid_kind" }, 400);
-  if (!destination || typeof destination !== "string" || destination.length > 200) {
+  if (!destination || typeof destination !== "string" || destination.length > 500) {
     return json({ success: false, error: "invalid_destination" }, 400);
   }
   if (kind === "email" && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(destination)) {
@@ -171,6 +208,19 @@ export async function handleAlertChannelCreate(request, env) {
   }
   if (kind === "telegram" && !/^-?\d+$/.test(destination)) {
     return json({ success: false, error: "invalid_telegram_chat_id" }, 400);
+  }
+  let dest = destination;
+  if (kind === "webhook") {
+    const gate = await requireTier(auth.user.id, WEBHOOK_MIN_TIER, env);
+    if (gate instanceof Response) return gate;
+    // Reject SSRF-shaped URLs here as well as at send time, so the user finds
+    // out while they are looking at the form rather than from a failed
+    // delivery row hours later.
+    const guard = validateWebhookUrl(destination);
+    if (!guard.ok) {
+      return json({ success: false, error: "invalid_webhook_url", reason: guard.error }, 400);
+    }
+    dest = guard.url;
   }
 
   // Quota
@@ -187,11 +237,14 @@ export async function handleAlertChannelCreate(request, env) {
 
   const id = newId();
   const verifToken = newId();
+  // Webhook channels get a signing secret; email/telegram have no MAC to
+  // compute so the column stays NULL for them.
+  const secret = kind === "webhook" ? `whsec_${newId()}${newId()}` : null;
   const now = Date.now();
   await env.HEALTH_DB.prepare(
-    `INSERT INTO alert_channels (id, user_id, kind, destination, label, is_verified, verification_token, created_at)
-     VALUES (?, ?, ?, ?, ?, 0, ?, ?)`
-  ).bind(id, auth.user.id, kind, destination, label || null, verifToken, now).run();
+    `INSERT INTO alert_channels (id, user_id, kind, destination, label, is_verified, verification_token, secret, created_at)
+     VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?)`
+  ).bind(id, auth.user.id, kind, dest, label || null, verifToken, secret, now).run();
 
   // For email: persist user.email if not yet set, so billing/portal can prefill it.
   if (kind === "email" && !auth.user.email) {
@@ -199,7 +252,18 @@ export async function handleAlertChannelCreate(request, env) {
       .bind(destination, auth.user.id).run().catch(() => {});
   }
 
-  return json({ success: true, id, verification_token: verifToken });
+  const res = { success: true, id, verification_token: verifToken };
+  if (secret) {
+    // Shown exactly once. No read endpoint ever returns it again, and we have
+    // no way to recover it — losing it means deleting the channel and
+    // recreating it. Say so in the response rather than in docs the caller
+    // may never open.
+    res.secret = secret;
+    res.secret_notice =
+      "Store this now — it is shown only once and cannot be retrieved later. " +
+      "Use it to verify the X-DeFiScoring-Signature header (HMAC-SHA256 over `${t}.${rawBody}`).";
+  }
+  return json(res);
 }
 
 export async function handleAlertChannelVerify(request, env, id) {
