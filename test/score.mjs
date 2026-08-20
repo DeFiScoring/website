@@ -3,7 +3,7 @@
 // subrequest count, and persistence.
 import { D1, KV } from "./d1.mjs";
 import worker from "../worker/index.js";
-import { BANDS, bandForScore } from "../worker/lib/score.js";
+import { BANDS, bandForScore, coverageOf, PILLAR_WEIGHTS } from "../worker/lib/score.js";
 
 const ORIGIN = "https://defiscoring.com";
 const WALLET = "0x00000000000000000000000000000000000000aa";
@@ -181,6 +181,76 @@ async function call(path) {
     .prepare("SELECT COUNT(*) c FROM health_scores").first()).c;
   check("unscored result is not persisted to health_scores",
     rowsAfter === rowsBefore, { rowsBefore, rowsAfter });
+
+  // ---- score coverage ----------------------------------------------------
+  // WALLET resolves four of five pillars against the stub — portfolio_health
+  // (.25), liquidity_provision (.15), governance (.10) and account_age (.15).
+  // Only loan_reliability (.35) finds nothing, because the stubbed Aave
+  // getUserAccountData returns all zeros. So coverage is 1 - .35 = .65.
+  const pl = s.json.pillars || {};
+  const expectedCoverage = Number(
+    [["loan_reliability", 0.35], ["portfolio_health", 0.25], ["liquidity_provision", 0.15],
+     ["governance", 0.10], ["account_age", 0.15]]
+      .reduce((sum, [k, w]) => sum + (pl[k]?.real ? w : 0), 0).toFixed(4));
+  check("scored payload reports coverage",
+    typeof s.json.coverage === "number", s.json.coverage);
+  check("coverage is the summed weight of pillars with real data",
+    s.json.coverage === expectedCoverage,
+    { got: s.json.coverage, expected: expectedCoverage,
+      real: Object.fromEntries(Object.entries(pl).map(([k, v]) => [k, v.real])) });
+  check("this wallet is the mixed real/estimated case, not all-or-nothing",
+    s.json.coverage > 0 && s.json.coverage < 1, s.json.coverage);
+  check("coverage stays within 0..1", s.json.coverage >= 0 && s.json.coverage <= 1, s.json.coverage);
+
+  // Pin the exact value so a weight change has to be deliberate rather than
+  // silently absorbed by the derived assertion above.
+  check("mixed pillar set yields 0.65 coverage", s.json.coverage === 0.65,
+    { coverage: s.json.coverage,
+      real: Object.entries(pl).filter(([, v]) => v.real).map(([k]) => k) });
+  check("the one estimated pillar is loan_reliability, worth .35",
+    pl.loan_reliability?.real === false && pl.loan_reliability?.weight === 0.35,
+    { real: pl.loan_reliability?.real, weight: pl.loan_reliability?.weight });
+
+  // ---- coverageOf across every real/estimated combination ----------------
+  // Exhaustive rather than sampled: with 5 pillars there are only 32 states,
+  // and exactly one of them (loan_reliability + governance) is the float-drift
+  // case the rounding guard exists for. A spot-check would likely miss it.
+  const keys = Object.keys(PILLAR_WEIGHTS);
+  const drifty = [];
+  let allSubsetsClean = true;
+  for (let mask = 0; mask < 32; mask++) {
+    const pillars = {};
+    let raw = 0;
+    keys.forEach((k, i) => {
+      const real = !!(mask & (1 << i));
+      pillars[k] = { real };
+      if (real) raw += PILLAR_WEIGHTS[k];
+    });
+    const got = coverageOf(pillars);
+    // Must equal the mathematically correct value to 4dp, and must be free of
+    // float noise — i.e. exactly representable as hundredths of a percent.
+    if (Math.abs(got - raw) > 1e-9 || !Number.isInteger(Math.round(got * 10000)) ||
+        got !== Number(got.toFixed(4))) allSubsetsClean = false;
+    if (got !== raw) drifty.push({ mask, raw, got });
+  }
+  check("coverageOf is drift-free for all 32 pillar combinations", allSubsetsClean, drifty);
+  check("the known float-drift combination is corrected",
+    coverageOf({ loan_reliability: { real: true }, governance: { real: true } }) === 0.45,
+    { got: coverageOf({ loan_reliability: { real: true }, governance: { real: true } }),
+      unrounded: 0.35 + 0.10 });
+  check("all pillars real is exactly 1",
+    coverageOf(Object.fromEntries(keys.map((k) => [k, { real: true }]))) === 1);
+  check("no pillars real is exactly 0",
+    coverageOf(Object.fromEntries(keys.map((k) => [k, { real: false }]))) === 0);
+  check("coverageOf tolerates a missing/degenerate pillar map",
+    coverageOf({}) === 0 && coverageOf(null) === 0 && coverageOf(undefined) === 0);
+  check("PILLAR_WEIGHTS sums to 1",
+    Number(Object.values(PILLAR_WEIGHTS).reduce((a, b) => a + b, 0).toFixed(4)) === 1,
+    Object.values(PILLAR_WEIGHTS));
+
+  check("coverage weights match the weights published in the pillars",
+    Object.entries(pl).reduce((sum, [, v]) => sum + (v.weight || 0), 0).toFixed(4) === "1.0000",
+    Object.entries(pl).map(([k, v]) => [k, v.weight]));
 
   globalThis.fetch = realFetch;
   const failed = results.filter((r) => !r.ok);
