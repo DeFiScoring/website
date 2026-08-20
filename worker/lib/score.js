@@ -17,7 +17,7 @@
 //   portfolio_health     0.25   Diversification (top-N concentration) + size
 //   liquidity_provision  0.15   Uni V3 LP count + DEX exposure
 //   governance           0.10   Snapshot vote count
-//   account_age          0.15   First-tx age on Ethereum
+//   account_age          0.15   Oldest first-tx age across Tier-1 chains
 //
 // Bonuses/penalties:
 //   +50  if any chain has Aave HF > 2.0 (proven safe lender)
@@ -28,7 +28,7 @@
 
 import { CHAINS } from './chains.js';
 import { getAllDeFiPositions } from './defi.js';
-import { ethCall, abiEncodeSingleAddr, abiHexWord } from './providers.js';
+import { ethCall, abiEncodeSingleAddr, abiHexWord, getFirstTxTimestamp } from './providers.js';
 
 // =============================================================================
 // Score bands — the single source of truth for the 300–850 → label mapping.
@@ -240,40 +240,97 @@ export async function pillarGovernance(env, wallet) {
 }
 
 // =============================================================================
-// Pillar 5: Account age — Ethereum first-tx age in days.
-// Reuses the providers.js helper so we don't duplicate the multi-tier logic.
+// Pillar 5: Account age — age of the oldest first transaction across the
+// Tier-1 chains, in days.
+//
+// This used to query Ethereum alone, which read an L2-native wallet as brand
+// new: a two-year-old Base wallet scored 25/100 on a pillar worth 15% of the
+// composite. Now every Tier-1 chain is queried in parallel (5 subrequests)
+// and the oldest answer wins, so bridging to Ethereum later never resets a
+// wallet's age.
 // =============================================================================
 
 export async function pillarAccountAge(env, wallet) {
-  // Direct Etherscan v2 lookup for Ethereum first tx (most users have ETH
-  // mainnet history; L2-only wallets are still rare). One HTTP call.
   if (!env.ETHERSCAN_API_KEY) {
     return { real: false, value: 50, rationale: 'No Etherscan key — neutral score.' };
   }
-  const url = `https://api.etherscan.io/v2/api?chainid=1&module=account&action=txlist&address=${wallet}&startblock=0&endblock=99999999&page=1&offset=1&sort=asc&apikey=${env.ETHERSCAN_API_KEY}`;
-  try {
-    const r = await fetch(url);
-    if (!r.ok) return { real: false, value: 50, rationale: `Etherscan http ${r.status} — neutral score.` };
-    const j = await r.json();
-    const tx = (j.result || [])[0];
-    if (!tx || !tx.timeStamp) {
-      return { real: true, value: 20, ageDays: 0, firstTxAt: null,
-               rationale: 'No Ethereum transaction history found.' };
+  const addr = String(wallet).toLowerCase();
+  const cacheKey = `age:v1:${addr}`;
+
+  let firstTxAt = null;
+  let firstTxChain = null;
+  let fromCache = false;
+
+  // A wallet's first transaction never moves, so a hit is good indefinitely;
+  // the 7-day TTL just bounds the blast radius of a bad write. Note we cache
+  // the timestamp, never the derived age — ageDays has to be recomputed on
+  // read or a cached wallet would stop ageing for a week.
+  if (env.DEFI_CACHE) {
+    const hit = await env.DEFI_CACHE.get(cacheKey, 'json').catch(() => null);
+    if (hit && typeof hit.firstTxAt === 'number' && hit.firstTxAt > 0) {
+      firstTxAt = hit.firstTxAt;
+      firstTxChain = hit.chain || null;
+      fromCache = true;
     }
-    const firstMs = Number(tx.timeStamp) * 1000;
-    const ageDays = Math.floor((Date.now() - firstMs) / 86400000);
-    let value;
-    if (ageDays < 30)       value = 25;
-    else if (ageDays < 180) value = 50;
-    else if (ageDays < 365) value = 70;
-    else if (ageDays < 1095) value = 85;
-    else                     value = 100;
-    return { real: true, value, ageDays, firstTxAt: new Date(firstMs).toISOString(),
-             rationale: `${ageDays} days since first Ethereum transaction.` };
-  } catch (e) {
-    return { real: false, value: 50, error: String(e.message || e),
-             rationale: 'First-tx fetch failed — neutral score.' };
   }
+
+  let chainsAnswered = 0;
+  let chainsQueried = 0;
+
+  if (!fromCache) {
+    // One call per Tier-1 chain, all in flight together — 5 subrequests.
+    const tier1 = CHAINS.filter((c) => c.tier === 1);
+    chainsQueried = tier1.length;
+    const results = await Promise.all(
+      tier1.map(async (c) => ({ chain: c, res: await getFirstTxTimestamp(c, env, addr) })),
+    );
+    for (const { chain, res } of results) {
+      if (!res || !res.ok) continue;
+      chainsAnswered += 1;
+      // Oldest wins: an L2-native wallet's age lives on the L2, and a wallet
+      // that later bridged to Ethereum should keep its original age.
+      if (res.firstTxAt != null && (firstTxAt == null || res.firstTxAt < firstTxAt)) {
+        firstTxAt = res.firstTxAt;
+        firstTxChain = chain.name;
+      }
+    }
+    // Every chain errored — that grades our infrastructure, not the wallet.
+    if (chainsAnswered === 0) {
+      return { real: false, value: 50, chainsQueried,
+               rationale: 'First-tx lookup failed on every Tier-1 chain — neutral score.' };
+    }
+    // Only a positive result is cached. Caching "no history yet" would pin a
+    // freshly-funded wallet at age zero for a week after it starts using it.
+    if (env.DEFI_CACHE && firstTxAt != null) {
+      await env.DEFI_CACHE
+        .put(cacheKey, JSON.stringify({ firstTxAt, chain: firstTxChain }), { expirationTtl: 604800 })
+        .catch(() => {});
+    }
+  }
+
+  if (firstTxAt == null) {
+    return { real: true, value: 20, ageDays: 0, firstTxAt: null,
+             chainsQueried, chainsAnswered,
+             rationale: 'No transaction history found on any Tier-1 chain.' };
+  }
+
+  const ageDays = Math.floor((Date.now() - firstTxAt) / 86400000);
+  let value;
+  if (ageDays < 30)        value = 25;
+  else if (ageDays < 180)  value = 50;
+  else if (ageDays < 365)  value = 70;
+  else if (ageDays < 1095) value = 85;
+  else                      value = 100;
+
+  return {
+    real: true, value, ageDays,
+    firstTxAt: new Date(firstTxAt).toISOString(),
+    firstTxChain,
+    cached: fromCache,
+    chainsQueried, chainsAnswered,
+    rationale: `${ageDays} days since first transaction` +
+      (firstTxChain ? ` (oldest on ${firstTxChain}).` : '.'),
+  };
 }
 
 // =============================================================================
