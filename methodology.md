@@ -91,7 +91,7 @@ A neutral 50 is deliberately mid-range: it neither rewards nor punishes a wallet
 ### 1.3 The five pillars
 
 <div class="pillar-grid">
-  <div class="pillar"><div class="weight">35%</div><h4>Loan Reliability</h4><p>Aave V3 health factor and debt utilisation across chains.</p></div>
+  <div class="pillar"><div class="weight">35%</div><h4>Loan Reliability</h4><p>Aave V3 and Compound V3 health factors across chains.</p></div>
   <div class="pillar"><div class="weight">25%</div><h4>Portfolio Health</h4><p>Diversification, portfolio size, multi-chain presence.</p></div>
   <div class="pillar"><div class="weight">15%</div><h4>Liquidity Provision</h4><p>Uniswap V3 concentrated-liquidity positions.</p></div>
   <div class="pillar"><div class="weight">15%</div><h4>Account Age</h4><p>Days since the wallet's first Ethereum transaction.</p></div>
@@ -102,13 +102,20 @@ Each pillar produces a **0–100** sub-score. The weights sum to exactly 1.00.
 
 #### A. Loan Reliability — 35%
 
-**Input:** every Aave V3 position found on the scanned chains — collateral, debt, and health factor.
+**Input:** every Aave V3 and Compound V3 position found on the scanned chains — collateral, debt, and health factor.
 
-We score the **riskiest** position, not the average: the lowest health factor across all chains sets the band. A wallet that is safe on four chains and about to be liquidated on a fifth is a liquidation risk.
+We score the **riskiest** position, not the average: the lowest health factor across all chains and both protocols sets the band. A wallet that is safe on four chains and about to be liquidated on a fifth is a liquidation risk.
+
+Aave reports a health factor directly. Compound V3 has no equivalent view, so
+one is derived on the same definition — risk-adjusted collateral divided by
+debt — from Comet's own price feeds and each collateral asset's liquidation
+collateral factor. Both protocols therefore land on one scale and share the
+bands below, with no conversion factor.
 
 | Condition | Sub-score | Coverage |
 | :--- | :--- | :--- |
-| No Aave V3 position on any chain | 50 | `real: false` |
+| No Aave V3 or Compound V3 position on any chain | 50 | `real: false` |
+| Borrowing, but the collateral backing it could not be read | 50 | `real: true` |
 | Supplying with **zero debt** | 80 | `real: true` |
 | Lowest HF ≥ 3.00 | 95 | `real: true` |
 | Lowest HF 2.00 – 3.00 | 85 | `real: true` |
@@ -118,6 +125,12 @@ We score the **riskiest** position, not the average: the lowest health factor ac
 | Lowest HF < 1.00 (liquidatable) | 0 | `real: true` |
 
 A zero-debt supplier scores 80 rather than 100 by design: successfully managing a leveraged position is a stronger credit signal than never borrowing at all.
+
+The unreadable-collateral row is deliberately neutral rather than optimistic
+or punitive. When a Compound borrow is visible but its backing is not, scoring
+it as safe would guess in the wallet's favour and scoring it as liquidatable
+would guess against it; the amount is reported as `unassessableDebtUsd` so the
+gap is visible rather than absorbed.
 
 #### B. Portfolio Health — 25%
 
@@ -267,7 +280,8 @@ A scored result is written to the wallet's score history, which backs the trend 
 
 ## 2. Wallet Score Limitations
 
-- **Aave V3 and Uniswap V3 only.** Two of the five pillars read specific protocols. A wallet that borrows exclusively on Compound, Morpho, or Spark scores `real: false` on loan reliability and receives a neutral 50 — not a penalty, but not credit for that activity either.
+- **A fixed protocol list.** Two of the five pillars read specific protocols: loan reliability covers Aave V3 and Compound V3, and liquidity provision covers Uniswap V3. A wallet that borrows exclusively on Morpho or Spark scores `real: false` on loan reliability and receives a neutral 50 — not a penalty, but not credit for that activity either.
+- **Compound collateral without a borrow is invisible.** Comet's position check keys off the base-asset balance, which is zero for an account that has deposited collateral but not borrowed against it. Such a wallet reads as having no Compound position. It is also the case where nothing is at risk.
 - **Ethereum-anchored account age.** An L2-native wallet with no mainnet history scores as though it had none. This under-rates genuinely long-lived L2 users.
 - **Point-in-time.** The score reflects the moment of the scan. A health factor can deteriorate within a single block.
 - **Prices depend on third-party feeds.** When every price tier is unavailable, tokens are still detected but unpriced, and portfolio health degrades to `real: false`.
@@ -330,6 +344,7 @@ Contract-level pattern analysis is available separately through the AI contract 
 | :--- | :--- |
 | **Etherscan v2 API** | Native and token balances, contract calls, first-transaction age, source verification |
 | **Aave V3 contracts** | Health factor, collateral, debt (read directly on-chain) |
+| **Compound V3 (Comet) contracts** | Supply, borrow, per-asset collateral, price feeds, liquidation collateral factors (read directly on-chain) |
 | **Uniswap V3 contracts** | LP position counts (read directly on-chain) |
 | **CoinGecko** | Token pricing (first tier) |
 | **DefiLlama** | Token pricing (second and third tiers), protocol TVL, market cap, audit counts |
