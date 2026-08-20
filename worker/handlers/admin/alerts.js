@@ -13,6 +13,7 @@ import { requireAdmin, auditLog } from "../../lib/admin.js";
 import { newId } from "../../lib/auth.js";
 import { send as sendEmail, isConfigured as emailConfigured } from "../../lib/email.js";
 import { send as sendTelegram, isConfigured as telegramConfigured } from "../../lib/telegram.js";
+import { send as sendWebhook } from "../../lib/webhook.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json" } });
@@ -51,7 +52,7 @@ export async function handleAdminAlertReplay(request, env, deliveryId) {
 
   const orig = await env.HEALTH_DB.prepare(
     `SELECT d.id, d.rule_id, d.channel_id, d.user_id, d.payload_json,
-            c.kind AS channel_kind, c.destination, c.is_verified
+            c.kind AS channel_kind, c.destination, c.is_verified, c.secret
      FROM alert_deliveries d
      LEFT JOIN alert_channels c ON c.id = d.channel_id
      WHERE d.id = ?`
@@ -79,6 +80,18 @@ export async function handleAdminAlertReplay(request, env, deliveryId) {
         chatId: orig.destination,
         text:   payload.telegram || payload.text || "(no body)",
       });
+      status = "sent";
+    } else if (orig.channel_kind === "webhook") {
+      // Signed and SSRF-checked by lib/webhook.js exactly as a live delivery
+      // is; `replayed_from` in the body tells the receiver this is not a new
+      // firing so it can dedupe.
+      const res = await sendWebhook(env, {
+        url: orig.destination,
+        secret: orig.secret,
+        deliveryId: orig.id,
+        payload: { ...payload, event: "alert.replayed", replayed_from: orig.id },
+      });
+      if (!res.ok) throw new Error(res.error || "webhook_failed");
       status = "sent";
     } else {
       throw new Error("unsupported_channel_kind:" + orig.channel_kind);

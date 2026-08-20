@@ -177,6 +177,32 @@
 }
 .pr-features li strong { color: #fff; font-weight: 700; }
 
+/* Not-yet-shipped entitlements. These must not wear the ✓ — the checkmark is
+   a claim that the feature works today. Swap the marker for a clock and dim
+   the row so the tier card stays honest at a glance. */
+.pr-features li.is-soon { color: var(--ds-text-dim); }
+.pr-features li.is-soon::before {
+  content: "◷";
+  background: rgba(250, 204, 21, 0.14);
+  color: var(--ds-gold, #facc15);
+  font-size: 11px;
+}
+.pr-soon {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(250, 204, 21, 0.35);
+  background: rgba(250, 204, 21, 0.1);
+  color: var(--ds-gold, #facc15);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
 .pr-cta {
   display: inline-flex;
   align-items: center;

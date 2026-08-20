@@ -4,7 +4,7 @@
  * triggers configured in wrangler.jsonc.
  *
  *   • Every 5 minutes: scanAlertRules() — evaluate all active rules,
- *     dispatch deliveries via email/telegram, write audit rows.
+ *     dispatch deliveries via email/telegram/webhook, write audit rows.
  *   • Daily 03:17 UTC: handled by the existing runRetentionPrune() in
  *     worker/index.js (we leave that one alone).
  *
@@ -12,9 +12,12 @@
  * catch and log per-rule errors and continue.
  */
 
-import { evaluateRule, formatAlertHtml, formatAlertText, formatAlertTelegram } from "../lib/alerts.js";
+import {
+  evaluateRule, formatAlertHtml, formatAlertText, formatAlertTelegram, formatAlertWebhook,
+} from "../lib/alerts.js";
 import { send as sendEmail, isConfigured as emailConfigured } from "../lib/email.js";
 import { send as sendTelegram, isConfigured as telegramConfigured } from "../lib/telegram.js";
+import { send as sendWebhook, validateWebhookUrl } from "../lib/webhook.js";
 import { newId } from "../lib/auth.js";
 
 const RULE_BATCH = 100;          // process up to 100 rules per scan
@@ -106,7 +109,7 @@ async function dispatchRule(env, rule, evalRes) {
   // Load this user's verified channels matching the rule's channel kinds
   const placeholders = rule.channels.map(() => "?").join(",");
   const { results } = await env.HEALTH_DB.prepare(
-    `SELECT id, kind, destination FROM alert_channels
+    `SELECT id, kind, destination, secret FROM alert_channels
      WHERE user_id = ? AND is_verified = 1 AND kind IN (${placeholders})`
   ).bind(rule.user_id, ...rule.channels).all();
 
@@ -141,6 +144,25 @@ async function dispatchRule(env, rule, evalRes) {
         }
         deliveryId = await startDelivery(env, rule, ch, evalRes);
         delivery = await sendTelegram(env, { chatId: ch.destination, text: tgMsg });
+      } else if (ch.kind === "webhook") {
+        // Re-validate at send time: the row could predate the creation-time
+        // guard, and a stored URL is still attacker-supplied input.
+        const guard = validateWebhookUrl(ch.destination);
+        if (!guard.ok) {
+          await logDelivery(env, rule, ch, "failed", evalRes, `unsafe_webhook_url:${guard.error}`);
+          continue;
+        }
+        if (!ch.secret) {
+          await logDelivery(env, rule, ch, "failed", evalRes, "webhook_secret_missing");
+          continue;
+        }
+        deliveryId = await startDelivery(env, rule, ch, evalRes);
+        delivery = await sendWebhook(env, {
+          url: guard.url,
+          secret: ch.secret,
+          deliveryId,
+          payload: formatAlertWebhook(rule, evalRes),
+        });
       } else {
         continue;
       }
@@ -157,11 +179,17 @@ async function dispatchRule(env, rule, evalRes) {
 }
 
 /**
- * Pre-write a "pending" audit row BEFORE making the network call, so an
+ * Pre-write a "queued" audit row BEFORE making the network call, so an
  * uncaught exception or worker timeout still leaves a record we can
  * reconcile or expose in the user-facing "recent triggers" view. Returns
  * the delivery row id (or null if D1 is unavailable; caller then degrades
  * to fire-and-log at the end).
+ *
+ * The status MUST be one of the four the alert_deliveries CHECK constraint
+ * allows ('queued','sent','failed','suppressed'). This previously inserted
+ * 'pending', which the constraint rejected — the INSERT threw, was swallowed
+ * by the catch below, and every successful send therefore left no audit row
+ * at all. 'queued' is the constraint's name for exactly this state.
  */
 async function startDelivery(env, rule, channel, evalRes) {
   if (!env.HEALTH_DB) return null;
@@ -171,9 +199,11 @@ async function startDelivery(env, rule, channel, evalRes) {
     await env.HEALTH_DB.prepare(
       `INSERT INTO alert_deliveries
          (id, rule_id, channel_id, user_id, fired_at, status, payload_json, error_message, delivered_at)
-       VALUES (?, ?, ?, ?, ?, 'pending', ?, NULL, NULL)`
+       VALUES (?, ?, ?, ?, ?, 'queued', ?, NULL, NULL)`
     ).bind(
-      id, rule.id, channel?.id || "none", rule.user_id, now,
+      // NULL, not a 'none' sentinel — the FK would reject a fabricated id and
+      // the row (a suppression, usually) would be lost. See 0011.
+      id, rule.id, channel?.id ?? null, rule.user_id, now,
       JSON.stringify({ kind: rule.kind, reason: evalRes.reason, snapshot: evalRes.snapshot }),
     ).run();
     return id;
@@ -206,7 +236,7 @@ async function logDeliveryDirect(env, rule, channel, status, evalRes, error) {
          (id, rule_id, channel_id, user_id, fired_at, status, payload_json, error_message, delivered_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).bind(
-      id, rule.id, channel?.id || "none", rule.user_id, now, status,
+      id, rule.id, channel?.id ?? null, rule.user_id, now, status,
       JSON.stringify({ kind: rule.kind, reason: evalRes.reason, snapshot: evalRes.snapshot }),
       error || null,
       status === "sent" ? now : null,
@@ -228,6 +258,11 @@ async function logDelivery(env, rule, channel, status, evalRes, error) {
  * now: HF + score from D1, and an empty stub for prices/approvals. T8 will
  * populate approvals; the price feed is straightforward to add when
  * price-rule users exist.
+ *
+ * Because these two are stubs, rule kinds 'price' and 'approval_change' are
+ * refused at creation (UNSUPPORTED_KINDS in handlers/alerts.js) rather than
+ * accepted into a state where they can never fire. Populate the stub here and
+ * remove the kind there in the same change.
  */
 async function fetchWalletState(env, wallet) {
   const state = { score: null, health: null, prices: {}, approvals: [], protocol_events: [] };

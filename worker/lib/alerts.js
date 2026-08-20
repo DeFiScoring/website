@@ -10,9 +10,16 @@
  *     id, user_id, wallet_address,
  *     kind: 'health_factor' | 'price' | 'score_change' | 'approval_change' | 'liquidation_risk' | 'protocol_event',
  *     params: { ... kind-specific ... },   // parsed from params_json
- *     channels: ['email', 'telegram'],
+ *     channels: ['email', 'telegram', 'webhook'],
  *     cooldown_secs, last_fired_at, last_value
  *   }
+ *
+ * NOTE: 'price' and 'approval_change' evaluators exist below but are refused
+ * at rule creation (see UNSUPPORTED_KINDS in handlers/alerts.js) because the
+ * state they read — state.prices / state.approvals — is still an empty stub in
+ * the cron's fetchWalletState. The evaluators are kept so that wiring up a
+ * price feed or the approval scanner is the only work left; drop the kind from
+ * UNSUPPORTED_KINDS at that point.
  *
  * State shape (built by cron handler from existing handlers):
  *   {
@@ -221,6 +228,27 @@ export function formatAlertTelegram(rule, evaluation) {
     `<pre>${escapeHtml(JSON.stringify(evaluation.snapshot, null, 2))}</pre>`,
     `<a href="https://defiscoring.com/dashboard/?wallet=${wallet}">Open dashboard</a>`,
   ].join("\n");
+}
+
+/**
+ * Machine-readable payload for webhook channels. Unlike the email/telegram
+ * formatters this is a plain object, not a string — the delivery path
+ * serialises it once and signs those exact bytes, so nothing may re-stringify
+ * it downstream or the receiver's MAC check will fail.
+ */
+export function formatAlertWebhook(rule, evaluation) {
+  return {
+    event: "alert.fired",
+    fired_at: Date.now(),
+    rule: {
+      id: rule.id,
+      kind: rule.kind,
+      wallet_address: rule.wallet_address,
+    },
+    reason: evaluation.reason,
+    snapshot: evaluation.snapshot,
+    dashboard_url: `https://defiscoring.com/dashboard/?wallet=${rule.wallet_address}`,
+  };
 }
 
 function titleFor(kind) {
