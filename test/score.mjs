@@ -3,11 +3,19 @@
 // subrequest count, and persistence.
 import { D1, KV } from "./d1.mjs";
 import worker from "../worker/index.js";
-import { BANDS, bandForScore } from "../worker/lib/score.js";
+import { BANDS, bandForScore, pillarLiquidityProvision } from "../worker/lib/score.js";
+import { getUniV3LpCount } from "../worker/lib/defi.js";
 
 const ORIGIN = "https://defiscoring.com";
 const WALLET = "0x00000000000000000000000000000000000000aa";
 const EMPTY_WALLET = "0x00000000000000000000000000000000000000ee";
+// Holds 3 Uniswap V3 position NFTs; only tokenId 1001 still has liquidity.
+// The other two are closed positions the wallet never burned.
+const LP_WALLET = "0x00000000000000000000000000000000000000c9";
+const LP_NFT_COUNT = 3;
+const LP_LIVE_TOKEN_ID = 1001;
+const ALCHEMY_CHAIN = { id: "ethereum", name: "Ethereum", chainId: 1, alchemy: "eth-mainnet" };
+const word = (v) => BigInt(v).toString(16).padStart(64, "0");
 
 const results = [];
 function check(name, cond, detail) {
@@ -23,7 +31,7 @@ const env = {
   SESSION_HMAC_KEY: "k",
 };
 
-let calls = { etherscan: 0, coingecko: 0, snapshot: 0, other: [] };
+let calls = { etherscan: 0, coingecko: 0, snapshot: 0, alchemyHttp: 0, alchemyCalls: 0, other: [] };
 const realFetch = globalThis.fetch;
 globalThis.fetch = async (input, init) => {
   const u = String(input?.url || input);
@@ -45,6 +53,12 @@ globalThis.fetch = async (input, init) => {
       if (action === "txlist")  return J({ status: "0", message: "No transactions found", result: [] });
       if (action === "eth_call") return J({ jsonrpc: "2.0", id: 1, result: "0x" + "0".repeat(64 * 6) });
     }
+    // LP wallet via the non-Alchemy path: balanceOf on the position manager
+    // returns the NFT count, and there is no batch endpoint to refine it.
+    if (action === "eth_call" && callData.includes(LP_WALLET.slice(2))) {
+      return J({ jsonrpc: "2.0", id: 1, result: "0x" + word(LP_NFT_COUNT) });
+    }
+
     if (action === "balance") return J({ status: "1", message: "OK", result: "1500000000000000000" });
     if (action === "tokentx") {
       return J({ status: "1", message: "OK", result: [{
@@ -65,6 +79,37 @@ globalThis.fetch = async (input, init) => {
     }
     return J({ status: "0", message: "NOTOK", result: "unsupported in stub" });
   }
+  // ---- Alchemy JSON-RPC (single + batch) ---------------------------------
+  if (u.includes(".g.alchemy.com")) {
+    const body = JSON.parse((init && init.body) || "{}");
+    const batched = Array.isArray(body);
+    const reqs = batched ? body : [body];
+    calls.alchemyHttp += 1;
+    calls.alchemyCalls += reqs.length;
+    const answer = (req) => {
+      const p = (req.params && req.params[0]) || {};
+      const d = String(p.data || "").toLowerCase();
+      const sel = d.slice(0, 10);
+      if (sel === "0x70a08231") {                       // balanceOf -> NFT count
+        return { jsonrpc: "2.0", id: req.id, result: "0x" + word(LP_NFT_COUNT) };
+      }
+      if (sel === "0x2f745c59") {                       // tokenOfOwnerByIndex
+        const idx = Number(BigInt("0x" + d.slice(74, 138)));
+        return { jsonrpc: "2.0", id: req.id, result: "0x" + word(1000 + idx) };
+      }
+      if (sel === "0x99fbab88") {                       // positions(tokenId)
+        const tokenId = Number(BigInt("0x" + d.slice(10, 74)));
+        // 12 words; liquidity is word 7.
+        const words = Array.from({ length: 12 }, () => word(0));
+        if (tokenId === LP_LIVE_TOKEN_ID) words[7] = word(123456789n);
+        return { jsonrpc: "2.0", id: req.id, result: "0x" + words.join("") };
+      }
+      return { jsonrpc: "2.0", id: req.id, result: "0x" };
+    };
+    const out = reqs.map(answer);
+    return J(batched ? out : out[0]);
+  }
+
   // CoinGecko is "down" (429-style empty) for the whole test — the portfolio
   // must still be priced via the DefiLlama fallback tier.
   if (u.includes("coingecko.com")) { calls.coingecko++; return J({}); }
@@ -90,7 +135,7 @@ async function call(path) {
 
 (async () => {
   // ---- portfolio
-  calls = { etherscan: 0, coingecko: 0, snapshot: 0, other: [] };
+  calls = { etherscan: 0, coingecko: 0, snapshot: 0, alchemyHttp: 0, alchemyCalls: 0, other: [] };
   const p = await call("/api/portfolio?wallet=" + WALLET);
   check("GET /api/portfolio succeeds", p.json.success, p.json);
   check("portfolio defaults to the 5 Tier-1 chains", (p.json.chains || []).length === 5,
@@ -105,7 +150,7 @@ async function call(path) {
   const portfolioSubrequests = calls.etherscan;
 
   // ---- wallet score
-  calls = { etherscan: 0, coingecko: 0, snapshot: 0, other: [] };
+  calls = { etherscan: 0, coingecko: 0, snapshot: 0, alchemyHttp: 0, alchemyCalls: 0, other: [] };
   const s = await call("/api/wallet-score?wallet=" + WALLET);
   check("GET /api/wallet-score succeeds", s.json.success, s.json);
   check("score is in the FICO band", s.json.score >= 300 && s.json.score <= 850, s.json.score);
@@ -160,7 +205,7 @@ async function call(path) {
     { expectedLabel, svg: boundarySvg.slice(0, 200) });
 
   // ---- all-chain opt-in
-  calls = { etherscan: 0, coingecko: 0, snapshot: 0, other: [] };
+  calls = { etherscan: 0, coingecko: 0, snapshot: 0, alchemyHttp: 0, alchemyCalls: 0, other: [] };
   const all = await call("/api/wallet-score?wallet=" + WALLET + "&tier=all");
   check("?tier=all is honoured end to end", all.json.success, all.json.error);
 
@@ -181,6 +226,72 @@ async function call(path) {
     .prepare("SELECT COUNT(*) c FROM health_scores").first()).c;
   check("unscored result is not persisted to health_scores",
     rowsAfter === rowsBefore, { rowsBefore, rowsAfter });
+
+  // ---- Uniswap V3: live positions, not NFT count -------------------------
+  // Regression: getUniV3LpCount was a balanceOf on the position manager, so
+  // a wallet holding three closed positions scored as a three-position LP.
+  calls = { etherscan: 0, coingecko: 0, snapshot: 0, alchemyHttp: 0, alchemyCalls: 0, other: [] };
+  const lp = await getUniV3LpCount(ALCHEMY_CHAIN, { ALCHEMY_KEY: "stub" }, LP_WALLET);
+  check("holds 3 position NFTs", lp.lpCount === LP_NFT_COUNT, lp);
+  check("only the position with liquidity counts as active",
+    lp.activeLpCount === 1, { activeLpCount: lp.activeLpCount, lpCount: lp.lpCount });
+  check("all 3 positions were actually read", lp.positionsRead === 3, lp.positionsRead);
+  check("hasPosition follows the live count, not the NFT count",
+    lp.hasPosition === true, lp);
+  check("not flagged truncated below the 20-position cap",
+    lp.lpCountTruncated === false, lp.lpCountTruncated);
+  // 1 balanceOf + 1 batched enumeration + 1 batched positions sweep.
+  check("enumeration costs 3 HTTP subrequests regardless of position count",
+    calls.alchemyHttp === 3, { http: calls.alchemyHttp, rpcCalls: calls.alchemyCalls });
+  // 1 balanceOf + 3 tokenOfOwnerByIndex + 3 positions = 7 RPC calls, but only
+  // 3 HTTP requests — the two sweeps ride in one batch each.
+  check("the per-position reads are batched, not serial",
+    calls.alchemyCalls === 1 + LP_NFT_COUNT * 2 && calls.alchemyHttp === 3,
+    { http: calls.alchemyHttp, rpcCalls: calls.alchemyCalls });
+
+  // Without an Alchemy key there is no batch endpoint, so the raw count
+  // stands — but the pillar must say so rather than implying it is live.
+  calls = { etherscan: 0, coingecko: 0, snapshot: 0, alchemyHttp: 0, alchemyCalls: 0, other: [] };
+  const lpNoKey = await getUniV3LpCount(ALCHEMY_CHAIN, { ETHERSCAN_API_KEY: "stub" }, LP_WALLET);
+  check("without Alchemy the raw NFT count still comes back",
+    lpNoKey.lpCount === LP_NFT_COUNT, lpNoKey);
+  check("without Alchemy the active count is null, not a guessed zero",
+    lpNoKey.activeLpCount === null, lpNoKey);
+  check("without Alchemy no batch calls are made", calls.alchemyHttp === 0, calls.alchemyHttp);
+
+  // ---- pillar prefers activeLpCount --------------------------------------
+  const chainRow = (row) => [{ protocols: [{ protocol: "uniswap-v3-lp", ...row }] }];
+
+  const live1of3 = pillarLiquidityProvision(chainRow(
+    { lpCount: 3, activeLpCount: 1, positionsRead: 3, lpCountTruncated: false }));
+  check("pillar scores the live count, not the NFT count",
+    live1of3.lpCount === 1 && live1of3.value === 50,
+    { lpCount: live1of3.lpCount, value: live1of3.value });
+  check("pillar says how many NFTs were discounted",
+    /2 further position NFT\(s\) hold no liquidity/.test(live1of3.rationale), live1of3.rationale);
+  check("the same wallet scored on raw NFT count would have ranked higher",
+    pillarLiquidityProvision(chainRow({ lpCount: 3 })).value > live1of3.value,
+    { byNftCount: pillarLiquidityProvision(chainRow({ lpCount: 3 })).value, byLive: live1of3.value });
+
+  const allClosed = pillarLiquidityProvision(chainRow(
+    { lpCount: 4, activeLpCount: 0, positionsRead: 4, lpCountTruncated: false }));
+  check("a wallet whose positions are all closed is not an LP",
+    allClosed.real === false && allClosed.value === 50, allClosed);
+  check("all-closed is reported as observed, not as 'never provided liquidity'",
+    /none currently hold liquidity/.test(allClosed.rationale), allClosed.rationale);
+
+  const unresolved = pillarLiquidityProvision(chainRow({ lpCount: 3, activeLpCount: null }));
+  check("unresolved counts still score, using the raw count",
+    unresolved.real === true && unresolved.lpCount === 3, unresolved);
+  check("unresolved counts are labelled as possibly including closed positions",
+    /may include closed positions/.test(unresolved.rationale), unresolved.rationale);
+  check("unresolved pillar does not claim a verified active count",
+    unresolved.activeLpCount === null, unresolved.activeLpCount);
+
+  const truncatedPillar = pillarLiquidityProvision(chainRow(
+    { lpCount: 40, activeLpCount: 20, positionsRead: 20, lpCountTruncated: true }));
+  check("a truncated enumeration is reported as a floor",
+    /floor/.test(truncatedPillar.rationale), truncatedPillar.rationale);
 
   globalThis.fetch = realFetch;
   const failed = results.filter((r) => !r.ok);
