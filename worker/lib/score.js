@@ -13,7 +13,7 @@
 // is the new path the SPA (T7) will move to.
 //
 // Pillars (weights sum to 1.0):
-//   loan_reliability     0.35   Aave HF + debt utilization across chains
+//   loan_reliability     0.35   Aave HF + Compound-derived HF, across chains
 //   portfolio_health     0.25   Diversification (top-N concentration) + size
 //   liquidity_provision  0.15   Uni V3 live LP positions (liquidity > 0)
 //   governance           0.10   Snapshot vote count
@@ -76,51 +76,109 @@ export function bandForScore(score) {
 // =============================================================================
 
 export function pillarLoanReliability(defiByChain) {
-  // Find the riskiest position (lowest HF) and the largest leverage user
-  // across every chain. Wallet with no debt anywhere -> neutral 80 (good
-  // signal but not "best possible" — paying down debt successfully is the
-  // gold standard).
+  // Score the riskiest lending position the wallet holds anywhere, across
+  // both supported lenders. A wallet that is comfortable on four chains and
+  // about to be liquidated on a fifth is a liquidation risk.
+  //
+  // Aave reports a health factor directly. Compound V3 has no healthFactor()
+  // view, but lib/defi.js derives one on the same definition (risk-adjusted
+  // collateral / debt) from Comet's per-asset balances, price feeds, and
+  // liquidation collateral factors — so both protocols land on one scale and
+  // share the bands below.
   let lowestHf = null;
+  let lowestHfProtocol = null;
   let totalCollateral = 0;
   let totalDebt = 0;
   let hasAnyPosition = false;
+  // Debt we can see but cannot assess: a Comet borrow whose collateral read
+  // failed. Scoring it as if it were safe would be a guess in the wallet's
+  // favour; scoring it as liquidatable would be a guess against it.
+  let unassessableDebt = 0;
+  const seen = new Set();
+
+  const noteHf = (hf, label) => {
+    if (typeof hf !== 'number' || !Number.isFinite(hf)) return;
+    if (lowestHf == null || hf < lowestHf) { lowestHf = hf; lowestHfProtocol = label; }
+  };
+
   for (const c of defiByChain) {
     for (const p of c.protocols || []) {
       if (p.protocol === 'aave-v3' && p.hasPosition) {
         hasAnyPosition = true;
+        seen.add('Aave V3');
         totalCollateral += p.collateralUsd || 0;
         totalDebt       += p.debtUsd || 0;
-        if (typeof p.healthFactor === 'number') {
-          if (lowestHf == null || p.healthFactor < lowestHf) lowestHf = p.healthFactor;
+        noteHf(p.healthFactor, 'Aave V3');
+      } else if (p.protocol === 'compound-v3' && p.hasPosition) {
+        hasAnyPosition = true;
+        seen.add('Compound V3');
+        // Comet's base-asset supply is a lending position, not collateral for
+        // it — collateral is a separate slot, read only when there is a borrow.
+        totalCollateral += (p.supplyUsd || 0) + (p.collateralUsd || 0);
+        totalDebt       += p.borrowUsd || 0;
+        if ((p.borrowUsd || 0) > 0) {
+          if (typeof p.healthFactor === 'number' && Number.isFinite(p.healthFactor)) {
+            noteHf(p.healthFactor, 'Compound V3');
+          } else {
+            unassessableDebt += p.borrowUsd || 0;
+          }
         }
       }
     }
   }
+
+  const protocols = [...seen];
+  const named = protocols.length ? protocols.join(' + ') : 'Aave V3 or Compound V3';
+
   if (!hasAnyPosition) {
     return { real: false, value: 50, lowestHealthFactor: null, totalCollateralUsd: 0, totalDebtUsd: 0,
-             rationale: 'No Aave V3 positions found across any chain — neutral score.' };
+             protocols: [],
+             rationale: 'No Aave V3 or Compound V3 positions found across any chain — neutral score.' };
   }
   // No debt? Wallet is supplying as a saver — that's a positive signal but
   // not as informative as a successfully managed leveraged position.
   if (totalDebt === 0) {
     return { real: true, value: 80, lowestHealthFactor: null, totalCollateralUsd: totalCollateral,
-             totalDebtUsd: 0, rationale: 'Aave supplier with no outstanding debt.' };
+             totalDebtUsd: 0, protocols,
+             rationale: `${named} supplier with no outstanding debt.` };
   }
-  // Map HF to score band (Aave HF semantics: <1 liquidatable, 1-1.5 risky,
-  // 1.5-2 caution, >2 safe). 100 best possible, 0 worst.
+
+  const utilization = totalCollateral > 0 ? totalDebt / totalCollateral : null;
+
+  // Borrowing, but every borrow's backing was unreadable — we know there is
+  // debt and nothing about how well it is covered. Neutral, and say so.
+  if (lowestHf == null) {
+    return {
+      real: true, value: 50, lowestHealthFactor: null,
+      totalCollateralUsd: totalCollateral, totalDebtUsd: totalDebt,
+      utilization, unassessableDebtUsd: unassessableDebt, protocols,
+      rationale: `${named} borrower, but the collateral backing the debt could not be read — neutral score.`,
+    };
+  }
+
+  // Map health factor to score band (Aave HF semantics: <1 liquidatable,
+  // 1-1.5 risky, 1.5-2 caution, >2 safe). 100 best possible, 0 worst.
   let value;
-  if (lowestHf == null)      value = 50;
-  else if (lowestHf < 1)     value = 0;
+  if (lowestHf < 1)          value = 0;
   else if (lowestHf < 1.25)  value = 20;
   else if (lowestHf < 1.5)   value = 40;
   else if (lowestHf < 2)     value = 65;
   else if (lowestHf < 3)     value = 85;
   else                        value = 95;
+
+  let rationale = `Lowest health factor across ${named}: ${lowestHf.toFixed(2)}`;
+  rationale += lowestHfProtocol ? ` (${lowestHfProtocol}).` : '.';
+  if (unassessableDebt > 0) {
+    rationale += ` $${Math.round(unassessableDebt).toLocaleString()} of Compound debt had unreadable collateral and is excluded from the health factor.`;
+  }
+
   return {
-    real: true, value, lowestHealthFactor: lowestHf,
+    real: true, value, lowestHealthFactor: lowestHf, lowestHealthFactorProtocol: lowestHfProtocol,
     totalCollateralUsd: totalCollateral, totalDebtUsd: totalDebt,
-    utilization: totalCollateral > 0 ? totalDebt / totalCollateral : 0,
-    rationale: `Lowest Aave health factor across all chains: ${lowestHf.toFixed(2)}.`,
+    utilization: utilization != null ? utilization : 0,
+    unassessableDebtUsd: unassessableDebt,
+    protocols,
+    rationale,
   };
 }
 
