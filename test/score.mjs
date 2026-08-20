@@ -3,6 +3,7 @@
 // subrequest count, and persistence.
 import { D1, KV } from "./d1.mjs";
 import worker from "../worker/index.js";
+import { BANDS, bandForScore } from "../worker/lib/score.js";
 
 const ORIGIN = "https://defiscoring.com";
 const WALLET = "0x00000000000000000000000000000000000000aa";
@@ -127,6 +128,36 @@ async function call(path) {
   const svg = await badge.text();
   check("badge renders the persisted score", badge.status === 200 && svg.includes(String(s.json.score)),
     svg.slice(0, 160));
+
+  // ---- band-threshold boundary: badge must agree with the score payload
+  //
+  // Regression test for the drift documented in worker/lib/score.js's BANDS
+  // comment: the badge and the score payload used to redeclare 720/660/580
+  // independently, and the dashboard had its own copy at 750/670/580 — the
+  // same wallet could show a different band on its badge than on its score.
+  // 720 is the exact floor of "excellent"; one point below it (719) must
+  // fall to "good", proving the boundary itself — not just the interior of
+  // a band — is shared correctly.
+  check("BANDS floor for 'excellent' is exactly 720 (canonical value)",
+    BANDS.find((b) => b.key === "excellent")?.floor === 720, BANDS);
+  check("bandForScore(720) === 'excellent'", bandForScore(720) === "excellent", bandForScore(720));
+  check("bandForScore(719) === 'good' (one point under the floor)",
+    bandForScore(719) === "good", bandForScore(719));
+
+  const BOUNDARY_WALLET = "0x00000000000000000000000000000000000000bb";
+  await env.HEALTH_DB.prepare(
+    "INSERT INTO health_scores (wallet, score, computed_at) VALUES (?, 720, ?)"
+  ).bind(BOUNDARY_WALLET, Date.now()).run();
+  const boundaryBadge = await worker.fetch(
+    new Request(ORIGIN + "/badge/" + BOUNDARY_WALLET + ".svg"), env, { waitUntil() {} });
+  const boundarySvg = await boundaryBadge.text();
+  // computeWalletScore uses the same bandForScore the badge does, so at the
+  // exact floor both must land on the same label ("Excellent"), not one
+  // rounding down to "Good" while the other reads the boundary inclusively.
+  const expectedLabel = bandForScore(720)[0].toUpperCase() + bandForScore(720).slice(1);
+  check("badge band at score=720 matches computeWalletScore's score_band ('excellent')",
+    boundaryBadge.status === 200 && boundarySvg.includes(">" + expectedLabel + "<"),
+    { expectedLabel, svg: boundarySvg.slice(0, 200) });
 
   // ---- all-chain opt-in
   calls = { etherscan: 0, coingecko: 0, snapshot: 0, other: [] };

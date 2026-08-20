@@ -30,6 +30,42 @@ import { CHAINS } from './chains.js';
 import { getAllDeFiPositions } from './defi.js';
 import { ethCall, abiEncodeSingleAddr, abiHexWord } from './providers.js';
 
+// =============================================================================
+// Score bands — the single source of truth for the 300–850 → label mapping.
+//
+// This used to be redeclared inline wherever a band was needed, and the
+// copies drifted: worker/handlers/badge.js and the legacy handleHealthScore
+// in worker/index.js matched this file (720/660/580), but the *dashboard* —
+// assets/js/dashboard.js's bandFor() and assets/js/defi-onchain.js's
+// preliminaryScore() — used 750/670/580, and the landing page's static gauge
+// legend and its animating JS each stated a third and fourth set (740/670
+// and 670/580 with a "Great" label instead of "Excellent"). The same wallet
+// could show "Good" on its badge and "Excellent" on its dashboard depending
+// on which of these four copies answered.
+//
+// Fix: this array is the only place a threshold is allowed to be a literal.
+// Every other surface — worker/handlers/badge.js, assets/js/dashboard.js,
+// assets/js/defi-onchain.js, assets/js/landing.js, index.html's gauge legend
+// — either imports BANDS (server-side) or mirrors it verbatim with a comment
+// pointing back here (browser-side, where there's no bundler to import
+// across). If you change a threshold, this is the only edit that matters;
+// everywhere else is a copy that must be kept byte-identical to it.
+//
+// Ordered highest floor first so bandForScore can return on first match.
+export const BANDS = [
+  { key: 'excellent', label: 'Excellent', floor: 720 },
+  { key: 'good',      label: 'Good',      floor: 660 },
+  { key: 'fair',      label: 'Fair',      floor: 580 },
+  { key: 'poor',      label: 'Poor',      floor: 300 },
+];
+
+export function bandForScore(score) {
+  for (const b of BANDS) {
+    if (score >= b.floor) return b.key;
+  }
+  return BANDS[BANDS.length - 1].key;
+}
+
 // Re-implemented from worker/index.js so the legacy handleHealthScore stays
 // untouched. Callers pass { from, to, perpage, sort } to the providers
 // layer if they want to use the existing fetcher; we use direct provider
@@ -345,7 +381,7 @@ export async function computeWalletScore(env, wallet, { portfolio, defiByChain }
 
   // Clamp to FICO range.
   const score = Math.max(300, Math.min(850, baseScore));
-  const score_band = score >= 720 ? 'excellent' : score >= 660 ? 'good' : score >= 580 ? 'fair' : 'poor';
+  const score_band = bandForScore(score);
 
   return {
     success: true,

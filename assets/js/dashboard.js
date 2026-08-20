@@ -96,12 +96,28 @@
     return data;
   }
 
+  // BANDS mirrors worker/lib/score.js's exported BANDS constant, the one
+  // canonical definition of the 300–850 → label mapping. There is no
+  // bundler here to `import` it across the server/browser boundary, so this
+  // array is a manual copy — keep the floors byte-identical to score.js if
+  // that file ever changes, or this dashboard will disagree with the badge
+  // and the score payload again, which is the exact bug this comment exists
+  // to prevent a repeat of (this bandFor used to read 750/670/580 while the
+  // backend and the badge used 720/660/580 — the same wallet could show
+  // "Excellent" here and "Good" on its own badge).
+  const BANDS = [
+    { key: "excellent", label: "Excellent", floor: 720 },
+    { key: "good",      label: "Good",      floor: 660 },
+    { key: "fair",      label: "Fair",      floor: 580 },
+    { key: "poor",      label: "Poor",      floor: 300 },
+  ];
+
   function bandFor(score) {
     if (score == null) return "Unscored";
-    if (score >= 750) return "Excellent";
-    if (score >= 670) return "Good";
-    if (score >= 580) return "Fair";
-    return "Poor";
+    for (const b of BANDS) {
+      if (score >= b.floor) return b.label;
+    }
+    return BANDS[BANDS.length - 1].label;
   }
 
   // Map the /api/wallet-score payload (5 pillars, weights 35/25/15/10/15)
