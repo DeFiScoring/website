@@ -71,6 +71,35 @@ export const BANDS = [
   { key: 'poor',      label: 'Poor',      floor: 300 },
 ];
 
+// Weight of each pillar in the composite, and the single source for both the
+// coverage calculation and the weights published in the payload.
+export const PILLAR_WEIGHTS = {
+  loan_reliability:    0.35,
+  portfolio_health:    0.25,
+  liquidity_provision: 0.15,
+  governance:          0.10,
+  account_age:         0.15,
+};
+
+/**
+ * How much of a score rests on data we actually observed: the summed weight
+ * of the pillars backed by real data. 1.0 means every pillar was answered;
+ * 0.5 means half the score is a neutral placeholder.
+ *
+ * The rounding is not cosmetic. Of the 32 possible real/estimated
+ * combinations exactly one drifts in binary floating point —
+ * loan_reliability + governance sums to 0.44999999999999996 — and without
+ * the guard that wallet's dashboard would read "45.000000000000004% live
+ * data" after the percentage conversion.
+ */
+export function coverageOf(pillars) {
+  let sum = 0;
+  for (const [key, weight] of Object.entries(PILLAR_WEIGHTS)) {
+    if (pillars && pillars[key] && pillars[key].real) sum += weight;
+  }
+  return Number(sum.toFixed(4));
+}
+
 export function bandForScore(score) {
   for (const b of BANDS) {
     if (score >= b.floor) return b.key;
@@ -511,6 +540,13 @@ export async function computeWalletScore(env, wallet, { portfolio, defiByChain }
   const score = Math.max(300, Math.min(850, baseScore));
   const score_band = bandForScore(score);
 
+  // Each pillar that fell back to a neutral 50 (`real: false`) contributes
+  // its weight to the shortfall rather than to coverage.
+  const coverage = coverageOf({
+    loan_reliability: Lr, portfolio_health: Ph,
+    liquidity_provision: Lp, governance: Gv, account_age: Ag,
+  });
+
   return {
     success: true,
     wallet,
@@ -518,6 +554,7 @@ export async function computeWalletScore(env, wallet, { portfolio, defiByChain }
     score,
     score_band,
     model: SCORE_MODEL_VERSION,
+    coverage,
     raw_h_s: Number(Hs.toFixed(2)),
     pillars: {
       loan_reliability:    { weight: 0.35, ...Lr },
