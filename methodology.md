@@ -267,6 +267,14 @@ Unscored results are **not written to score history**. They do not appear in the
 
 A scored result is written to the wallet's score history, which backs the trend chart and the public badge at `/badge/{address}.svg`. The stored row keeps the pillar sub-scores, the raw `Hs`, the band, and the adjustment list alongside the final number.
 
+### 1.9 Model versioning
+
+A score is only comparable to another score produced by the same model, so every score carries a **model version** — currently `2026.08` — and every stored row records the version that produced it.
+
+The version is incremented whenever a change would move an existing wallet's score without its on-chain position having changed: new or reweighted pillars, changed banding, new adjustments, or a new data source feeding an existing pillar. It is *not* incremented for bug fixes that only affect which wallets can be scored at all, nor for refactors.
+
+Where a wallet's history spans a model change, the trend chart marks the boundary rather than drawing the step as though the wallet had moved. Rows written before versioning existed carry no version; those are left unmarked, since the absence of a recorded version is not evidence that the model changed at that point.
+
 ---
 
 ## 2. Wallet Score Limitations

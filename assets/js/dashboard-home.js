@@ -265,9 +265,53 @@
       }
       return p.month || "";
     });
+    // Mark where the scoring model changed between two consecutive points.
+    // Only flagged when BOTH sides carry a version: rows written before model
+    // versioning have model === null, and "unknown -> 2026.08" is not evidence
+    // the model actually changed there, only that we started recording it.
+    // Drawing a marker for that would assert a discontinuity we can't confirm.
+    const modelMarkers = [];
+    for (let i = 1; i < history.length; i++) {
+      const prev = history[i - 1] && history[i - 1].model;
+      const cur = history[i] && history[i].model;
+      if (prev && cur && prev !== cur) modelMarkers.push({ index: i, label: cur });
+    }
+    const modelChangePlugin = {
+      id: "modelChange",
+      afterDatasetsDraw: function (chart) {
+        if (!modelMarkers.length) return;
+        const area = chart.chartArea;
+        const xScale = chart.scales.x;
+        if (!area || !xScale) return;
+        const c = chart.ctx;
+        c.save();
+        modelMarkers.forEach(function (m) {
+          const x = xScale.getPixelForValue(m.index);
+          if (!isFinite(x)) return;
+          c.beginPath();
+          c.setLineDash([4, 4]);
+          c.lineWidth = 1;
+          c.strokeStyle = "rgba(168,85,247,0.55)";
+          c.moveTo(x, area.top);
+          c.lineTo(x, area.bottom);
+          c.stroke();
+          c.setLineDash([]);
+          c.font = "600 10px Inter, system-ui, sans-serif";
+          c.fillStyle = "rgba(168,85,247,0.9)";
+          c.textBaseline = "top";
+          const label = "model " + m.label;
+          const w = c.measureText(label).width;
+          // Keep the label inside the plot area when the change is near the edge.
+          c.fillText(label, Math.min(x + 4, area.right - w - 2), area.top + 4);
+        });
+        c.restore();
+      },
+    };
+
     const ctx = canvas.getContext("2d");
     window._trendChart = new Chart(ctx, {
       type: "line",
+      plugins: [modelChangePlugin],
       data: {
         labels: labels,
         datasets: [{
@@ -278,7 +322,17 @@
       },
       options: {
         responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              afterLabel: function (item) {
+                const m = history[item.dataIndex] && history[item.dataIndex].model;
+                return m ? "Model " + m : "";
+              },
+            },
+          },
+        },
         scales: {
           x: { ticks: { color: "#8b8b99" }, grid: { color: "rgba(255,255,255,0.08)" } },
           y: { suggestedMin: 300, suggestedMax: 850, ticks: { color: "#8b8b99" }, grid: { color: "rgba(255,255,255,0.08)" } },
