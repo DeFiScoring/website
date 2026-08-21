@@ -14,7 +14,7 @@
 import { CHAINS } from '../lib/chains.js';
 import { handlePortfolio } from './portfolio.js';
 import { getAllDeFiPositions } from '../lib/defi.js';
-import { computeWalletScore } from '../lib/score.js';
+import { computeWalletScore, SCORE_MODEL_VERSION } from '../lib/score.js';
 
 const ADDR_RE = /^0x[a-fA-F0-9]{40}$/;
 const isAddress = (a) => ADDR_RE.test(a || '');
@@ -95,6 +95,9 @@ async function persistWalletScore(env, wallet, payload) {
       payload.raw_h_s ?? null,
       JSON.stringify({
         source: 'wallet-score',
+        // Which scoring model produced this row. Read back by the history
+        // endpoint so the trend chart can mark where the model changed.
+        model: payload.model || SCORE_MODEL_VERSION,
         score_band: payload.score_band,
         adjustments: payload.adjustments || [],
         portfolio_health: p.portfolio_health || null,
