@@ -77,7 +77,7 @@ By default the score is computed across the five **Tier 1** chains:
 
 Passing `?tier=all` extends the scan to all eleven supported chains, adding BNB Chain, Avalanche, Gnosis, Linea, Scroll, and zkSync Era. `?chains=` accepts an explicit comma-separated list.
 
-Two pillars are not multi-chain by construction: **governance** reads Snapshot, which is chain-agnostic, and **account age** reads Ethereum mainnet only.
+One pillar is not multi-chain by construction: **governance** reads Snapshot, which is chain-agnostic. **Account age** queries all five Tier 1 chains regardless of the requested tier, since a wallet's age is a property of its whole history rather than of the chains being scored.
 
 ### 1.2 Real signals vs. neutral defaults
 
@@ -188,7 +188,9 @@ Note that one LP position and zero LP positions both land on 50 — the differen
 
 #### D. Account Age — 15%
 
-**Input:** the timestamp of the wallet's first Ethereum mainnet transaction.
+**Input:** the timestamp of the wallet's earliest transaction on any Tier 1 chain.
+
+All five chains are queried in parallel and the **oldest** answer wins, so a wallet that started on an L2 keeps that age, and one that later bridged to Ethereum does not have its history reset to the bridging date. The chain the age came from is named in the pillar's rationale.
 
 | Age since first transaction | Sub-score | Coverage |
 | :--- | :--- | :--- |
@@ -197,10 +199,10 @@ Note that one LP position and zero LP positions both land on 50 — the differen
 | 6 – 12 months | 70 | `real: true` |
 | 1 – 6 months | 50 | `real: true` |
 | < 30 days | 25 | `real: true` |
-| No transaction history found | 20 | `real: true` |
-| Lookup unavailable or failed | 50 | `real: false` |
+| No transaction history on any Tier 1 chain | 20 | `real: true` |
+| Every chain's lookup failed | 50 | `real: false` |
 
-"No history found" is a real, observed answer and is scored as such. "Lookup failed" is not an answer, and falls back to neutral.
+"No history found" is a real, observed answer and is scored as such. "Lookup failed" is not an answer, and falls back to neutral. With five chains queried, the distinction is drawn on the whole set: as long as one chain answers, an empty result is an observation; only when every lookup fails does the pillar go neutral.
 
 #### E. Governance — 10%
 
@@ -294,7 +296,7 @@ Where a wallet's history spans a model change, the trend chart marks the boundar
 
 - **A fixed protocol list.** Two of the five pillars read specific protocols: loan reliability covers Aave V3 and Compound V3, and liquidity provision covers Uniswap V3. A wallet that borrows exclusively on Morpho or Spark scores `real: false` on loan reliability and receives a neutral 50 — not a penalty, but not credit for that activity either.
 - **Compound collateral without a borrow is invisible.** Comet's position check keys off the base-asset balance, which is zero for an account that has deposited collateral but not borrowed against it. Such a wallet reads as having no Compound position. It is also the case where nothing is at risk.
-- **Ethereum-anchored account age.** An L2-native wallet with no mainnet history scores as though it had none. This under-rates genuinely long-lived L2 users.
+- **Account age stops at Tier 1.** All five Tier 1 chains are queried, but a wallet whose entire history predates its Tier 1 activity — living only on Gnosis, Linea, zkSync Era or another Tier 2 chain — is still under-rated.
 - **Point-in-time.** The score reflects the moment of the scan. A health factor can deteriorate within a single block.
 - **Prices depend on third-party feeds.** When every price tier is unavailable, tokens are still detected but unpriced, and portfolio health degrades to `real: false`.
 - **No Sybil resistance.** The score describes an address, not a person. One person may hold many addresses, and one address may be controlled by many people.
