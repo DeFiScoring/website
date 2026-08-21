@@ -88,6 +88,10 @@ Every pillar is tagged `real: true` or `real: false` in the API response.
 
 A neutral 50 is deliberately mid-range: it neither rewards nor punishes a wallet for a signal we could not observe.
 
+**Coverage** summarises this in one number: the summed weight of the pillars backed by real data, from 0 to 1. A wallet whose loan reliability could not be observed but whose other four pillars were all found scores `0.65` coverage — the missing pillar carries 35% of the composite.
+
+The dashboard shows this as *"Score based on N% live data"* beside the band, dimmed normally and amber below 60%, and names which pillars were estimated. A score resting largely on neutral defaults is not wrong, but it is a weaker claim than one backed by observation, and it should be legible as such rather than presented identically.
+
 ### 1.3 The five pillars
 
 <div class="pillar-grid">
