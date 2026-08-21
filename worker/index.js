@@ -64,6 +64,9 @@ import {
 } from "./handlers/wallets.js";
 import { handleScoreBadge } from "./handlers/badge.js";
 import { runScheduledRescore } from "./handlers/rescore.js";
+import {
+  handleWatchedWalletsList, handleWatchedWalletsAdd, handleWatchedWalletsUpdate, handleWatchedWalletsDelete,
+} from "./handlers/watched-wallets.js";
 import { handleQuota } from "./handlers/quota.js";
 import {
   handleBillingConfig, handleBillingCheckout, handleBillingPortal,
@@ -3020,6 +3023,18 @@ async function dispatch(request, env, peekedAddr) {
     //   /api/alerts/channels/{id}/verify   POST (with token) marks verified
     //   /api/alerts/deliveries         GET recent audit log
     // -----------------------------------------------------------------------
+    // User-scoped wallet watchlist — distinct from the legacy per-wallet
+    // protocol watchlist at /api/watchlist/{wallet} below.
+    if (url.pathname === "/api/watched-wallets") {
+      if (request.method === "GET")  return handleWatchedWalletsList(request, env);
+      if (request.method === "POST") return handleWatchedWalletsAdd(request, env);
+    }
+    if (url.pathname.startsWith("/api/watched-wallets/")) {
+      const wid = url.pathname.slice("/api/watched-wallets/".length).replace(/\/$/, "");
+      if (request.method === "PUT")    return handleWatchedWalletsUpdate(request, env, wid);
+      if (request.method === "DELETE") return handleWatchedWalletsDelete(request, env, wid);
+    }
+
     if (url.pathname === "/api/alerts/rules") {
       if (request.method === "GET")  return handleAlertRulesList(request, env);
       if (request.method === "POST") return handleAlertRuleCreate(request, env);

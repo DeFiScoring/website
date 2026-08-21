@@ -28,15 +28,18 @@ export async function runScheduledRescore(env, ctx) {
 
   const minAgeMs = (Number(env.RESCORE_MIN_AGE_HOURS) || DEFAULT_MIN_AGE_HOURS) * 3600 * 1000;
 
-  // Stalest wallet with at least one active rule. SQLite sorts NULL first on
-  // ASC, so never-scored wallets win, then the oldest scan.
+  // Stalest wallet that is either covered by an active alert rule or on
+  // someone's watchlist — the union IS the "watched" set. SQLite sorts NULL
+  // first on ASC, so never-scored wallets win, then the oldest scan.
   const row = await env.HEALTH_DB.prepare(
-    `SELECT r.wallet_address AS wallet,
+    `SELECT w.wallet AS wallet,
             (SELECT MAX(h.computed_at) FROM health_scores h
-              WHERE h.wallet = r.wallet_address) AS last_scored_at
-     FROM alert_rules r
-     WHERE r.is_active = 1
-     GROUP BY r.wallet_address
+              WHERE h.wallet = w.wallet) AS last_scored_at
+     FROM (
+       SELECT DISTINCT wallet_address AS wallet FROM alert_rules WHERE is_active = 1
+       UNION
+       SELECT DISTINCT wallet FROM watched_wallets
+     ) w
      ORDER BY last_scored_at ASC
      LIMIT 1`
   ).first();

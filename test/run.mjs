@@ -22,6 +22,7 @@ const SUITES = [
   ["dsar",  "wallet-proved account erasure"],
   ["alerts", "webhook delivery signing + SSRF guard, unsupported rule kinds"],
   ["rescore", "scheduled re-scoring: stalest-first selection, freshness gate, score_change loop"],
+  ["watchlist", "watched wallets: CRUD, tier caps, isolation, re-score queue membership"],
 ];
 
 const [maj, min] = process.versions.node.split(".").map(Number);
