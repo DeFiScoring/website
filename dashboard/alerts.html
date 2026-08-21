@@ -105,7 +105,11 @@ sitemap: false
           <option value="price">Token price &lt; threshold (USD)</option>
         </select>
       </div>
-      <div class="defi-form-group" style="flex:1;min-width:140px">
+      <div class="defi-form-group" style="flex:1.4;min-width:200px;display:none" id="rule-token-group">
+        <label for="rule-token">Token contract</label>
+        <input class="defi-input" id="rule-token" placeholder="0x…" pattern="0x[0-9a-fA-F]{40}">
+      </div>
+      <div class="defi-form-group" style="flex:1;min-width:140px" id="rule-threshold-group">
         <label for="rule-threshold" id="rule-threshold-label">Threshold</label>
         <input class="defi-input" id="rule-threshold" placeholder="e.g. 1.5" required>
       </div>
