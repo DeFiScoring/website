@@ -63,6 +63,7 @@ import {
   handleWalletsList, handleWalletLink, handleWalletUnlink, handleWalletUpdate,
 } from "./handlers/wallets.js";
 import { handleScoreBadge } from "./handlers/badge.js";
+import { runScheduledRescore } from "./handlers/rescore.js";
 import { handleQuota } from "./handlers/quota.js";
 import {
   handleBillingConfig, handleBillingCheckout, handleBillingPortal,
@@ -2387,6 +2388,10 @@ export default {
     }
     if (event.cron === "*/5 * * * *") {
       ctx.waitUntil(scanAlertRules(env, ctx));
+      return;
+    }
+    if (event.cron === "*/15 * * * *") {
+      ctx.waitUntil(runScheduledRescore(env, ctx));
       return;
     }
     // Unknown cron — log and bail rather than guessing.

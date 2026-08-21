@@ -21,6 +21,7 @@ const SUITES = [
   ["score", "portfolio scan, wallet score, price fallbacks, badge"],
   ["dsar",  "wallet-proved account erasure"],
   ["alerts", "webhook delivery signing + SSRF guard, unsupported rule kinds"],
+  ["rescore", "scheduled re-scoring: stalest-first selection, freshness gate, score_change loop"],
 ];
 
 const [maj, min] = process.versions.node.split(".").map(Number);

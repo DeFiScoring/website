@@ -284,7 +284,7 @@ Unscored results are **not written to score history**. They do not appear in the
 
 ### 1.8 Persistence
 
-A scored result is written to the wallet's score history, which backs the trend chart and the public badge at `/badge/{address}.svg`. The stored row keeps the pillar sub-scores, the raw `Hs`, the band, and the adjustment list alongside the final number.
+A scored result is written to the wallet's score history, which backs the trend chart and the public badge at `/badge/{address}.svg`. The stored row keeps the pillar sub-scores, the raw `Hs`, the band, and the adjustment list alongside the final number. Wallets with active alert rules are additionally re-scored on a schedule (roughly daily, stalest first), so their trend history and score-change alerts work without anyone pressing scan.
 
 ### 1.9 Model versioning
 
