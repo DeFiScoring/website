@@ -127,20 +127,29 @@
   function mapWalletScore(wallet, data) {
     const p = data.pillars || {};
     const pct = (pl) => (pl && pl.value != null) ? Math.max(0, Math.min(100, Math.round(pl.value))) : null;
-    const mk = (pl, name) => ({
+    const mk = (pl, name, short) => ({
       name,
+      short: short || name,
       value: pct(pl),
       weight: pl && pl.weight != null ? Math.round(pl.weight * 100) : 0,
       real: pl ? pl.real !== false : false,
       detail: pl && (pl.rationale || pl.finding) || "",
     });
     const factors = [
-      mk(p.loan_reliability,    "Loan reliability (Aave V3, all chains)"),
-      mk(p.portfolio_health,    "Portfolio health (size + diversification)"),
-      mk(p.liquidity_provision, "Liquidity provision (Uniswap V3 LP)"),
-      mk(p.governance,          "Governance participation (Snapshot)"),
-      mk(p.account_age,         "Account age (Ethereum first tx)"),
+      mk(p.loan_reliability,    "Loan reliability (Aave V3, all chains)",    "loan reliability"),
+      mk(p.portfolio_health,    "Portfolio health (size + diversification)", "portfolio health"),
+      mk(p.liquidity_provision, "Liquidity provision (Uniswap V3 LP)",       "liquidity provision"),
+      mk(p.governance,          "Governance participation (Snapshot)",       "governance"),
+      mk(p.account_age,         "Account age (Ethereum first tx)",           "account age"),
     ];
+    // How much of the score rests on observed data. The worker sends this,
+    // but derive it from the factor weights when it's absent so an older
+    // worker (or the legacy endpoint) still gets an honest badge instead of
+    // silently claiming full coverage.
+    const coverage = typeof data.coverage === "number"
+      ? data.coverage
+      : factors.reduce(function (sum, f) { return sum + (f.real ? f.weight : 0); }, 0) / 100;
+    const estimated = factors.filter(function (f) { return !f.real; });
     const notes = [];
     if (Array.isArray(data.adjustments) && data.adjustments.length) {
       notes.push("Adjustments: " + data.adjustments.map(function (a) {
@@ -148,11 +157,20 @@
       }).join("; "));
     }
     if (data.scored === false && data.explanation) notes.push(data.explanation);
+    // Name what was estimated rather than only showing a percentage — "72%
+    // live data" doesn't tell anyone which part of their score is a guess.
+    if (data.scored !== false && estimated.length) {
+      notes.push(
+        "Estimated (no data found): " +
+        estimated.map(function (f) { return f.short; }).join(", ") +
+        ". These fall back to a neutral score and are not counted as live data.");
+    }
     return {
       wallet,
       scored: data.scored !== false,
       score: data.score,
       band: data.scored === false ? "Unscored" : bandFor(data.score),
+      coverage: coverage,
       reason: data.reason || null,
       explanation: data.explanation || null,
       preliminary: false,
@@ -320,11 +338,28 @@
     },
   };
 
+  // Shared so the home and score dashboards phrase and colour coverage the
+  // same way. Returns null when there is nothing honest to say — an unknown
+  // coverage must not render as "0% live data".
+  function coverageLabel(coverage) {
+    if (typeof coverage !== "number" || !isFinite(coverage)) return null;
+    const pct = Math.round(Math.max(0, Math.min(1, coverage)) * 100);
+    return {
+      pct: pct,
+      text: "Score based on " + pct + "% live data",
+      // Amber is a warning, so it is reserved for genuinely thin coverage;
+      // anything above the threshold is informational and stays dimmed.
+      color: pct < 60 ? "#facc15" : "var(--defi-text-dim, #8b8b99)",
+      low: pct < 60,
+    };
+  }
+
   window.DefiState = {
     get wallet() { return state.wallet; },
     setWallet,           // exposed so wallet-picker.js can switch the active wallet
     shorten,
     bandFor,
+    coverageLabel,
   };
   window.userWallet = state.wallet;
 

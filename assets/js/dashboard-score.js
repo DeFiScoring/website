@@ -6,7 +6,7 @@
     el.style.display = ""; el.textContent = text;
   }
 
-  function drawGauge(score, preliminary) {
+  function drawGauge(score, preliminary, coverage) {
     const el = document.getElementById("score-circle");
     const valueEl = document.getElementById("score-value");
     const bandEl = document.getElementById("score-band");
@@ -43,9 +43,22 @@
         '<div class="defi-score-circle__value">' + score + '</div>' +
         '<div class="defi-score-circle__label">out of 850' + (preliminary ? ' · preliminary' : '') + '</div>' +
         '<span class="defi-score-band defi-band--' + band + '">' + band + '</span>' +
+        coverageMarkup(coverage) +
       '</div>';
     valueEl && (valueEl.textContent = score);
-    bandEl && (bandEl.textContent = band);
+    if (bandEl) {
+      const cov = window.DefiState.coverageLabel(coverage);
+      bandEl.textContent = cov ? band + " · " + cov.text : band;
+    }
+  }
+
+  // Rendered under the band inside the gauge — the page has no standalone
+  // #score-band element, so this is where the band actually appears.
+  function coverageMarkup(coverage) {
+    const cov = window.DefiState.coverageLabel(coverage);
+    if (!cov) return '';
+    return '<div class="defi-score-coverage" style="margin-top:6px;font-size:10px;line-height:1.3;' +
+      'white-space:nowrap;color:' + cov.color + '">' + escapeAttr(cov.text) + '</div>';
   }
 
   function escapeAttr(s) {
@@ -98,7 +111,7 @@
     setNotice("score-notice", "Computing on-chain score…");
     try {
       const data = await window.DefiAPI.getScore(wallet);
-      drawGauge(data.scored === false ? null : data.score, data.preliminary);
+      drawGauge(data.scored === false ? null : data.score, data.preliminary, data.coverage);
       drawFactors(data.factors);
       const updated = document.getElementById("score-updated");
       if (updated) updated.textContent = "Last updated " + new Date(data.updated_at).toLocaleString();
