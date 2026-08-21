@@ -52,6 +52,18 @@ import { ethCall, abiEncodeSingleAddr, abiHexWord, getFirstTxTimestamp } from '.
 // everywhere else is a copy that must be kept byte-identical to it.
 //
 // Ordered highest floor first so bandForScore can return on first match.
+// The scoring model's version. Bump this whenever a change would move an
+// existing wallet's score without its on-chain position changing — new or
+// reweighted pillars, changed banding, new adjustments, a new data source
+// feeding an existing pillar. Do NOT bump it for bug fixes that only affect
+// which wallets can be scored at all, or for refactors.
+//
+// It is stamped into every score payload and persisted alongside every
+// health_scores row, so a trend line spanning a model change can say so
+// instead of presenting the discontinuity as if the wallet had moved.
+// Format is YYYY.MM of the release that introduced the model.
+export const SCORE_MODEL_VERSION = '2026.08';
+
 export const BANDS = [
   { key: 'excellent', label: 'Excellent', floor: 720 },
   { key: 'good',      label: 'Good',      floor: 660 },
@@ -445,6 +457,7 @@ export async function computeWalletScore(env, wallet, { portfolio, defiByChain }
       scored: false,
       score: null,
       score_band: "unscored",
+      model: SCORE_MODEL_VERSION,
       reason,
       explanation: reason === "no_onchain_history"
         ? "This wallet has no on-chain footprint yet — no transactions, balances, " +
@@ -504,6 +517,7 @@ export async function computeWalletScore(env, wallet, { portfolio, defiByChain }
     scored: true,
     score,
     score_band,
+    model: SCORE_MODEL_VERSION,
     raw_h_s: Number(Hs.toFixed(2)),
     pillars: {
       loan_reliability:    { weight: 0.35, ...Lr },
