@@ -116,10 +116,46 @@
       const updated = document.getElementById("score-updated");
       if (updated) updated.textContent = "Last updated " + new Date(data.updated_at).toLocaleString();
       setNotice("score-notice", data.notice || "");
+      loadExplanation(wallet, data);
     } catch (e) {
       console.error(e);
       setNotice("score-notice", "Unable to compute score: " + e.message);
     }
+  }
+
+  // AI narrative under the gauge. Best-effort and clearly labelled: a
+  // signed-out visitor, an unscored wallet, or an AI outage all just leave
+  // the block hidden — the numbers above are the product, this is gloss.
+  async function loadExplanation(wallet, data) {
+    var host = document.getElementById("score-explanation");
+    if (!host) {
+      host = document.createElement("div");
+      host.id = "score-explanation";
+      host.style.cssText = "margin-top:14px;font-size:13px;line-height:1.6;color:var(--defi-text-dim,#8b8b99);max-width:560px;display:none";
+      var anchor = document.getElementById("score-notice");
+      if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(host, anchor.nextSibling);
+      else return;
+    }
+    host.style.display = "none";
+    if (!wallet || data.scored === false) return;
+    try {
+      var base = (window.DefiAPI && window.DefiAPI.apiBase) || "";
+      var res = await fetch(base + "/api/score-explanation?wallet=" + encodeURIComponent(wallet), {
+        credentials: "include",
+      });
+      if (!res.ok) return; // signed out, no score row, or AI down — stay hidden
+      var j = await res.json();
+      if (!j.success || !j.explanation) return;
+      host.textContent = "";
+      var tag = document.createElement("span");
+      tag.textContent = "AI-generated summary";
+      tag.style.cssText = "display:inline-block;font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--defi-accent-2,#a855f7);margin-bottom:4px";
+      var body = document.createElement("div");
+      body.textContent = j.explanation;
+      host.appendChild(tag);
+      host.appendChild(body);
+      host.style.display = "";
+    } catch (e) { /* cosmetic — never break the score page over it */ }
   }
 
   document.addEventListener("DOMContentLoaded", refresh);

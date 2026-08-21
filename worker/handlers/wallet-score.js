@@ -105,6 +105,16 @@ async function persistWalletScore(env, wallet, payload) {
         score_band: payload.score_band,
         adjustments: payload.adjustments || [],
         portfolio_health: p.portfolio_health || null,
+        // Compact per-pillar summaries so the explanation endpoint can
+        // narrate a persisted score without recomputing it. Values and
+        // weights already live in dedicated columns; what's new here is the
+        // rationale strings and real flags.
+        pillars: Object.fromEntries(Object.entries(p).map(([k, v]) => [k, {
+          value: v?.value ?? null,
+          weight: v?.weight ?? null,
+          real: v?.real === true,
+          rationale: typeof v?.rationale === 'string' ? v.rationale.slice(0, 300) : null,
+        }])),
       }),
       Date.now(),
     ).run();
