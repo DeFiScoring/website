@@ -15,7 +15,7 @@
 // Pillars (weights sum to 1.0):
 //   loan_reliability     0.35   Aave HF + Compound-derived HF, across chains
 //   portfolio_health     0.25   Diversification (top-N concentration) + size
-//   liquidity_provision  0.15   Uni V3 LP count + DEX exposure
+//   liquidity_provision  0.15   Uni V3 live LP positions (liquidity > 0)
 //   governance           0.10   Snapshot vote count
 //   account_age          0.15   Oldest first-tx age across Tier-1 chains
 //
@@ -280,21 +280,45 @@ export function pillarPortfolioHealth(portfolio) {
 // =============================================================================
 
 export function pillarLiquidityProvision(defiByChain) {
+  // lpCount is the number of position NFTs the wallet holds, which over-counts
+  // real LP activity: Uniswap V3 does not burn the token when a position is
+  // fully withdrawn, so a wallet that closed ten positions still holds ten
+  // NFTs. activeLpCount (liquidity > 0) is the honest number and is preferred
+  // wherever the reader could resolve it.
   let totalLpCount = 0;
   let chainsWithLp = 0;
+  let verified = false;      // at least one chain resolved live positions
+  let unverified = false;    // at least one chain could only give a raw count
+  let truncated = false;
+  let heldNfts = 0;
+
   for (const c of defiByChain) {
     for (const p of c.protocols || []) {
-      if (p.protocol === 'uniswap-v3-lp' && (p.lpCount || 0) > 0) {
-        totalLpCount += p.lpCount;
+      if (p.protocol !== 'uniswap-v3-lp') continue;
+      const resolved = p.activeLpCount != null;
+      if (resolved) verified = true;
+      const n = resolved ? p.activeLpCount : (p.lpCount || 0);
+      if ((p.lpCount || 0) > 0) heldNfts += p.lpCount;
+      if (!resolved && (p.lpCount || 0) > 0) unverified = true;
+      if (p.lpCountTruncated) truncated = true;
+      if (n > 0) {
+        totalLpCount += n;
         chainsWithLp += 1;
       }
     }
   }
+
   if (totalLpCount === 0) {
-    return { real: false, value: 50, lpCount: 0, chainsWithLp: 0,
-             rationale: 'No Uniswap V3 LP positions found — neutral score.' };
+    // Distinguish "holds NFTs but every one is closed" from "never provided
+    // liquidity" — the first is an observation about a former LP.
+    const rationale = verified && heldNfts > 0
+      ? `${heldNfts} Uniswap V3 position NFT(s) held, but none currently hold liquidity — neutral score.`
+      : 'No Uniswap V3 LP positions found — neutral score.';
+    return { real: false, value: 50, lpCount: 0, activeLpCount: verified ? 0 : null,
+             heldNftCount: heldNfts, chainsWithLp: 0, rationale };
   }
-  // Each LP NFT is a real concentrated-liquidity position. 1 = engaged user;
+
+  // Each live position is real deployed capital. 1 = engaged user;
   // 5+ = active LP'er; 20+ = market maker.
   let value;
   if (totalLpCount >= 20)     value = 95;
@@ -302,8 +326,23 @@ export function pillarLiquidityProvision(defiByChain) {
   else if (totalLpCount >= 2) value = 65;
   else                         value = 50;
   if (chainsWithLp >= 2) value = Math.min(100, value + 5);
-  return { real: true, value, lpCount: totalLpCount, chainsWithLp,
-           rationale: `${totalLpCount} Uniswap V3 LP position(s) across ${chainsWithLp} chain(s).` };
+
+  const noun = verified && !unverified ? 'live Uniswap V3 position' : 'Uniswap V3 LP position';
+  let rationale = `${totalLpCount} ${noun}(s) across ${chainsWithLp} chain(s).`;
+  if (verified && heldNfts > totalLpCount) {
+    rationale += ` ${heldNfts - totalLpCount} further position NFT(s) hold no liquidity and were not counted.`;
+  }
+  if (unverified) {
+    // Say so rather than implying the count is live positions.
+    rationale += ' Counts on some chains are position NFTs held, which may include closed positions (no Alchemy key).';
+  }
+  if (truncated) {
+    rationale += ` Only the first ${20} positions per chain are checked, so this is a floor.`;
+  }
+
+  return { real: true, value, lpCount: totalLpCount,
+           activeLpCount: verified ? totalLpCount : null,
+           heldNftCount: heldNfts, chainsWithLp, verified, truncated, rationale };
 }
 
 // =============================================================================

@@ -97,7 +97,7 @@ The dashboard shows this as *"Score based on N% live data"* beside the band, dim
 <div class="pillar-grid">
   <div class="pillar"><div class="weight">35%</div><h4>Loan Reliability</h4><p>Aave V3 health factor and debt utilisation across chains.</p></div>
   <div class="pillar"><div class="weight">25%</div><h4>Portfolio Health</h4><p>Diversification, portfolio size, multi-chain presence.</p></div>
-  <div class="pillar"><div class="weight">15%</div><h4>Liquidity Provision</h4><p>Uniswap V3 concentrated-liquidity positions.</p></div>
+  <div class="pillar"><div class="weight">15%</div><h4>Liquidity Provision</h4><p>Live Uniswap V3 concentrated-liquidity positions.</p></div>
   <div class="pillar"><div class="weight">15%</div><h4>Account Age</h4><p>Days since the wallet's first Ethereum transaction.</p></div>
   <div class="pillar"><div class="weight">10%</div><h4>Governance</h4><p>Snapshot voting record across DAOs.</p></div>
 </div>
@@ -159,9 +159,13 @@ If no portfolio value is detected at all, the pillar is `real: false` at a neutr
 
 #### C. Liquidity Provision — 15%
 
-**Input:** the number of Uniswap V3 LP NFTs held, summed across the scanned chains.
+**Input:** the number of **live** Uniswap V3 positions — those still holding liquidity — summed across the scanned chains.
 
-| LP positions | Sub-score | Coverage |
+Uniswap V3 does not burn the position NFT when a position is fully withdrawn, so counting NFTs over-counts: a wallet that closed ten positions still holds ten tokens. Where the infrastructure allows it, each position is read and only those with non-zero liquidity are counted. A wallet holding nothing but closed positions therefore scores as having no LP exposure, and the rationale says the NFTs were found but are empty rather than implying the wallet never provided liquidity.
+
+Two limits apply to that resolution. Up to 20 positions per chain are examined, and beyond that the count is reported as a floor rather than a total. Where the per-position read is unavailable, the raw NFT count stands — and the pillar says so explicitly instead of presenting the number as live positions.
+
+| Live LP positions | Sub-score | Coverage |
 | :--- | :--- | :--- |
 | ≥ 20 | 95 | `real: true` |
 | 5 – 19 | 80 | `real: true` |
@@ -283,6 +287,7 @@ Where a wallet's history spans a model change, the trend chart marks the boundar
 
 - **Aave V3 and Uniswap V3 only.** Two of the five pillars read specific protocols. A wallet that borrows exclusively on Compound, Morpho, or Spark scores `real: false` on loan reliability and receives a neutral 50 — not a penalty, but not credit for that activity either.
 - **Account age stops at Tier 1.** All five Tier 1 chains are queried, but a wallet whose entire history predates its Tier 1 activity — living only on Gnosis, Linea, zkSync Era or another Tier 2 chain — is still under-rated.
+- **LP positions are counted, not valued.** A live position counts the same whether it holds a few dollars or a few million; the pillar measures whether a wallet provides liquidity, not how much.
 - **Point-in-time.** The score reflects the moment of the scan. A health factor can deteriorate within a single block.
 - **Prices depend on third-party feeds.** When every price tier is unavailable, tokens are still detected but unpriced, and portfolio health degrades to `real: false`.
 - **No Sybil resistance.** The score describes an address, not a person. One person may hold many addresses, and one address may be controlled by many people.
@@ -344,7 +349,7 @@ Contract-level pattern analysis is available separately through the AI contract 
 | :--- | :--- |
 | **Etherscan v2 API** | Native and token balances, contract calls, first-transaction age, source verification |
 | **Aave V3 contracts** | Health factor, collateral, debt (read directly on-chain) |
-| **Uniswap V3 contracts** | LP position counts (read directly on-chain) |
+| **Uniswap V3 contracts** | Position counts and per-position liquidity (read directly on-chain) |
 | **CoinGecko** | Token pricing (first tier) |
 | **DefiLlama** | Token pricing (second and third tiers), protocol TVL, market cap, audit counts |
 | **Snapshot** | Wallet governance voting records |
