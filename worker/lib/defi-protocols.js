@@ -34,6 +34,14 @@ export const AAVE_V3_POOLS = {
   scroll:    '0x11fCfe756c05AD438e312a7fd934381537D3cFfe',
 };
 
+// SparkLend Pool — an Aave V3 fork, so the Aave reader works unchanged.
+// Addresses from Spark's own address registry (sparkdotfi/spark-address-registry:
+// src/SparkLend.sol POOL, src/Gnosis.sol POOL).
+export const SPARK_POOLS = {
+  ethereum: '0xC13e21B648A5Ee794902342038FF3aDAB66BE987',
+  gnosis:   '0x2Dae5307c5E3FD1CF5A72Cb6F698f915860607e0',
+};
+
 // Compound V3 (Comet) markets. Each market is a separate contract per
 // collateral asset; we list the headline USDC market per chain since that
 // has the deepest TVL. Future: extend to {chainId: [{symbol, address}]} if
