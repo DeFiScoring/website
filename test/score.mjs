@@ -3,7 +3,7 @@
 // subrequest count, and persistence.
 import { D1, KV } from "./d1.mjs";
 import worker from "../worker/index.js";
-import { BANDS, bandForScore, pillarLoanReliability } from "../worker/lib/score.js";
+import { BANDS, bandForScore, pillarLoanReliability, SCORE_MODEL_VERSION } from "../worker/lib/score.js";
 import { COMPOUND_V3_MARKETS } from "../worker/lib/defi-protocols.js";
 
 const ORIGIN = "https://defiscoring.com";
@@ -321,6 +321,49 @@ async function call(path) {
   const none = pillarLoanReliability([]);
   check("no lending anywhere still reads real:false and names both protocols",
     none.real === false && /Aave V3 or Compound V3/.test(none.rationale), none);
+  // ---- model versioning --------------------------------------------------
+  check("scored payload carries the model version",
+    s.json.model === SCORE_MODEL_VERSION, { got: s.json.model, expected: SCORE_MODEL_VERSION });
+  check("unscored payload carries the model version too",
+    es.json.model === SCORE_MODEL_VERSION, { got: es.json.model, expected: SCORE_MODEL_VERSION });
+
+  const persisted = await env.HEALTH_DB
+    .prepare("SELECT source_json FROM health_scores WHERE wallet = ? ORDER BY computed_at DESC LIMIT 1")
+    .bind(WALLET).first();
+  let blob = null;
+  try { blob = JSON.parse(persisted?.source_json || "null"); } catch { /* asserted below */ }
+  check("persisted row records the model inside source_json",
+    blob?.model === SCORE_MODEL_VERSION, { got: blob?.model, expected: SCORE_MODEL_VERSION });
+
+  // The history endpoint must surface it, and must not fall over on rows
+  // written before versioning existed (no `model` key) or on a corrupt blob.
+  const HIST = "0x00000000000000000000000000000000000000c1";
+  const now = Date.now();
+  const seed = async (offsetMs, score, sourceJson) => env.HEALTH_DB.prepare(
+    "INSERT INTO health_scores (wallet, score, loan_reliability, liquidity_provision, " +
+    "governance, account_age, raw_h_s, source_json, computed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+  ).bind(HIST, score, 50, 50, 50, 50, 50, sourceJson, now - offsetMs).run();
+
+  await seed(3 * 86400000, 700, JSON.stringify({ source: "wallet-score", score_band: "good" }));   // pre-versioning
+  await seed(2 * 86400000, 710, "{not valid json");                                                 // corrupt
+  await seed(1 * 86400000, 720, JSON.stringify({ source: "wallet-score", model: "2026.07" }));
+  await seed(0,             730, JSON.stringify({ source: "wallet-score", model: SCORE_MODEL_VERSION }));
+
+  const hist = await call("/api/health-score/" + HIST + "/history");
+  const rows = hist.json.history || [];
+  check("history endpoint returns every row despite a corrupt source_json",
+    hist.json.success && rows.length === 4, { count: rows.length, error: hist.json.error });
+  check("history is ordered oldest first", rows.map((r) => r.score).join(",") === "700,710,720,730",
+    rows.map((r) => r.score));
+  check("history surfaces the model for versioned rows",
+    rows[2]?.model === "2026.07" && rows[3]?.model === SCORE_MODEL_VERSION,
+    rows.map((r) => r.model));
+  check("pre-versioning row reports model null, not undefined or a guess",
+    rows[0]?.model === null, { got: rows[0]?.model });
+  check("corrupt source_json degrades to null instead of throwing",
+    rows[1]?.model === null && rows[1]?.score === 710, rows[1]);
+  check("history does not leak the raw source_json blob",
+    rows.every((r) => !("source_json" in r)), Object.keys(rows[0] || {}));
 
   globalThis.fetch = realFetch;
   const failed = results.filter((r) => !r.ok);
