@@ -384,9 +384,16 @@ async function etherscanErc20Balances(chain, env, address) {
   return out;
 }
 
-// First-tx timestamp (ms). Used for the wallet-age scoring factor. Etherscan
-// v2 multichain — call with `chain` for the chain we want, but Ethereum is
-// usually the right answer for a wallet's "true age".
+/**
+ * First-tx timestamp for an address on one chain. Etherscan v2 is multichain,
+ * so the chain is whichever `chain` you pass.
+ *
+ * Returns { ok, firstTxAt } rather than a bare timestamp because the two
+ * null cases mean opposite things to a scorer: `ok: true, firstTxAt: null`
+ * is "this chain answered, the address has no history here", while
+ * `ok: false` is "we never got an answer". Collapsing them would let a
+ * rate-limited lookup read as a brand-new wallet.
+ */
 export async function getFirstTxTimestamp(chain, env, address) {
   try {
     const r = await etherscanCall(chain, env, {
@@ -394,10 +401,11 @@ export async function getFirstTxTimestamp(chain, env, address) {
       startblock: 0, endblock: 99999999,
       page: 1, offset: 1, sort: 'asc',
     });
-    if (!Array.isArray(r) || !r.length) return null;
-    return Number(r[0].timeStamp) * 1000;
-  } catch {
-    return null;
+    if (!Array.isArray(r) || !r.length) return { ok: true, firstTxAt: null };
+    const ts = Number(r[0].timeStamp) * 1000;
+    return { ok: true, firstTxAt: Number.isFinite(ts) && ts > 0 ? ts : null };
+  } catch (e) {
+    return { ok: false, firstTxAt: null, error: String((e && e.message) || e) };
   }
 }
 
