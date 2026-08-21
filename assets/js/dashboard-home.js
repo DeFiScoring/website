@@ -368,6 +368,19 @@
         bandEl.textContent = score.band + (score.preliminary ? " (preliminary)" : "");
         bandEl.className = "defi-card__delta defi-band--" + score.band;
         bandEl.style.color = "";
+        // Appended as a node rather than via innerHTML so the band string is
+        // never re-parsed as markup.
+        const cov = window.DefiState.coverageLabel(score.coverage);
+        if (cov) {
+          const span = document.createElement("span");
+          span.textContent = " · " + cov.text;
+          span.style.color = cov.color;
+          span.style.fontWeight = "400";
+          span.title = cov.low
+            ? "Several pillars had no data and fell back to a neutral score."
+            : "Share of the score's weight backed by data we observed on-chain.";
+          bandEl.appendChild(span);
+        }
       }
 
       // P2 — fiat-aware total + meta line driven by the API's structured

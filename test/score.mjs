@@ -3,7 +3,7 @@
 // subrequest count, and persistence.
 import { D1, KV } from "./d1.mjs";
 import worker from "../worker/index.js";
-import { BANDS, bandForScore, pillarLoanReliability, pillarLiquidityProvision, SCORE_MODEL_VERSION } from "../worker/lib/score.js";
+import { BANDS, bandForScore, coverageOf, PILLAR_WEIGHTS, pillarLoanReliability, pillarLiquidityProvision, SCORE_MODEL_VERSION } from "../worker/lib/score.js";
 import { getUniV3LpCount } from "../worker/lib/defi.js";
 import { COMPOUND_V3_MARKETS } from "../worker/lib/defi-protocols.js";
 
@@ -409,6 +409,65 @@ async function call(path) {
   check("history does not leak the raw source_json blob",
     rows.every((r) => !("source_json" in r)), Object.keys(rows[0] || {}));
 
+  // ---- score coverage ----------------------------------------------------
+  const pl = s.json.pillars || {};
+  const expectedCoverage = Number(
+    [["loan_reliability", 0.35], ["portfolio_health", 0.25], ["liquidity_provision", 0.15],
+     ["governance", 0.10], ["account_age", 0.15]]
+      .reduce((sum, [k, w]) => sum + (pl[k]?.real ? w : 0), 0).toFixed(4));
+  check("scored payload reports coverage",
+    typeof s.json.coverage === "number", s.json.coverage);
+  check("coverage is the summed weight of pillars with real data",
+    s.json.coverage === expectedCoverage,
+    { got: s.json.coverage, expected: expectedCoverage,
+      real: Object.fromEntries(Object.entries(pl).map(([k, v]) => [k, v.real])) });
+  check("this wallet is the mixed real/estimated case, not all-or-nothing",
+    s.json.coverage > 0 && s.json.coverage < 1, s.json.coverage);
+  check("coverage stays within 0..1", s.json.coverage >= 0 && s.json.coverage <= 1, s.json.coverage);
+  check("mixed pillar set yields 0.65 coverage", s.json.coverage === 0.65,
+    { coverage: s.json.coverage,
+      real: Object.entries(pl).filter(([, v]) => v.real).map(([k]) => k) });
+  check("the one estimated pillar is loan_reliability, worth .35",
+    pl.loan_reliability?.real === false && pl.loan_reliability?.weight === 0.35,
+    { real: pl.loan_reliability?.real, weight: pl.loan_reliability?.weight });
+
+  // ---- coverageOf across every real/estimated combination ----------------
+  // Exhaustive rather than sampled: with 5 pillars there are only 32 states,
+  // and exactly one of them (loan_reliability + governance) is the float-drift
+  // case the rounding guard exists for. A spot-check would likely miss it.
+  const keys = Object.keys(PILLAR_WEIGHTS);
+  const drifty = [];
+  let allSubsetsClean = true;
+  for (let mask = 0; mask < 32; mask++) {
+    const pillars = {};
+    let raw = 0;
+    keys.forEach((k, i) => {
+      const real = !!(mask & (1 << i));
+      pillars[k] = { real };
+      if (real) raw += PILLAR_WEIGHTS[k];
+    });
+    const got = coverageOf(pillars);
+    if (Math.abs(got - raw) > 1e-9 || !Number.isInteger(Math.round(got * 10000)) ||
+        got !== Number(got.toFixed(4))) allSubsetsClean = false;
+    if (got !== raw) drifty.push({ mask, raw, got });
+  }
+  check("coverageOf is drift-free for all 32 pillar combinations", allSubsetsClean, drifty);
+  check("the known float-drift combination is corrected",
+    coverageOf({ loan_reliability: { real: true }, governance: { real: true } }) === 0.45,
+    { got: coverageOf({ loan_reliability: { real: true }, governance: { real: true } }),
+      unrounded: 0.35 + 0.10 });
+  check("all pillars real is exactly 1",
+    coverageOf(Object.fromEntries(keys.map((k) => [k, { real: true }]))) === 1);
+  check("no pillars real is exactly 0",
+    coverageOf(Object.fromEntries(keys.map((k) => [k, { real: false }]))) === 0);
+  check("coverageOf tolerates a missing/degenerate pillar map",
+    coverageOf({}) === 0 && coverageOf(null) === 0 && coverageOf(undefined) === 0);
+  check("PILLAR_WEIGHTS sums to 1",
+    Number(Object.values(PILLAR_WEIGHTS).reduce((a, b) => a + b, 0).toFixed(4)) === 1,
+    Object.values(PILLAR_WEIGHTS));
+  check("coverage weights match the weights published in the pillars",
+    Object.entries(pl).reduce((sum, [, v]) => sum + (v.weight || 0), 0).toFixed(4) === "1.0000",
+    Object.entries(pl).map(([k, v]) => [k, v.weight]));
   // ---- Uniswap V3: live positions, not NFT count -------------------------
   // Regression: getUniV3LpCount was a balanceOf on the position manager, so
   // a wallet holding three closed positions scored as a three-position LP.
