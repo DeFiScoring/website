@@ -1483,11 +1483,26 @@ async function fetchHistoryByDays(env, wallet, days) {
   const sinceMs = Date.now() - Math.max(1, Math.min(36500, days || 7)) * 86400000;
   try {
     const r = await env.HEALTH_DB.prepare(
-      "SELECT score, loan_reliability, liquidity_provision, governance, account_age, computed_at " +
+      "SELECT score, loan_reliability, liquidity_provision, governance, account_age, computed_at, source_json " +
       "FROM health_scores WHERE wallet = ? AND computed_at >= ? " +
       "ORDER BY computed_at DESC LIMIT 1000"
     ).bind(wallet.toLowerCase(), sinceMs).all();
-    return (r.results || []).reverse();
+    // Surface which scoring model produced each row so the trend chart can
+    // mark a model change instead of drawing the step as wallet movement.
+    // Rows written before model versioning have no `model` key, and the blob
+    // is free-form enough that a bad parse must not take the history down —
+    // both cases degrade to null rather than throwing.
+    return (r.results || []).reverse().map((row) => {
+      const { source_json, ...rest } = row;
+      let model = null;
+      if (typeof source_json === "string" && source_json) {
+        try {
+          const parsed = JSON.parse(source_json);
+          if (parsed && typeof parsed.model === "string") model = parsed.model;
+        } catch { /* pre-versioning or malformed blob — leave null */ }
+      }
+      return { ...rest, model };
+    });
   } catch (e) {
     return [];
   }
