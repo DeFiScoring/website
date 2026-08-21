@@ -98,6 +98,10 @@ async function persistWalletScore(env, wallet, payload) {
         // Which scoring model produced this row. Read back by the history
         // endpoint so the trend chart can mark where the model changed.
         model: payload.model || SCORE_MODEL_VERSION,
+        // Share of the score's weight backed by observed data (0..1). Read
+        // back by the public badge so a thin-coverage score is labelled as
+        // such there too, not only on the dashboard.
+        coverage: typeof payload.coverage === 'number' ? payload.coverage : null,
         score_band: payload.score_band,
         adjustments: payload.adjustments || [],
         portfolio_health: p.portfolio_health || null,
