@@ -95,7 +95,7 @@ The dashboard shows this as *"Score based on N% live data"* beside the band, dim
 ### 1.3 The five pillars
 
 <div class="pillar-grid">
-  <div class="pillar"><div class="weight">35%</div><h4>Loan Reliability</h4><p>Aave V3 and Compound V3 health factors across chains.</p></div>
+  <div class="pillar"><div class="weight">35%</div><h4>Loan Reliability</h4><p>Aave V3, Spark and Compound V3 health factors across chains.</p></div>
   <div class="pillar"><div class="weight">25%</div><h4>Portfolio Health</h4><p>Diversification, portfolio size, multi-chain presence.</p></div>
   <div class="pillar"><div class="weight">15%</div><h4>Liquidity Provision</h4><p>Live Uniswap V3 concentrated-liquidity positions.</p></div>
   <div class="pillar"><div class="weight">15%</div><h4>Account Age</h4><p>Days since the wallet's first Ethereum transaction.</p></div>
@@ -106,7 +106,7 @@ Each pillar produces a **0–100** sub-score. The weights sum to exactly 1.00.
 
 #### A. Loan Reliability — 35%
 
-**Input:** every Aave V3 and Compound V3 position found on the scanned chains — collateral, debt, and health factor.
+**Input:** every Aave V3, Spark and Compound V3 position found on the scanned chains — collateral, debt, and health factor. Spark is an Aave V3 fork whose pool reports the same health factor with the same semantics, so its positions flow through the identical logic with no conversion.
 
 We score the **riskiest** position, not the average: the lowest health factor across all chains and both protocols sets the band. A wallet that is safe on four chains and about to be liquidated on a fifth is a liquidation risk.
 
@@ -118,7 +118,7 @@ bands below, with no conversion factor.
 
 | Condition | Sub-score | Coverage |
 | :--- | :--- | :--- |
-| No Aave V3 or Compound V3 position on any chain | 50 | `real: false` |
+| No Aave V3, Spark or Compound V3 position on any chain | 50 | `real: false` |
 | Borrowing, but the collateral backing it could not be read | 50 | `real: true` |
 | Supplying with **zero debt** | 80 | `real: true` |
 | Lowest HF ≥ 3.00 | 95 | `real: true` |
@@ -298,7 +298,7 @@ Where a wallet's history spans a model change, the trend chart marks the boundar
 
 ## 2. Wallet Score Limitations
 
-- **A fixed protocol list.** Two of the five pillars read specific protocols: loan reliability covers Aave V3 and Compound V3, and liquidity provision covers Uniswap V3. A wallet that borrows exclusively on Morpho or Spark scores `real: false` on loan reliability and receives a neutral 50 — not a penalty, but not credit for that activity either.
+- **A fixed protocol list.** Two of the five pillars read specific protocols: loan reliability covers Aave V3, Spark and Compound V3, and liquidity provision covers Uniswap V3. A wallet that borrows exclusively on Morpho scores `real: false` on loan reliability and receives a neutral 50 — not a penalty, but not credit for that activity either.
 - **Compound collateral without a borrow is invisible.** Comet's position check keys off the base-asset balance, which is zero for an account that has deposited collateral but not borrowed against it. Such a wallet reads as having no Compound position. It is also the case where nothing is at risk.
 - **Account age stops at Tier 1.** All five Tier 1 chains are queried, but a wallet whose entire history predates its Tier 1 activity — living only on Gnosis, Linea, zkSync Era or another Tier 2 chain — is still under-rated.
 - **LP positions are counted, not valued.** A live position counts the same whether it holds a few dollars or a few million; the pillar measures whether a wallet provides liquidity, not how much.
@@ -363,6 +363,7 @@ Contract-level pattern analysis is available separately through the AI contract 
 | :--- | :--- |
 | **Etherscan v2 API** | Native and token balances, contract calls, first-transaction age, source verification |
 | **Aave V3 contracts** | Health factor, collateral, debt (read directly on-chain) |
+| **Spark (SparkLend) contracts** | Health factor, collateral, debt (read directly on-chain — same ABI as Aave V3) |
 | **Compound V3 (Comet) contracts** | Supply, borrow, per-asset collateral, price feeds, liquidation collateral factors (read directly on-chain) |
 | **Uniswap V3 contracts** | Position counts and per-position liquidity (read directly on-chain) |
 | **CoinGecko** | Token pricing (first tier) |

@@ -12,6 +12,7 @@ import { ethCall, abiEncodeSingleAddr, abiHexWord, abiPadAddr, alchemyRpcBatch }
 import { CHAINS_BY_ID } from './chains.js';
 import {
   AAVE_V3_POOLS,
+  SPARK_POOLS,
   COMPOUND_V3_MARKETS,
   UNI_V3_POSITION_MANAGER,
   UNI_V3_NPM_CHAINS,
@@ -50,11 +51,21 @@ const UNI_V3_MAX_ENUMERATE = 20;
 // =============================================================================
 
 export async function getAaveV3Position(chain, env, wallet) {
-  const pool = AAVE_V3_POOLS[chain.id];
-  if (!pool) return { protocol: 'aave-v3', chain: chain.id, hasPosition: false, deployed: false };
+  return readAaveStylePool(chain, env, wallet, AAVE_V3_POOLS[chain.id], 'aave-v3');
+}
+
+// Spark is an Aave V3 fork with an unchanged Pool ABI, so its reader IS the
+// Aave reader pointed at Spark's pools — same decode, same healthFactor
+// semantics, no conversion. Only the protocol slug differs.
+export async function getSparkPosition(chain, env, wallet) {
+  return readAaveStylePool(chain, env, wallet, SPARK_POOLS[chain.id], 'spark');
+}
+
+async function readAaveStylePool(chain, env, wallet, pool, slug) {
+  if (!pool) return { protocol: slug, chain: chain.id, hasPosition: false, deployed: false };
   const data = abiEncodeSingleAddr(SEL_GET_USER_ACCOUNT_DATA, wallet);
   const r = await ethCall(chain, env, pool, data);
-  if (!r || r === '0x') return { protocol: 'aave-v3', chain: chain.id, hasPosition: false, deployed: true };
+  if (!r || r === '0x') return { protocol: slug, chain: chain.id, hasPosition: false, deployed: true };
   // Returns: totalCollateralBase, totalDebtBase, availableBorrowsBase,
   //          currentLiquidationThreshold, ltv, healthFactor.
   // *Base values are in the protocol's reference asset (usually USD) at 8 decimals.
@@ -69,7 +80,7 @@ export async function getAaveV3Position(chain, env, wallet) {
   // not Infinity, so JSON.stringify works and the dashboard can show "—".
   const healthFactor = totalDebtBase === 0n ? null : Number(healthFactorRaw) / 1e18;
   return {
-    protocol:           'aave-v3',
+    protocol:           slug,
     category:           'lending',
     chain:              chain.id,
     chainName:          chain.name,
@@ -405,12 +416,13 @@ export function classifyYieldTokens(chainId, erc20Rows, fiatPriceMap) {
 export async function getAllDeFiPositions(env, wallet, chains) {
   const perChain = await Promise.all(chains.map(async (chain) => {
     try {
-      const [aave, compoundList, uni] = await Promise.all([
+      const [aave, spark, compoundList, uni] = await Promise.all([
         getAaveV3Position(chain, env, wallet).catch((e) => ({ protocol: 'aave-v3', chain: chain.id, error: String(e.message || e) })),
+        getSparkPosition(chain, env, wallet).catch((e) => ({ protocol: 'spark', chain: chain.id, error: String(e.message || e) })),
         getCompoundV3Positions(chain, env, wallet).catch((e) => [{ protocol: 'compound-v3', chain: chain.id, error: String(e.message || e) }]),
         getUniV3LpCount(chain, env, wallet).catch((e) => ({ protocol: 'uniswap-v3-lp', chain: chain.id, error: String(e.message || e) })),
       ]);
-      const protocols = [aave, ...compoundList, uni];
+      const protocols = [aave, spark, ...compoundList, uni];
       const collateralUsd = protocols.reduce((s, p) => s + (p.collateralUsd || p.supplyUsd || 0), 0);
       const debtUsd       = protocols.reduce((s, p) => s + (p.debtUsd || p.borrowUsd || 0), 0);
       return {

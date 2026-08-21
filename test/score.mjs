@@ -19,6 +19,10 @@ const ALCHEMY_CHAIN = { id: "ethereum", name: "Ethereum", chainId: 1, alchemy: "
 // Borrows on Compound V3 with collateral behind it — the case that used to
 // score as "no lending history" because the pillar only matched aave-v3.
 const BORROWER = "0x00000000000000000000000000000000000000bb";
+// Borrows on Spark only — its Pool shares Aave's ABI, so the stub answers
+// getUserAccountData on Spark's pool address and nothing else.
+const SPARK_WALLET = "0x00000000000000000000000000000000000000dd";
+const SPARK_ETH_POOL = "0xc13e21b648a5ee794902342038ff3adab66be987";
 
 // Comet stub fixtures. Chosen so the derived health factor is exact:
 //   5 WETH x $3,000       = $15,000 collateral
@@ -165,6 +169,24 @@ globalThis.fetch = async (input, init) => {
       if (action === "txlist")  return J({ status: "0", message: "No transactions found", result: [] });
       if (action === "eth_call") return J({ jsonrpc: "2.0", id: 1, result: "0x" + "0".repeat(64 * 6) });
     }
+    // ---- Spark-only wallet -------------------------------------------------
+    if (action === "eth_call" && callData.includes(SPARK_WALLET.slice(2))) {
+      const to = (q.get("to") || "").toLowerCase();
+      if (to === SPARK_ETH_POOL) {
+        const w6 = (v) => BigInt(v).toString(16).padStart(64, "0");
+        // collateral $20,000, debt $9,000 (8-dec base), HF 1.8e18
+        return J({ jsonrpc: "2.0", id: 1, result: "0x" +
+          w6(20000n * 10n ** 8n) + w6(9000n * 10n ** 8n) + w6(0n) +
+          w6(8000n) + w6(7500n) + w6(1800000000000000000n) });
+      }
+      return J({ jsonrpc: "2.0", id: 1, result: "0x" + "0".repeat(64 * 6) });
+    }
+    if (callData === "" && (q.get("address") || "").toLowerCase() === SPARK_WALLET) {
+      if (action === "balance") return J({ status: "1", message: "OK", result: "0" });
+      if (action === "tokentx") return J({ status: "0", message: "No token transfers found", result: [] });
+      if (action === "txlist")  return J({ status: "0", message: "No transactions found", result: [] });
+    }
+
     // ---- Compound V3 Comet ------------------------------------------------
     // Intercepted by contract address so Comet's balanceOf (supply) is not
     // answered by the generic ERC-20 balanceOf branch below. Every wallet
@@ -448,8 +470,47 @@ async function call(path) {
     /could not be read/.test(blind.rationale), blind.rationale);
 
   const none = pillarLoanReliability([]);
-  check("no lending anywhere still reads real:false and names both protocols",
-    none.real === false && /Aave V3 or Compound V3/.test(none.rationale), none);
+  check("no lending anywhere still reads real:false and names all three protocols",
+    none.real === false && /Aave V3, Spark or Compound V3/.test(none.rationale), none);
+
+  // ---- Spark folded into loan reliability --------------------------------
+  // Spark is an Aave V3 fork with an unchanged Pool ABI, so its positions
+  // must flow through the same branch as Aave's — same bands, only the label
+  // differs. A wallet that borrows exclusively on Spark used to score
+  // real:false neutral 50, exactly the gap Compound had before it.
+  const sparkRow = (hf, coll = 20000, debt = 9000) => [{ protocols: [{
+    protocol: "spark", hasPosition: true, healthFactor: hf,
+    collateralUsd: coll, debtUsd: debt }] }];
+  const sp = pillarLoanReliability(sparkRow(1.4));
+  check("a Spark borrower is scored, not treated as no lending history",
+    sp.real === true && sp.value === 40, sp);
+  check("Spark and Aave land in the same band at the same health factor",
+    sp.value === pillarLoanReliability([{ protocols: [{
+      protocol: "aave-v3", hasPosition: true, healthFactor: 1.4,
+      collateralUsd: 20000, debtUsd: 9000 }] }]).value, sp.value);
+  check("Spark is named in the rationale and protocol list",
+    /Spark/.test(sp.rationale) && sp.protocols.includes("Spark") &&
+    sp.lowestHealthFactorProtocol === "Spark", sp);
+  const sparkAndAave = pillarLoanReliability([
+    ...sparkRow(2.6),
+    { protocols: [{ protocol: "aave-v3", hasPosition: true, healthFactor: 1.1,
+      collateralUsd: 5000, debtUsd: 4000 }] },
+  ]);
+  check("the riskier protocol still sets the band with Spark in the mix",
+    sparkAndAave.value === 20 && sparkAndAave.lowestHealthFactorProtocol === "Aave V3",
+    sparkAndAave);
+
+  // End to end: a wallet whose only footprint is a Spark borrow must be
+  // scored (the honest-score gate counts the position as real signal), with
+  // the pillar reading the health factor off Spark's pool.
+  const sw = await call("/api/wallet-score?wallet=" + SPARK_WALLET);
+  const slr = sw.json.pillars?.loan_reliability;
+  check("Spark-only wallet is scored end to end",
+    sw.json.scored === true && slr?.real === true, { scored: sw.json.scored, slr });
+  check("Spark HF read from the pool and banded like Aave's",
+    slr?.lowestHealthFactor === 1.8 && slr?.value === 65, slr);
+  check("end-to-end rationale names Spark",
+    /Spark/.test(slr?.rationale || "") && slr?.lowestHealthFactorProtocol === "Spark", slr?.rationale);
   // ---- model versioning --------------------------------------------------
   check("scored payload carries the model version",
     s.json.model === SCORE_MODEL_VERSION, { got: s.json.model, expected: SCORE_MODEL_VERSION });
