@@ -195,16 +195,29 @@
     var kind = $("#rule-kind").value;
     var label = $("#rule-threshold-label");
     var input = $("#rule-threshold");
+    // Thresholds here use the evaluator's real semantics: HF and price rules
+    // fire on crossing the threshold, liquidation_risk fires while HF sits
+    // below it (default 1.1), score_change fires on a drop of >= delta.
     var hints = {
       health_factor:    { label: "HF threshold (alert if below)", placeholder: "1.5" },
       score_change:     { label: "Drop in points", placeholder: "30" },
-      liquidation_risk: { label: "Risk score (0-100)", placeholder: "70" },
-      approval_change:  { label: "Min USD exposure", placeholder: "1000" },
+      liquidation_risk: { label: "HF liquidation threshold", placeholder: "1.1" },
       price:            { label: "Token price USD (alert if below)", placeholder: "1800" },
       protocol_event:   { label: "Protocol slug", placeholder: "aave-v3" },
-    }[kind] || { label: "Threshold", placeholder: "" };
-    label.textContent = hints.label;
-    input.placeholder = hints.placeholder;
+    }[kind];
+    // approval_change has no threshold — any new risky approval alerts.
+    var thGroup = $("#rule-threshold-group");
+    if (!hints) {
+      thGroup.style.display = "none";
+      input.required = false;
+    } else {
+      thGroup.style.display = "";
+      input.required = true;
+      label.textContent = hints.label;
+      input.placeholder = hints.placeholder;
+    }
+    var tokenGroup = $("#rule-token-group");
+    if (tokenGroup) tokenGroup.style.display = kind === "price" ? "" : "none";
   }
 
   async function submitRule(ev) {
@@ -219,13 +232,23 @@
     });
     if (!channels.length) { toast("Pick at least one delivery channel.", "warn"); return; }
 
-    // Build params payload per kind
+    // Build params using the names the evaluators actually read
+    // (worker/lib/alerts.js PARAM_DEFAULTS). The previous names here — lt,
+    // drop, gte, lt_usd — matched nothing, so every user-set threshold was
+    // silently ignored and the evaluator defaults applied instead.
     var params = {};
-    if (kind === "health_factor")     params = { lt: parseFloat(threshold) };
-    else if (kind === "score_change") params = { drop: parseInt(threshold, 10) };
-    else if (kind === "liquidation_risk") params = { gte: parseFloat(threshold) };
-    else if (kind === "approval_change") params = { min_usd: parseFloat(threshold) };
-    else if (kind === "price")        params = { lt_usd: parseFloat(threshold) };
+    if (kind === "health_factor")     params = { threshold: parseFloat(threshold), direction: "below" };
+    else if (kind === "score_change") params = { delta: parseInt(threshold, 10), direction: "down" };
+    else if (kind === "liquidation_risk") params = { threshold: parseFloat(threshold) };
+    else if (kind === "approval_change") params = {};
+    else if (kind === "price") {
+      var token = ($("#rule-token") && $("#rule-token").value.trim()) || "";
+      if (!/^0x[0-9a-fA-F]{40}$/.test(token)) {
+        toast("Price rules need the token's contract address (0x…).", "warn");
+        return;
+      }
+      params = { token: token, chain: "ethereum", threshold: parseFloat(threshold), direction: "below" };
+    }
     else if (kind === "protocol_event") params = { protocol: threshold };
 
     var btn = $("#rule-form button[type=submit]");
@@ -253,11 +276,14 @@
 
   function describeParams(kind, params) {
     if (!params) return "";
-    if (kind === "health_factor")     return "&lt; " + params.lt;
-    if (kind === "score_change")      return "−" + params.drop + " pts";
-    if (kind === "liquidation_risk")  return "≥ " + params.gte;
-    if (kind === "approval_change")   return "≥ $" + (params.min_usd || 0);
-    if (kind === "price")             return "&lt; $" + params.lt_usd;
+    // Old rules may carry the pre-fix param names (lt/drop/gte) — render
+    // both rather than showing "undefined" for rules created before the
+    // rename. The evaluator itself falls back to its defaults for those.
+    if (kind === "health_factor")     return "&lt; " + (params.threshold ?? params.lt ?? 1.5);
+    if (kind === "score_change")      return "−" + (params.delta ?? params.drop ?? 50) + " pts";
+    if (kind === "liquidation_risk")  return "HF &lt; " + (params.threshold ?? 1.1);
+    if (kind === "approval_change")   return "any new risky approval";
+    if (kind === "price")             return (params.direction === "above" ? "&gt;" : "&lt;") + " $" + params.threshold;
     if (kind === "protocol_event")    return escapeHtml(params.protocol || "");
     return JSON.stringify(params);
   }
