@@ -341,6 +341,12 @@ async function call(path) {
     .prepare("SELECT source_json FROM health_scores WHERE wallet = ? ORDER BY computed_at DESC LIMIT 1")
     .bind(WALLET).first()).source_json);
   check("coverage persisted alongside the score", persistedCov.coverage === 0.65, persistedCov);
+  check("pillar summaries persisted for the explanation endpoint",
+    persistedCov.pillars &&
+    Object.keys(persistedCov.pillars).length === 5 &&
+    typeof persistedCov.pillars.account_age?.rationale === "string" &&
+    persistedCov.pillars.loan_reliability?.real === false,
+    persistedCov.pillars && Object.keys(persistedCov.pillars));
 
   // A row written before coverage existed (no key) must render the plain
   // band label — unknown coverage is not zero coverage.
