@@ -66,7 +66,9 @@ async function alchemyRpc(chain, env, method, params) {
 // free plan, and a 5-chain portfolio scan that issued one metadata call per
 // token (up to 100 per chain) blew that budget on the first chain, leaving the
 // rest of the wallet's chains silently unscanned.
-async function alchemyRpcBatch(chain, env, calls) {
+// Exported so protocol readers can amortise per-item reads (e.g. one
+// eth_call per Uniswap V3 position) into a single HTTP subrequest.
+export async function alchemyRpcBatch(chain, env, calls) {
   if (!chain.alchemy || !env.ALCHEMY_KEY) throw new Error('alchemy unavailable');
   if (!calls.length) return [];
   const url = `https://${chain.alchemy}.g.alchemy.com/v2/${env.ALCHEMY_KEY}`;
