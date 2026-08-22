@@ -64,7 +64,12 @@ async function cardinalityFor(env, userId, key) {
         .bind(userId).first();
       return r?.n || 0;
     }
-    // watchlist not yet shipped
+    if (key === "watchlist.size") {
+      const r = await env.HEALTH_DB
+        .prepare("SELECT COUNT(*) AS n FROM watched_wallets WHERE user_id = ?")
+        .bind(userId).first();
+      return r?.n || 0;
+    }
     return 0;
   } catch {
     return 0;
