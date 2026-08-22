@@ -1,0 +1,41 @@
+---
+layout: dashboard
+permalink: /dashboard/watchlist/
+title: Watched Wallets
+dashboard_section: watchlist
+dashboard_title: Watched Wallets
+dashboard_subtitle: Follow any wallet's score. Watched wallets are re-scored automatically, so their history accrues without a manual scan.
+sitemap: false
+---
+
+<div id="wl-signin-required" class="defi-empty" style="display:none">
+  <h3 style="margin:0 0 8px">Sign in to manage your watchlist</h3>
+  <p style="color:var(--defi-text-dim)">Connect a wallet to follow other addresses and track their scores over time.</p>
+</div>
+
+<div id="wl-main" style="display:none">
+  <div class="defi-card" style="margin-bottom:18px">
+    <form id="wl-add-form" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+      <div class="defi-form-group" style="flex:2;min-width:280px">
+        <label for="wl-address">Wallet address</label>
+        <input class="defi-input" id="wl-address" placeholder="0x…" pattern="0x[0-9a-fA-F]{40}" required>
+      </div>
+      <div class="defi-form-group" style="flex:1;min-width:160px">
+        <label for="wl-label">Label (optional)</label>
+        <input class="defi-input" id="wl-label" placeholder="e.g. Treasury" maxlength="80">
+      </div>
+      <div class="defi-form-group" style="flex:0 0 auto">
+        <label>&nbsp;</label>
+        <button type="submit" class="defi-btn defi-btn--primary">Watch wallet</button>
+      </div>
+    </form>
+    <div id="wl-quota" class="defi-card__delta" style="margin-top:8px;color:var(--defi-text-dim)"></div>
+  </div>
+
+  <div class="defi-card">
+    <div id="wl-empty" style="display:none;color:var(--defi-text-dim);padding:14px 0">
+      No watched wallets yet. Add one above — its score will start accruing history automatically.
+    </div>
+    <div id="wl-table" style="overflow-x:auto"></div>
+  </div>
+</div>

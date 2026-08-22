@@ -19,6 +19,7 @@ groups:
       - { id: score,     label: My Score,         path: /dashboard/score/,     icon: trending-up,      match: score }
       - { id: portfolio, label: Portfolio Heatmap,path: /dashboard/portfolio/, icon: grid-2x2,         match: portfolio }
       - { id: alerts,    label: Alerts,           path: /dashboard/alerts/,    icon: bell,             match: alerts }
+      - { id: watchlist, label: Watched Wallets,  path: /dashboard/watchlist/, icon: eye,              match: watchlist }
       - { id: report,    label: Report Issue,     path: /dashboard/report-issue/, icon: flag,          match: report }
 
   - id: risk
