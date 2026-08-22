@@ -330,6 +330,54 @@ async function call(path) {
   check("badge renders the persisted score", badge.status === 200 && svg.includes(String(s.json.score)),
     svg.slice(0, 160));
 
+  // ---- coverage on the badge --------------------------------------------
+  // The badge is the one public surface: a score computed from partial data
+  // must not render identically to a fully-observed one. This wallet's scan
+  // resolved four of five pillars (loan_reliability found nothing), so the
+  // persisted row carries coverage 0.65 and the badge must say so.
+  check("partial-coverage badge appends the observed-data share",
+    svg.includes("65% data"), svg.match(/<text[^>]*>[^<]*<\/text>/g));
+  const persistedCov = JSON.parse((await env.HEALTH_DB
+    .prepare("SELECT source_json FROM health_scores WHERE wallet = ? ORDER BY computed_at DESC LIMIT 1")
+    .bind(WALLET).first()).source_json);
+  check("coverage persisted alongside the score", persistedCov.coverage === 0.65, persistedCov);
+  check("pillar summaries persisted for the explanation endpoint",
+    persistedCov.pillars &&
+    Object.keys(persistedCov.pillars).length === 5 &&
+    typeof persistedCov.pillars.account_age?.rationale === "string" &&
+    persistedCov.pillars.loan_reliability?.real === false,
+    persistedCov.pillars && Object.keys(persistedCov.pillars));
+
+  // A row written before coverage existed (no key) must render the plain
+  // band label — unknown coverage is not zero coverage.
+  const LEGACY = "0x00000000000000000000000000000000000000f0";
+  await env.HEALTH_DB.prepare(
+    "INSERT INTO health_scores (wallet, score, source_json, computed_at) VALUES (?, ?, ?, ?)"
+  ).bind(LEGACY, 700, JSON.stringify({ source: "wallet-score" }), Date.now()).run();
+  const legacyBadge = await worker.fetch(new Request(ORIGIN + "/badge/" + LEGACY + ".svg"), env, { waitUntil() {} });
+  const legacySvg = await legacyBadge.text();
+  check("pre-coverage row renders the plain band, not a data suffix",
+    legacyBadge.status === 200 && !legacySvg.includes("% data") && legacySvg.includes("700"),
+    legacySvg.match(/<text[^>]*>[^<]*<\/text>/g));
+
+  // Full coverage stays plain too — the suffix marks the exception, and a
+  // malformed blob must not take the badge down.
+  const FULLCOV = "0x00000000000000000000000000000000000000f1";
+  await env.HEALTH_DB.prepare(
+    "INSERT INTO health_scores (wallet, score, source_json, computed_at) VALUES (?, ?, ?, ?)"
+  ).bind(FULLCOV, 810, JSON.stringify({ coverage: 1 }), Date.now()).run();
+  const fullSvg = await (await worker.fetch(new Request(ORIGIN + "/badge/" + FULLCOV + ".svg"), env, { waitUntil() {} })).text();
+  check("full-coverage badge renders the plain band", !fullSvg.includes("% data") && fullSvg.includes("810"), null);
+  const CORRUPT = "0x00000000000000000000000000000000000000f2";
+  await env.HEALTH_DB.prepare(
+    "INSERT INTO health_scores (wallet, score, source_json, computed_at) VALUES (?, ?, ?, ?)"
+  ).bind(CORRUPT, 640, "{not json", Date.now()).run();
+  const corruptBadge = await worker.fetch(new Request(ORIGIN + "/badge/" + CORRUPT + ".svg"), env, { waitUntil() {} });
+  const corruptSvg = await corruptBadge.text();
+  check("a corrupt source_json still renders the badge (coverage just omitted)",
+    corruptBadge.status === 200 && corruptSvg.includes("640") && !corruptSvg.includes("% data"),
+    corruptBadge.status);
+
   // ---- band-threshold boundary: badge must agree with the score payload
   //
   // Regression test for the drift documented in worker/lib/score.js's BANDS

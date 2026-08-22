@@ -62,7 +62,7 @@ import { ethCall, abiEncodeSingleAddr, abiHexWord, getFirstTxTimestamp } from '.
 // health_scores row, so a trend line spanning a model change can say so
 // instead of presenting the discontinuity as if the wallet had moved.
 // Format is YYYY.MM of the release that introduced the model.
-export const SCORE_MODEL_VERSION = '2026.08';
+export const SCORE_MODEL_VERSION = '2026.09';
 
 export const BANDS = [
   { key: 'excellent', label: 'Excellent', floor: 720 },

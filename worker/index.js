@@ -64,6 +64,7 @@ import {
 } from "./handlers/wallets.js";
 import { handleScoreBadge } from "./handlers/badge.js";
 import { runScheduledRescore } from "./handlers/rescore.js";
+import { handleScoreExplanation } from "./handlers/explain.js";
 import { handleQuota } from "./handlers/quota.js";
 import {
   handleBillingConfig, handleBillingCheckout, handleBillingPortal,
@@ -2829,6 +2830,12 @@ async function dispatch(request, env, peekedAddr) {
     // wired for existing front-end consumers). Internally fans out to
     // /api/portfolio + /api/defi + Snapshot + Etherscan first-tx, so it's
     // the most expensive endpoint we ship — same rate-limit posture.
+    if (request.method === "GET" && url.pathname === "/api/score-explanation") {
+      const blocked = await rateLimit(request, env, "/api/score-explanation", 20, 60);
+      if (blocked) return blocked;
+      return handleScoreExplanation(request, env);
+    }
+
     if (request.method === "GET" && url.pathname === "/api/wallet-score") {
       const blockedIp = await rateLimit(request, env, "/api/wallet-score", 30, 60);
       if (blockedIp) return blockedIp;
