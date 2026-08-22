@@ -13,7 +13,7 @@
 // is the new path the SPA (T7) will move to.
 //
 // Pillars (weights sum to 1.0):
-//   loan_reliability     0.35   Aave HF + Compound-derived HF, across chains
+//   loan_reliability     0.35   Aave/Spark HF + Compound-derived HF, across chains
 //   portfolio_health     0.25   Diversification (top-N concentration) + size
 //   liquidity_provision  0.15   Uni V3 live LP positions (liquidity > 0)
 //   governance           0.10   Snapshot vote count
@@ -142,14 +142,19 @@ export function pillarLoanReliability(defiByChain) {
     if (lowestHf == null || hf < lowestHf) { lowestHf = hf; lowestHfProtocol = label; }
   };
 
+  // Spark is an Aave V3 fork whose Pool reports the same health factor with
+  // the same semantics, so both flow through the identical branch — only the
+  // label differs.
+  const AAVE_STYLE = { 'aave-v3': 'Aave V3', 'spark': 'Spark' };
+
   for (const c of defiByChain) {
     for (const p of c.protocols || []) {
-      if (p.protocol === 'aave-v3' && p.hasPosition) {
+      if (AAVE_STYLE[p.protocol] && p.hasPosition) {
         hasAnyPosition = true;
-        seen.add('Aave V3');
+        seen.add(AAVE_STYLE[p.protocol]);
         totalCollateral += p.collateralUsd || 0;
         totalDebt       += p.debtUsd || 0;
-        noteHf(p.healthFactor, 'Aave V3');
+        noteHf(p.healthFactor, AAVE_STYLE[p.protocol]);
       } else if (p.protocol === 'compound-v3' && p.hasPosition) {
         hasAnyPosition = true;
         seen.add('Compound V3');
@@ -169,12 +174,12 @@ export function pillarLoanReliability(defiByChain) {
   }
 
   const protocols = [...seen];
-  const named = protocols.length ? protocols.join(' + ') : 'Aave V3 or Compound V3';
+  const named = protocols.length ? protocols.join(' + ') : 'Aave V3, Spark or Compound V3';
 
   if (!hasAnyPosition) {
     return { real: false, value: 50, lowestHealthFactor: null, totalCollateralUsd: 0, totalDebtUsd: 0,
              protocols: [],
-             rationale: 'No Aave V3 or Compound V3 positions found across any chain — neutral score.' };
+             rationale: 'No Aave V3, Spark or Compound V3 positions found across any chain — neutral score.' };
   }
   // No debt? Wallet is supplying as a saver — that's a positive signal but
   // not as informative as a successfully managed leveraged position.
