@@ -288,11 +288,13 @@ A scored result is written to the wallet's score history, which backs the trend 
 
 ### 1.9 Model versioning
 
-A score is only comparable to another score produced by the same model, so every score carries a **model version** — currently `2026.08` — and every stored row records the version that produced it.
+A score is only comparable to another score produced by the same model, so every score carries a **model version** — currently `2026.09` — and every stored row records the version that produced it.
 
 The version is incremented whenever a change would move an existing wallet's score without its on-chain position having changed: new or reweighted pillars, changed banding, new adjustments, or a new data source feeding an existing pillar. It is *not* incremented for bug fixes that only affect which wallets can be scored at all, nor for refactors.
 
 Where a wallet's history spans a model change, the trend chart marks the boundary rather than drawing the step as though the wallet had moved. Rows written before versioning existed carry no version; those are left unmarked, since the absence of a recorded version is not evidence that the model changed at that point.
+
+**Version history.** `2026.09` — account age became multichain (the oldest first-transaction across all Tier 1 chains, where it previously read Ethereum alone), and liquidity provision began counting only live Uniswap V3 positions rather than position NFTs held. Both changes can move a wallet's score without any on-chain action by the wallet, which is precisely what a version boundary exists to mark. `2026.08` — the first versioned model: five pillars as documented on this page.
 
 ---
 

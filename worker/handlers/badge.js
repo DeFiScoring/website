@@ -95,9 +95,20 @@ function badgeResponse(body, { cacheSecs = 300, status = 200 } = {}) {
 async function latestScoreFor(env, addr) {
   if (!env.HEALTH_DB) return null;
   const row = await env.HEALTH_DB
-    .prepare("SELECT score, computed_at FROM health_scores WHERE wallet = ? ORDER BY computed_at DESC LIMIT 1")
+    .prepare("SELECT score, computed_at, source_json FROM health_scores WHERE wallet = ? ORDER BY computed_at DESC LIMIT 1")
     .bind(addr).first();
-  return row || null;
+  if (!row) return null;
+  // Coverage rode into source_json later than the score did, so old rows
+  // have no key and the blob is free-form — both degrade to null rather
+  // than breaking the badge. Same defensive shape as the history endpoint.
+  let coverage = null;
+  try {
+    const src = JSON.parse(row.source_json || "null");
+    if (src && typeof src.coverage === "number" && src.coverage >= 0 && src.coverage <= 1) {
+      coverage = src.coverage;
+    }
+  } catch { /* pre-coverage or malformed blob — leave null */ }
+  return { score: row.score, computed_at: row.computed_at, coverage };
 }
 
 export async function handleScoreBadge(request, env, walletPath) {
@@ -120,10 +131,17 @@ export async function handleScoreBadge(request, env, walletPath) {
   }
 
   const band = bandFor(row.score);
+  // A score computed from partial data must not render identically to one
+  // backed by every pillar — the badge is the one public surface, and a bare
+  // number implies full confidence. Full coverage (or unknown, on rows that
+  // predate the field) keeps the plain band label; anything partial appends
+  // the observed-data share.
+  const partial = row.coverage != null && row.coverage < 1;
+  const bandLabel = band[0].toUpperCase() + band.slice(1);
   return badgeResponse(svg({
     score: String(row.score),
     band,
     label: "DeFi Score",
-    sublabel: band[0].toUpperCase() + band.slice(1),
+    sublabel: partial ? `${bandLabel} · ${Math.round(row.coverage * 100)}% data` : bandLabel,
   }));
 }

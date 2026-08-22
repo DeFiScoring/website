@@ -21,6 +21,7 @@ const SUITES = [
   ["score", "portfolio scan, wallet score, price fallbacks, badge"],
   ["dsar",  "wallet-proved account erasure"],
   ["alerts", "webhook delivery signing + SSRF guard, unsupported rule kinds"],
+  ["explain", "AI score explanations: prompts from persisted data, caching, failure modes"],
   ["rescore", "scheduled re-scoring: stalest-first selection, freshness gate, score_change loop"],
   ["watchlist", "watched wallets: CRUD, tier caps, isolation, re-score queue membership"],
 ];
