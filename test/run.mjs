@@ -30,6 +30,7 @@ const SUITES = [
   ["sanctions", "OFAC screening: seed floor, KV overlay, feed validation, platform health"],
   ["onchain", "native-balance snapshot endpoint: validation, no RPC proxying, unreadable != empty"],
   ["nav", "sidebar integrity: links resolve, section tags agree, curated pages grouped as research"],
+  ["share-card", "social share card: coverage survives into the shared context, no invented scores"],
 ];
 
 const [maj, min] = process.versions.node.split(".").map(Number);

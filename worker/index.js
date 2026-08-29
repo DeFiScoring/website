@@ -63,6 +63,7 @@ import {
   handleWalletsList, handleWalletLink, handleWalletUnlink, handleWalletUpdate,
 } from "./handlers/wallets.js";
 import { handleScoreBadge } from "./handlers/badge.js";
+import { handleShareCard, handleSharePage } from "./handlers/share-card.js";
 import { runScheduledRescore } from "./handlers/rescore.js";
 import {
   handleWatchedWalletsList, handleWatchedWalletsAdd, handleWatchedWalletsUpdate, handleWatchedWalletsDelete,
@@ -3031,6 +3032,16 @@ async function dispatch(request, env, peekedAddr) {
     // -----------------------------------------------------------------------
     if (request.method === "GET" && url.pathname.startsWith("/badge/")) {
       return handleScoreBadge(request, env, url.pathname.slice("/badge/".length));
+    }
+
+    // Social share card: the same persisted score at poster size, plus the
+    // page whose og:/twitter: tags point at it. Both public and cacheable —
+    // neither triggers a scan.
+    if (request.method === "GET" && url.pathname.startsWith("/card/")) {
+      return handleShareCard(request, env, url.pathname.slice("/card/".length));
+    }
+    if (request.method === "GET" && url.pathname.startsWith("/share/")) {
+      return handleSharePage(request, env, url.pathname.slice("/share/".length).replace(/\/$/, ""));
     }
 
     // -----------------------------------------------------------------------

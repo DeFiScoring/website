@@ -51,6 +51,17 @@ description: Paste a live DeFi credit-score badge anywhere — forum signatures,
     </div>
   </div>
 
+  <div class="badge-card" id="share-card-block" style="display:none;">
+    <h2>3. Share it</h2>
+    <p style="margin-bottom:14px">Posting this link renders a full-size score card as the link preview, on the
+    platforms whose crawlers accept SVG (Slack, Discord, Telegram, LinkedIn, iMessage).</p>
+    <div class="snippet-row">
+      <label>Share link</label>
+      <div class="snippet"><button data-copy="share">Copy</button><span id="snip-share"></span></div>
+    </div>
+    <div class="badge-preview"><img id="share-img" alt="Social score card preview" style="max-width:100%;border-radius:10px"></div>
+  </div>
+
   <div class="badge-card">
     <h2>How it works</h2>
     <p>The badge URL is <code>https://defiscoring.com/badge/&lt;wallet&gt;.svg</code>. We render the latest persisted score from our scoring engine; if the wallet hasn't been scanned yet, the badge shows "no scan yet" until one is captured. The image is cached for 5 minutes at the edge so embeds stay fast.</p>
@@ -67,9 +78,15 @@ description: Paste a live DeFi credit-score badge anywhere — forum signatures,
   var snipMd = document.getElementById("snip-md");
   var snipHtml = document.getElementById("snip-html");
   var snipBb = document.getElementById("snip-bb");
+  var shareBlock = document.getElementById("share-card-block");
+  var snipShare = document.getElementById("snip-share");
+  var shareImg = document.getElementById("share-img");
   function update() {
     var v = input.value.trim().toLowerCase();
-    if (!/^0x[0-9a-f]{40}$/.test(v)) { preview.style.display = "none"; snippets.style.display = "none"; return; }
+    if (!/^0x[0-9a-f]{40}$/.test(v)) {
+      preview.style.display = "none"; snippets.style.display = "none";
+      shareBlock.style.display = "none"; return;
+    }
     var url = BADGE_BASE + v + ".svg";
     var profileUrl = "https://defiscoring.com/dashboard/score/?wallet=" + v;
     img.src = url;
@@ -78,13 +95,20 @@ description: Paste a live DeFi credit-score badge anywhere — forum signatures,
     snipMd.textContent  = "[![DeFi Score](" + url + ")](" + profileUrl + ")";
     snipHtml.textContent = '<a href="' + profileUrl + '"><img src="' + url + '" alt="DeFi Score" /></a>';
     snipBb.textContent  = "[url=" + profileUrl + "][img]" + url + "[/img][/url]";
+    var shareUrl = "https://defiscoring.com/share/" + v;
+    snipShare.textContent = shareUrl;
+    shareImg.src = "https://defiscoring.com/card/" + v + ".svg";
+    shareBlock.style.display = "";
   }
   input.addEventListener("input", update);
   document.addEventListener("click", function (ev) {
     var btn = ev.target.closest("[data-copy]");
     if (!btn) return;
     var which = btn.dataset.copy;
-    var text = which === "md" ? snipMd.textContent : which === "html" ? snipHtml.textContent : snipBb.textContent;
+    var text = which === "md" ? snipMd.textContent
+             : which === "html" ? snipHtml.textContent
+             : which === "share" ? snipShare.textContent
+             : snipBb.textContent;
     navigator.clipboard.writeText(text).then(function () {
       var orig = btn.textContent;
       btn.textContent = "Copied!";
