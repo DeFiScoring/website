@@ -263,6 +263,11 @@ body.ds-admin {
   display: grid; place-items: center;
   z-index: 100;
 }
+/* `display: grid` above beats the `hidden` attribute's UA `display: none`, so
+   without this the modal's full-screen backdrop sits over the admin UI at all
+   times and swallows every click — no tab, button or row is reachable. The
+   attribute is how admin.js opens and closes the modal, so it has to win. */
+.ds-admin__modal[hidden] { display: none; }
 .ds-admin__modal-bg {
   position: absolute; inset: 0;
   background: rgba(0,0,0,0.7);
@@ -329,3 +334,50 @@ body.ds-admin {
   .ds-admin__filters input,
   .ds-admin__filters select { min-width: 140px; }
 }
+
+/* ---- Health panel --------------------------------------------------------- */
+
+.ds-admin__hint {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #9ca3af;
+  max-width: 70ch;
+}
+
+.ds-admin__warns {
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  border-radius: 10px;
+  background: rgba(255, 93, 108, .08);
+  border: 1px solid rgba(255, 93, 108, .3);
+}
+.ds-admin__warns h3 { margin: 0 0 8px; font-size: 13px; color: #ff5d6c; }
+.ds-admin__warns ul { margin: 0; padding-left: 18px; }
+.ds-admin__warns li { font-size: 13px; line-height: 1.6; color: #e5e7eb; }
+.ds-admin__warns--ok {
+  background: rgba(43, 212, 164, .08);
+  border-color: rgba(43, 212, 164, .3);
+  color: #2bd4a4;
+  font-size: 13px;
+}
+
+.ds-admin__pill {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+
+[data-panel="health"] h3 {
+  margin: 24px 0 10px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: #9ca3af;
+}
+[data-panel="health"] .ds-admin__table th { white-space: nowrap; }

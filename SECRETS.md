@@ -56,7 +56,7 @@ Set with `wrangler secret put NAME` from the project root. **Every entry below M
 | `GMAIL_SENDER` | Workspace user the SA impersonates | `alerts@defiscoring.com` | |
 | `TELEGRAM_BOT_TOKEN` | `/api/alerts` Telegram delivery | `<botid>:<hash>` | |
 | `TURNSTILE_SECRET` | Cloudflare Turnstile server verify | `0x…` | |
-| `OFAC_LIST_URL` | OFAC SDN snapshot fetch | `https://…` | Pre-signed URL — treat as secret |
+| `OFAC_LIST_URL` | Sanctions overlay refresh (`lib/sanctions.js`, daily cron) | `https://…` | Pre-signed URL — treat as secret. Returns `{"addresses":["0x…"],"source":"…"}` or a bare JSON array. Optional: without it, screening enforces the built-in seed list only. `SANCTIONS_FEED_URL` is accepted as an alias. |
 
 ### 1b. Public values that still live in CF Secrets (rotatable without rebuild)
 
