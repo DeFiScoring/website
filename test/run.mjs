@@ -28,6 +28,7 @@ const SUITES = [
   ["claims", "public pricing and landing claims match what the code enforces"],
   ["api-keys", "API key issuance, bearer auth, per-tier metering, revocation, isolation"],
   ["sanctions", "OFAC screening: seed floor, KV overlay, feed validation, platform health"],
+  ["onchain", "native-balance snapshot endpoint: validation, no RPC proxying, unreadable != empty"],
 ];
 
 const [maj, min] = process.versions.node.split(".").map(Number);

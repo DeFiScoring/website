@@ -74,6 +74,7 @@ import {
 } from "./handlers/api-keys.js";
 import { anySanctioned, refreshSanctionsList } from "./lib/sanctions.js";
 import { handleAdminHealth } from "./handlers/admin/health.js";
+import { handleOnchainSnapshot } from "./handlers/onchain-snapshot.js";
 import { handleQuota } from "./handlers/quota.js";
 import {
   handleBillingConfig, handleBillingCheckout, handleBillingPortal,
@@ -2812,6 +2813,14 @@ async function dispatch(request, env, peekedAddr) {
       const blocked = await rateLimit(request, env, "/api/score-explanation", 20, 60);
       if (blocked) return blocked;
       return handleScoreExplanation(request, env);
+    }
+
+    // Native-balance snapshot for the browser dashboard. Deliberately a
+    // narrow endpoint rather than an RPC proxy — see the handler's header.
+    if (request.method === "GET" && url.pathname === "/api/onchain/snapshot") {
+      const blockedSnap = await rateLimit(request, env, "/api/onchain/snapshot", 30, 60);
+      if (blockedSnap) return blockedSnap;
+      return handleOnchainSnapshot(request, env, corsHeadersFor(request, env));
     }
 
     if (request.method === "GET" && url.pathname === "/api/wallet-score") {
