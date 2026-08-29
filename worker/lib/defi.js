@@ -12,6 +12,7 @@ import { ethCall, abiEncodeSingleAddr, abiHexWord, abiPadAddr, alchemyRpcBatch }
 import {
   tickToSqrtPrice, sqrtPriceX96ToSqrtPrice, positionValueUsd, abiWordToInt,
 } from './univ3-math.js';
+import { getMorphoPosition } from './morpho.js';
 import { priceTokensWithFallback } from './prices.js';
 import { CHAINS_BY_ID } from './chains.js';
 import {
@@ -559,13 +560,14 @@ export function classifyYieldTokens(chainId, erc20Rows, fiatPriceMap) {
 export async function getAllDeFiPositions(env, wallet, chains) {
   const perChain = await Promise.all(chains.map(async (chain) => {
     try {
-      const [aave, spark, compoundList, uni] = await Promise.all([
+      const [aave, spark, compoundList, morpho, uni] = await Promise.all([
         getAaveV3Position(chain, env, wallet).catch((e) => ({ protocol: 'aave-v3', chain: chain.id, error: String(e.message || e) })),
         getSparkPosition(chain, env, wallet).catch((e) => ({ protocol: 'spark', chain: chain.id, error: String(e.message || e) })),
         getCompoundV3Positions(chain, env, wallet).catch((e) => [{ protocol: 'compound-v3', chain: chain.id, error: String(e.message || e) }]),
+        getMorphoPosition(chain, env, wallet).catch((e) => ({ protocol: 'morpho-blue', chain: chain.id, error: String(e.message || e) })),
         getUniV3LpCount(chain, env, wallet).catch((e) => ({ protocol: 'uniswap-v3-lp', chain: chain.id, error: String(e.message || e) })),
       ]);
-      const protocols = [aave, spark, ...compoundList, uni];
+      const protocols = [aave, spark, ...compoundList, morpho, uni];
       const collateralUsd = protocols.reduce((s, p) => s + (p.collateralUsd || p.supplyUsd || 0), 0);
       const debtUsd       = protocols.reduce((s, p) => s + (p.debtUsd || p.borrowUsd || 0), 0);
       return {

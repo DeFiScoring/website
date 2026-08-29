@@ -95,7 +95,7 @@ The dashboard shows this as *"Score based on N% live data"* beside the band, dim
 ### 1.3 The five pillars
 
 <div class="pillar-grid">
-  <div class="pillar"><div class="weight">35%</div><h4>Loan Reliability</h4><p>Aave V3, Spark and Compound V3 health factors across chains.</p></div>
+  <div class="pillar"><div class="weight">35%</div><h4>Loan Reliability</h4><p>Aave V3, Spark, Compound V3 and Morpho Blue health factors across chains.</p></div>
   <div class="pillar"><div class="weight">25%</div><h4>Portfolio Health</h4><p>Diversification, portfolio size, multi-chain presence.</p></div>
   <div class="pillar"><div class="weight">15%</div><h4>Liquidity Provision</h4><p>USD value of live Uniswap V3 concentrated liquidity.</p></div>
   <div class="pillar"><div class="weight">15%</div><h4>Account Age</h4><p>Days since the wallet's first Ethereum transaction.</p></div>
@@ -106,7 +106,7 @@ Each pillar produces a **0–100** sub-score. The weights sum to exactly 1.00.
 
 #### A. Loan Reliability — 35%
 
-**Input:** every Aave V3, Spark and Compound V3 position found on the scanned chains — collateral, debt, and health factor. Spark is an Aave V3 fork whose pool reports the same health factor with the same semantics, so its positions flow through the identical logic with no conversion.
+**Input:** every Aave V3, Spark, Compound V3 and Morpho Blue position found on the scanned chains — collateral, debt, and health factor. Spark is an Aave V3 fork whose pool reports the same health factor with the same semantics, so its positions flow through the identical logic with no conversion.
 
 We score the **riskiest** position, not the average: the lowest health factor across all chains and both protocols sets the band. A wallet that is safe on four chains and about to be liquidated on a fifth is a liquidation risk.
 
@@ -118,7 +118,7 @@ bands below, with no conversion factor.
 
 | Condition | Sub-score | Coverage |
 | :--- | :--- | :--- |
-| No Aave V3, Spark or Compound V3 position on any chain | 50 | `real: false` |
+| No Aave V3, Spark, Compound V3 or Morpho Blue position on any chain | 50 | `real: false` |
 | Borrowing, but the collateral backing it could not be read | 50 | `real: true` |
 | Supplying with **zero debt** | 80 | `real: true` |
 | Lowest HF ≥ 3.00 | 95 | `real: true` |
@@ -300,13 +300,14 @@ The version is incremented whenever a change would move an existing wallet's sco
 
 Where a wallet's history spans a model change, the trend chart marks the boundary rather than drawing the step as though the wallet had moved. Rows written before versioning existed carry no version; those are left unmarked, since the absence of a recorded version is not evidence that the model changed at that point.
 
-**Version history.** `2026.10` — liquidity provision moved from counting live Uniswap V3 positions to valuing them in USD. A wallet holding twenty dust positions previously outscored one holding a single seven-figure position; that is now reversed. `2026.09` — account age became multichain (the oldest first-transaction across all Tier 1 chains, where it previously read Ethereum alone), and liquidity provision began counting only live Uniswap V3 positions rather than position NFTs held. Both changes can move a wallet's score without any on-chain action by the wallet, which is precisely what a version boundary exists to mark. `2026.08` — the first versioned model: five pillars as documented on this page.
+**Version history.** `2026.11` — Morpho Blue joined the loan-reliability pillar. Morpho has no account-level health factor because it has no account-level position: its markets are isolated, so one is derived per market from collateral, oracle price and LLTV on the same definition Aave publishes, and the riskiest sets the band. A wallet borrowing only on Morpho was previously unscorable on this pillar. `2026.10` — liquidity provision moved from counting live Uniswap V3 positions to valuing them in USD. A wallet holding twenty dust positions previously outscored one holding a single seven-figure position; that is now reversed. `2026.09` — account age became multichain (the oldest first-transaction across all Tier 1 chains, where it previously read Ethereum alone), and liquidity provision began counting only live Uniswap V3 positions rather than position NFTs held. Both changes can move a wallet's score without any on-chain action by the wallet, which is precisely what a version boundary exists to mark. `2026.08` — the first versioned model: five pillars as documented on this page.
 
 ---
 
 ## 2. Wallet Score Limitations
 
-- **A fixed protocol list.** Two of the five pillars read specific protocols: loan reliability covers Aave V3, Spark and Compound V3, and liquidity provision covers Uniswap V3. A wallet that borrows exclusively on Morpho scores `real: false` on loan reliability and receives a neutral 50 — not a penalty, but not credit for that activity either.
+- **A fixed protocol list.** Two of the five pillars read specific protocols: loan reliability covers Aave V3, Spark, Compound V3 and Morpho Blue, and liquidity provision covers Uniswap V3. A wallet that borrows exclusively on a protocol outside that list scores `real: false` on loan reliability and receives a neutral 50 — not a penalty, but not credit for that activity either.
+- **Morpho positions are discovered from borrow history, on Ethereum only.** Morpho Blue publishes no on-chain index of a user's markets, so we find them by scanning `Borrow` logs for the wallet — one request per chain, which cannot be avoided. A Tier-1 scan already sits at 49 of the platform's 50-subrequest ceiling, so that request is spent on Ethereum, where the great majority of Morpho's TVL sits. Positions on other chains are reported as **not checked**, never as absent. A wallet that supplies collateral without ever borrowing is not detected, and a wallet in more than eight markets has only its most recent eight read — the reported health factor is then the riskiest of those, not necessarily of all.
 - **Compound collateral without a borrow is invisible.** Comet's position check keys off the base-asset balance, which is zero for an account that has deposited collateral but not borrowed against it. Such a wallet reads as having no Compound position. It is also the case where nothing is at risk.
 - **Account age stops at Tier 1.** All five Tier 1 chains are queried, but a wallet whose entire history predates its Tier 1 activity — living only on Gnosis, Linea, zkSync Era or another Tier 2 chain — is still under-rated.
 - **LP valuation needs a batch RPC endpoint.** Valuing positions costs six batched reads per chain; without an Alchemy key the worker cannot batch them affordably and the pillar falls back to counting positions. The rationale says which basis was used, so a count-based score is never mistaken for a statement about capital.
@@ -372,6 +373,7 @@ Contract-level pattern analysis is available separately through the AI contract 
 | **Etherscan v2 API** | Native and token balances, contract calls, first-transaction age, source verification |
 | **Aave V3 contracts** | Health factor, collateral, debt (read directly on-chain) |
 | **Spark (SparkLend) contracts** | Health factor, collateral, debt (read directly on-chain — same ABI as Aave V3) |
+| **Morpho Blue contracts** | Per-market position, market state and oracle price (read on-chain); markets discovered from the wallet's `Borrow` logs |
 | **Compound V3 (Comet) contracts** | Supply, borrow, per-asset collateral, price feeds, liquidation collateral factors (read directly on-chain) |
 | **Uniswap V3 contracts** | Position counts and per-position liquidity (read directly on-chain) |
 | **CoinGecko** | Token pricing (first tier) |
