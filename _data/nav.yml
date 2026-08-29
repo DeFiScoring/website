@@ -1,17 +1,23 @@
 # Dashboard sidebar — single source of truth.
 #
-# Stream A regroup (May 2026): the 21 dashboard pages are organised into
-# 5 collapsible sections — Overview, Risk, RWA, Audits, Settings. NO URL
-# was changed; every item points at its existing page. Section membership
-# is also exposed to the topbar via `_includes/dashboard/wallet-bar.html`,
-# which uses the `match` field below to derive the breadcrumb.
+# Grouped so the licensed core is distinguishable from the research surface:
 #
-# `match` is the page.dashboard_section value used to highlight the
-# active item and auto-open the parent group.
+#   Wallet Scoring  the metered, live-data product — everything here reads the
+#                   chain or the user's own account.
+#   Risk Tools      wallet-level analysis built on that same live data.
+#   RWA Research    curated dossiers, not live feeds. Every page in this group
+#                   renders a provenance banner (assets/js/rwa-provenance.js)
+#                   saying so; the grouping makes the distinction legible
+#                   before a reader clicks, not only after.
+#   Reference       audit directory and market data.
+#   Account         settings, plan, privacy, and reporting a problem.
+#
+# `match` is the page.dashboard_section value used to highlight the active
+# item and auto-open the parent group. NO URL is changed by regrouping.
 
 groups:
-  - id: overview
-    label: Overview
+  - id: scoring
+    label: Wallet Scoring
     icon: layout-dashboard
     default_open: true
     items:
@@ -20,48 +26,52 @@ groups:
       - { id: portfolio, label: Portfolio Heatmap,path: /dashboard/portfolio/, icon: grid-2x2,         match: portfolio }
       - { id: alerts,    label: Alerts,           path: /dashboard/alerts/,    icon: bell,             match: alerts }
       - { id: watchlist, label: Watched Wallets,  path: /dashboard/watchlist/, icon: eye,              match: watchlist }
-      - { id: report,    label: Report Issue,     path: /dashboard/report-issue/, icon: flag,          match: report }
 
   - id: risk
-    label: Risk
+    label: Risk Tools
     icon: shield-alert
     items:
-      - { id: risk,      label: Risk Profiler,           path: /dashboard/risk-profiler/,        icon: target,        match: risk }
-      - { id: chatbot,   label: AI Risk Advisor,         path: /dashboard/risk-chatbot/,         icon: brain,         match: chatbot }
-      - { id: scanner,   label: Wallet Scanner,          path: /dashboard/scanner/,              icon: scan-line,     match: scanner }
-      - { id: approvals, label: Token Approvals,         path: /dashboard/approvals/,            icon: alert-triangle,match: approvals }
-      - { id: yield,     label: Yield & Risk-Adjusted,   path: /dashboard/yield-risk-adjusted/,  icon: bar-chart-2,   match: rwa-yield }
+      - { id: risk,      label: Risk Profiler,    path: /dashboard/risk-profiler/, icon: target,         match: risk }
+      - { id: chatbot,   label: AI Risk Advisor,  path: /dashboard/risk-chatbot/,  icon: brain,          match: chatbot }
+      - { id: scanner,   label: Wallet Scanner,   path: /dashboard/scanner/,       icon: scan-line,      match: scanner }
+      - { id: approvals, label: Token Approvals,  path: /dashboard/approvals/,     icon: alert-triangle, match: approvals }
 
   - id: rwa
-    label: RWA
+    label: RWA Research
     icon: building-2
     items:
-      - { id: rwa-asset,     label: RWA Asset Risk Score,    path: /dashboard/rwa-asset-score/,        icon: landmark, match: rwa-asset }
-      - { id: rwa-chatbot,   label: AI RWA Advisor,          path: /dashboard/rwa-chatbot/,            icon: sparkles, match: rwa-chatbot }
-      - { id: rwa-portfolio, label: Portfolio RWA Exposure,  path: /dashboard/portfolio-rwa-exposure/, icon: layers,   match: rwa-portfolio }
-      - { id: audit-toolkit, label: Audit & Export Toolkit,  path: /dashboard/audit-toolkit/,          icon: download, match: audit-toolkit }
+      - { id: rwa-asset,     label: RWA Asset Risk Score,    path: /dashboard/rwa-asset-score/,        icon: landmark,  match: rwa-asset }
+      - { id: rwa-chatbot,   label: AI RWA Advisor,          path: /dashboard/rwa-chatbot/,            icon: sparkles,  match: rwa-chatbot }
+      - { id: rwa-portfolio, label: Portfolio RWA Exposure,  path: /dashboard/portfolio-rwa-exposure/, icon: layers,    match: rwa-portfolio }
+      - { id: issuer,        label: Issuer Due Diligence,    path: /dashboard/issuer-due-diligence/,   icon: search,    match: rwa-issuer }
+      - { id: custody,       label: Custody & PoR,           path: /dashboard/custody-por/,            icon: lock,      match: rwa-custody }
+      - { id: legal,         label: Legal & Regulatory,      path: /dashboard/legal-compliance/,       icon: scale,     match: rwa-legal }
+      - { id: liquidity,     label: Liquidity & Redemption,  path: /dashboard/liquidity-redemption/,   icon: droplets,  match: rwa-liquidity }
+      - { id: oracle,        label: Oracle & Data Integrity, path: /dashboard/oracle-integrity/,       icon: database,  match: rwa-oracle }
+      # Sits here rather than under Risk Tools: it scores the detected RWA
+      # issuer from the same curated dossiers, and its section tag was already
+      # rwa-yield while the sidebar filed it under Risk.
+      - { id: yield,         label: Yield & Risk-Adjusted,   path: /dashboard/yield-risk-adjusted/,    icon: bar-chart-2, match: rwa-yield }
+      - { id: audit-toolkit, label: Audit & Export Toolkit,  path: /dashboard/audit-toolkit/,          icon: download,  match: audit-toolkit }
 
-  - id: audits
-    label: Audits
+  - id: reference
+    label: Reference
     icon: book-open
     items:
-      - { id: audits,        label: Audit Directory,         path: /dashboard/audits/,               icon: book-open, match: audits }
-      - { id: oracle,        label: Oracle & Data Integrity, path: /dashboard/oracle-integrity/,     icon: database,  match: rwa-oracle }
-      - { id: custody,       label: Custody & PoR,           path: /dashboard/custody-por/,          icon: lock,      match: rwa-custody }
-      - { id: issuer,        label: Issuer Due Diligence,    path: /dashboard/issuer-due-diligence/, icon: search,    match: rwa-issuer }
-      - { id: legal,         label: Legal & Regulatory,      path: /dashboard/legal-compliance/,     icon: scale,     match: rwa-legal }
-      - { id: liquidity,     label: Liquidity & Redemption,  path: /dashboard/liquidity-redemption/, icon: droplets,  match: rwa-liquidity }
-      - { id: market,        label: Live Market Data,        path: /dashboard/market-intel/,         icon: radio,     match: intel }
+      - { id: audits, label: Audit Directory,  path: /dashboard/audits/,      icon: book-open, match: audits }
+      - { id: market, label: Live Market Data, path: /dashboard/market-intel/, icon: radio,    match: intel }
 
-  - id: settings
-    label: Settings
+  - id: account
+    label: Account
     icon: settings
     items:
-      - { id: settings, label: Wallets & Billing,    path: /dashboard/settings/, icon: wallet,   match: settings }
-      # The three items below link out to non-dashboard layouts (`/pricing/`,
-      # `/account/`, `/account/privacy/`). The sidebar isn't rendered there,
-      # so their `match` values never trigger highlighting — they exist only
-      # to keep this YAML schema uniform.
-      - { id: pricing,  label: Upgrade Plan,         path: /pricing/,            icon: sparkles, match: pricing }
-      - { id: account,  label: Account,              path: /account/,            icon: user,     match: account }
-      - { id: privacy,  label: Privacy Preferences,  path: /account/privacy/,    icon: shield,   match: account-privacy }
+      - { id: settings, label: Wallets, Billing & API, path: /dashboard/settings/, icon: wallet,   match: settings }
+      # The three below link out to non-dashboard layouts (`/pricing/`,
+      # `/account/`, `/account/privacy/`). The sidebar isn't rendered there, so
+      # their `match` values never highlight — they exist to keep the schema
+      # uniform.
+      - { id: pricing,  label: Upgrade Plan,        path: /pricing/,           icon: sparkles, match: pricing }
+      - { id: account,  label: Account,             path: /account/,           icon: user,     match: account }
+      - { id: privacy,  label: Privacy Preferences, path: /account/privacy/,   icon: shield,   match: account-privacy }
+      # Last, deliberately: a support affordance, not a daily destination.
+      - { id: report,   label: Report an Issue,     path: /dashboard/report-issue/, icon: flag, match: report }

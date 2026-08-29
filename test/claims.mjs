@@ -96,6 +96,16 @@ const rwaGated = /requireTier\([^)]*rwa|rwa[^)]*requireTier/i.test(workerIndex);
 check("RWA suite gating claim matches enforcement",
   rwaGated || /open beta/.test(pricing), "table claims gating that nothing enforces");
 
+// --- freshness must be real, not stamped at response time -----------------
+const protoHandler = read("worker/handlers/protocols.js");
+const protoLib = read("worker/lib/protocols.js");
+check("protocol catalog reports when TVL was actually fetched",
+  /fetched_at/.test(protoHandler) && /fetched_at/.test(protoLib), null);
+check("...and says whether the response came from cache",
+  /cached/.test(protoHandler), null);
+check("a cached payload written before fetched_at existed reports unknown, not now",
+  /Array\.isArray\(cached\)/.test(protoLib) && /fetched_at: null/.test(protoLib), null);
+
 const failed = results.filter((r) => !r.ok).length;
 console.log(`\n${results.length - failed}/${results.length} passed`);
 process.exit(failed ? 1 : 0);

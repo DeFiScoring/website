@@ -29,6 +29,7 @@ const SUITES = [
   ["api-keys", "API key issuance, bearer auth, per-tier metering, revocation, isolation"],
   ["sanctions", "OFAC screening: seed floor, KV overlay, feed validation, platform health"],
   ["onchain", "native-balance snapshot endpoint: validation, no RPC proxying, unreadable != empty"],
+  ["nav", "sidebar integrity: links resolve, section tags agree, curated pages grouped as research"],
 ];
 
 const [maj, min] = process.versions.node.split(".").map(Number);
