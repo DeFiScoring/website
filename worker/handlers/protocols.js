@@ -9,7 +9,7 @@
 // counterpart for the new SPA (T7).
 // ----------------------------------------------------------------------------
 
-import { getCatalog, getProtocolEnriched } from '../lib/protocols.js';
+import { getCatalogWithMeta, getProtocolEnriched } from '../lib/protocols.js';
 
 export async function handleProtocols(request, env, baseHeaders = {}) {
   const url = new URL(request.url);
@@ -22,12 +22,16 @@ export async function handleProtocols(request, env, baseHeaders = {}) {
     return jsonRes({ success: true, protocol: p }, 200, baseHeaders);
   }
 
-  const catalog = await getCatalog(env, { enrich });
+  const { protocols, fetched_at, cached } = await getCatalogWithMeta(env, { enrich });
   return jsonRes({
     success: true,
-    count: catalog.length,
+    count: protocols.length,
     enriched: enrich,
-    protocols: catalog,
+    protocols,
+    // When the TVL figures were actually read from upstream — NOT when this
+    // response was assembled. A cached catalog is honestly reported as such.
+    fetched_at: fetched_at || null,
+    cached,
     timestamp: new Date().toISOString(),
   }, 200, baseHeaders);
 }
