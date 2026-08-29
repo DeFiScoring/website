@@ -15,7 +15,20 @@ const EMPTY_WALLET = "0x00000000000000000000000000000000000000ee";
 const LP_WALLET = "0x00000000000000000000000000000000000000c9";
 const LP_NFT_COUNT = 3;
 const LP_LIVE_TOKEN_ID = 1001;
-const ALCHEMY_CHAIN = { id: "ethereum", name: "Ethereum", chainId: 1, alchemy: "eth-mainnet" };
+const LP_TOKEN0 = "0x00000000000000000000000000000000000000f0";
+const LP_TOKEN1 = "0x00000000000000000000000000000000000000f1";
+const LP_POOL   = "0x00000000000000000000000000000000000000fe";
+// Chosen so the position values to a round number: at √price 1 inside
+// [-60, 60], amount0 = amount1 = L * (1 - 1/√1.0001^30) ≈ L * 0.0014979.
+const LP_LIQUIDITY = 10n ** 22n;
+// int24 as a 32-byte two's-complement word.
+const twos = (n) => (BigInt(n) < 0n ? (1n << 256n) + BigInt(n) : BigInt(n))
+  .toString(16).padStart(64, "0");
+// Mirrors the real registry entry (worker/lib/chains.js) — the pricing
+// tiers key off `defillama`/`coingecko`, so a chain stub missing them
+// silently prices nothing.
+const ALCHEMY_CHAIN = { id: "ethereum", name: "Ethereum", chainId: 1, alchemy: "eth-mainnet",
+  coingecko: "ethereum", defillama: "ethereum", nativeSymbol: "ETH", nativeCoingeckoId: "ethereum" };
 // Borrows on Compound V3 with collateral behind it — the case that used to
 // score as "no lending history" because the pillar only matched aave-v3.
 const BORROWER = "0x00000000000000000000000000000000000000bb";
@@ -277,10 +290,32 @@ globalThis.fetch = async (input, init) => {
       }
       if (sel === "0x99fbab88") {                       // positions(tokenId)
         const tokenId = Number(BigInt("0x" + d.slice(10, 74)));
-        // 12 words; liquidity is word 7.
+        // 12 words: 2 token0, 3 token1, 4 fee, 5 tickLower, 6 tickUpper,
+        // 7 liquidity. Ticks are int24 and NEGATIVE here on purpose — read
+        // unsigned they become ~1e77 and the position values at zero.
         const words = Array.from({ length: 12 }, () => w(0));
-        if (tokenId === LP_LIVE_TOKEN_ID) words[7] = w(123456789n);
+        if (tokenId === LP_LIVE_TOKEN_ID) {
+          words[2] = w(BigInt(LP_TOKEN0));
+          words[3] = w(BigInt(LP_TOKEN1));
+          words[4] = w(3000n);                          // 0.3% fee tier
+          words[5] = twos(-60);                         // tickLower  (negative!)
+          words[6] = twos(60);                          // tickUpper
+          words[7] = w(LP_LIQUIDITY);
+        }
         return { jsonrpc: "2.0", id: req.id, result: "0x" + words.join("") };
+      }
+      if (sel === "0x1698ee82") {                       // factory.getPool
+        return { jsonrpc: "2.0", id: req.id, result: "0x" + w(BigInt(LP_POOL)) };
+      }
+      if (sel === "0x3850c7bd") {                       // pool.slot0()
+        // √price = 1 → tick 0, inside the [-60, 60] range, so the position
+        // holds both tokens.
+        const words = Array.from({ length: 7 }, () => w(0));
+        words[0] = w(2n ** 96n);
+        return { jsonrpc: "2.0", id: req.id, result: "0x" + words.join("") };
+      }
+      if (sel === "0x313ce567") {                       // token.decimals()
+        return { jsonrpc: "2.0", id: req.id, result: "0x" + w(18n) };
       }
       return { jsonrpc: "2.0", id: req.id, result: "0x" };
     };
@@ -297,6 +332,10 @@ globalThis.fetch = async (input, init) => {
     for (const k of keys) {
       if (k === "coingecko:ethereum") coins[k] = { price: 3000, symbol: "ETH" };
       else if (k.endsWith("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48")) coins[k] = { price: 1, symbol: "USDC" };
+      // Both legs of the LP position at $1, so the expected value is
+      // hand-computable from the position math alone.
+      else if (k.toLowerCase().endsWith(LP_TOKEN0)) coins[k] = { price: 1, symbol: "LP0" };
+      else if (k.toLowerCase().endsWith(LP_TOKEN1)) coins[k] = { price: 1, symbol: "LP1" };
     }
     return J({ coins });
   }
@@ -766,13 +805,39 @@ async function call(path) {
     lp.hasPosition === true, lp);
   check("not flagged truncated below the 20-position cap",
     lp.lpCountTruncated === false, lp.lpCountTruncated);
-  // 1 balanceOf + 3 tokenOfOwnerByIndex + 3 positions = 7 RPC calls, but only
-  // 3 HTTP requests — the two sweeps ride in one batch each.
-  check("enumeration costs 3 HTTP subrequests regardless of position count",
-    calls.alchemyHttp === 3, { http: calls.alchemyHttp, rpcCalls: calls.alchemyCalls });
+  // Reading AND valuing costs a FIXED number of HTTP subrequests:
+  //   1 balanceOf + 1 tokenOfOwnerByIndex batch + 1 positions batch
+  //   + 1 getPool batch + 1 slot0 batch + 1 decimals batch = 6
+  // The RPC-call count grows with positions; the HTTP count does not. That is
+  // the property worth guarding — on a 50-subrequest budget, per-position HTTP
+  // would blow the whole invocation on one chain.
+  const LP_HTTP_BUDGET = 6;
+  check("reading and valuing positions costs a fixed number of HTTP subrequests",
+    calls.alchemyHttp === LP_HTTP_BUDGET, { http: calls.alchemyHttp, rpcCalls: calls.alchemyCalls });
   check("the per-position reads are batched, not serial",
-    calls.alchemyCalls === 1 + LP_NFT_COUNT * 2 && calls.alchemyHttp === 3,
+    calls.alchemyCalls > calls.alchemyHttp && calls.alchemyCalls >= 1 + LP_NFT_COUNT * 2,
     { http: calls.alchemyHttp, rpcCalls: calls.alchemyCalls });
+
+  // ---- value, not count --------------------------------------------------
+  // The defect this replaces: a wallet holding twenty dust NFTs outscored a
+  // wallet holding one seven-figure position, because only the count was read.
+  check("the live position carries a USD value, not just a count",
+    typeof lp.lpValueUsd === "number" && lp.lpValueUsd > 0, lp.lpValueUsd);
+  check("only the position with liquidity is valued",
+    lp.lpValuedCount === 1, { valued: lp.lpValuedCount, unvalued: lp.lpUnvaluedCount });
+  // Derived independently of the implementation. At √P = 1 inside [-60, 60]:
+  //   √upper = 1.0001^(60/2) = 1.0001^30,  √lower = 1.0001^-30
+  //   amount0 = L(1/√P − 1/√upper) = L(1 − 1.0001^-30)
+  //   amount1 = L(√P − √lower)     = L(1 − 1.0001^-30)   ← symmetric here
+  // Both legs priced at $1 with 18 decimals.
+  const expectedLeg = (Number(LP_LIQUIDITY) * (1 - Math.pow(1.0001, -30))) / 1e18;
+  check("the valuation matches the position math",
+    Math.abs(lp.lpValueUsd - expectedLeg * 2) < expectedLeg * 0.02,
+    { got: lp.lpValueUsd, expected: expectedLeg * 2 });
+  // The sharp edge: tickLower is negative in this fixture. Read unsigned it
+  // becomes ~1e77, the range degenerates, and the value silently collapses.
+  check("negative ticks are read signed, so the position does not value at zero",
+    lp.lpValueUsd > 1, lp.lpValueUsd);
 
   // Without an Alchemy key there is no batch endpoint, so the raw count
   // stands — but the pillar must say so rather than implying it is live.
