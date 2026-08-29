@@ -33,7 +33,7 @@ keywords: "DeFi scoring pricing, on-chain credit score plans, Pro Plus Enterpris
       <li>Live credit score (300–850)</li>
       <li><strong>7-day</strong> score history</li>
       <li>Portfolio risk heatmap</li>
-      <li><strong>5</strong> scans / day</li>
+      <li>Wallet scans under a <strong>fair-use</strong> rate limit</li>
       <li>Public API access (rate-limited)</li>
       <li>Email support</li>
     </ul>
@@ -54,7 +54,7 @@ keywords: "DeFi scoring pricing, on-chain credit score plans, Pro Plus Enterpris
       <li>Everything in Free, plus:</li>
       <li><strong>30-day</strong> score history</li>
       <li><strong>Real-time alerts</strong> (email + Telegram)</li>
-      <li><strong>Unlimited</strong> scans</li>
+      <li><strong>Higher</strong> scan rate limits</li>
       <li>Health-factor &amp; liquidation alerts</li>
       <li>Score-change alerts</li>
       <li>Token-approval risk alerts</li>
@@ -77,7 +77,7 @@ keywords: "DeFi scoring pricing, on-chain credit score plans, Pro Plus Enterpris
       <li>Everything in Pro, plus:</li>
       <li><strong>365-day</strong> score history</li>
       <li>AI Risk Profiler &amp; project picks</li>
-      <li>RWA scoring suite</li>
+      <li>RWA research suite <small>(open beta — currently free to all)</small></li>
       <li>Custom watchlists &amp; tags</li>
       <li>PDF report exports</li>
       <li>Webhook delivery for alerts</li>
@@ -95,11 +95,11 @@ keywords: "DeFi scoring pricing, on-chain credit score plans, Pro Plus Enterpris
     </header>
     <ul class="pr-features">
       <li>Unlimited wallets &amp; scans</li>
-      <li>Dedicated API quota &amp; SLA</li>
-      <li>OFAC / sanctions screening</li>
-      <li>Custom scoring weights</li>
-      <li>SSO &amp; user roles</li>
-      <li>White-label embeds</li>
+      <li>Dedicated API quota <small>+ SLA by contract</small></li>
+      <li class="is-soon">OFAC / sanctions screening <span class="pr-soon">Planned</span></li>
+      <li class="is-soon">Custom scoring weights <span class="pr-soon">Planned</span></li>
+      <li class="is-soon">SSO &amp; user roles <span class="pr-soon">Planned</span></li>
+      <li class="is-soon">White-label embeds <span class="pr-soon">Planned</span></li>
       <li>Dedicated CSM &amp; Slack channel</li>
       <li>Annual invoicing</li>
     </ul>
@@ -125,20 +125,21 @@ keywords: "DeFi scoring pricing, on-chain credit score plans, Pro Plus Enterpris
       <tbody>
         <tr><th>Linked wallets</th><td>1</td><td>3</td><td>10</td><td>Unlimited</td></tr>
         <tr><th>Score history</th><td>7 days</td><td>30 days</td><td>365 days</td><td>Unlimited</td></tr>
-        <tr><th>Scans / day</th><td>5</td><td>Unlimited</td><td>Unlimited</td><td>Unlimited</td></tr>
+        <tr><th>Scans</th><td>Fair-use rate limit</td><td>Fair-use rate limit</td><td>Fair-use rate limit</td><td>Fair-use rate limit</td></tr>
         <tr><th>Real-time alerts (email)</th><td>—</td><td>✓</td><td>✓</td><td>✓</td></tr>
         <tr><th>Telegram alerts</th><td>—</td><td>✓</td><td>✓</td><td>✓</td></tr>
         <tr><th>Webhook delivery</th><td>—</td><td>—</td><td>✓</td><td>✓</td></tr>
         <tr><th>AI Risk Profiler</th><td>—</td><td>—</td><td>✓</td><td>✓</td></tr>
-        <tr><th>RWA scoring suite</th><td>—</td><td>—</td><td>✓</td><td>✓</td></tr>
+        <tr><th>RWA research suite <small>(open beta — free to all tiers)</small></th><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
         <tr><th>PDF report export</th><td>—</td><td>—</td><td>✓</td><td>✓</td></tr>
-        <tr><th>OFAC screening API</th><td>—</td><td>—</td><td>—</td><td>✓</td></tr>
-        <tr><th>Custom scoring weights</th><td>—</td><td>—</td><td>—</td><td>✓</td></tr>
-        <tr><th>SSO &amp; user roles</th><td>—</td><td>—</td><td>—</td><td>✓</td></tr>
-        <tr><th>White-label embeds</th><td>—</td><td>—</td><td>—</td><td>✓</td></tr>
+        <tr><th>OFAC screening API</th><td>—</td><td>—</td><td>—</td><td class="is-soon-cell">◷</td></tr>
+        <tr><th>Custom scoring weights</th><td>—</td><td>—</td><td>—</td><td class="is-soon-cell">◷</td></tr>
+        <tr><th>SSO &amp; user roles</th><td>—</td><td>—</td><td>—</td><td class="is-soon-cell">◷</td></tr>
+        <tr><th>White-label embeds</th><td>—</td><td>—</td><td>—</td><td class="is-soon-cell">◷</td></tr>
         <tr><th>Support</th><td>Email</td><td>Priority email</td><td>Priority email</td><td>Dedicated CSM</td></tr>
       </tbody>
     </table>
+    <p class="pr-table__legend"><span aria-hidden="true">◷</span> Planned — scoped per contract, not yet shipped. We list it so you know it is on the roadmap, not so you assume it is live today.</p>
   </div>
 </section>
 
@@ -163,7 +164,7 @@ keywords: "DeFi scoring pricing, on-chain credit score plans, Pro Plus Enterpris
     </details>
     <details class="pr-faq__item">
       <summary>Is the public API really free?</summary>
-      <p>Yes. The 300–850 score endpoint is free with generous rate limits. Paid tiers raise the cap and unlock authenticated endpoints (history, alerts, RWA).</p>
+      <p>Yes. The 300–850 score endpoint is public and free, under a fair-use rate limit. Signed-in accounts additionally reach their own history, alert rules and watchlist through the dashboard session. Issued API keys with per-key quotas are in progress — see the roadmap markers in the table above.</p>
     </details>
     <details class="pr-faq__item">
       <summary>Do you take crypto?</summary>

@@ -1,70 +1,37 @@
 /* DeFi Scoring – defi-onchain.js
- * Real on-chain reads via public JSON-RPC. No mocks, no fabrications.
+ * On-chain reads for the dashboard. No mocks, no fabrications.
  * Exposes window.DefiOnchain.
+ *
+ * These reads USED to go straight from the browser to public RPCs
+ * (eth.llamarpc.com, polygon-rpc.com) and to CoinGecko. That was rate limited
+ * per visitor IP and CORS-fragile, so a wallet loaded on a busy network simply
+ * showed zeros — indistinguishable from an empty wallet. They now go through
+ * the worker's tiered provider stack via /api/onchain/snapshot, which also
+ * distinguishes "we could not read this chain" from "this chain is empty".
  */
 (function () {
-  // RPC endpoints. Defaults are public free-tier RPCs; for production set
-  // window.DEFI_RPC = { ethereum: "https://<your>.web3.cloudflare.com/...", ... }
-  // in a layout <script> tag to point at your Cloudflare Web3 Gateway URLs
-  // (Cloudflare dashboard → Web3 → Create Gateway → Ethereum / Polygon).
-  // Strip empty strings so Liquid templates that emit "" don't override
-  // the public defaults below.
-  const RPC_OVERRIDES = {};
-  if (typeof window !== "undefined" && window.DEFI_RPC) {
-    Object.keys(window.DEFI_RPC).forEach((k) => {
-      const v = window.DEFI_RPC[k];
-      if (typeof v === "string" && v.trim()) RPC_OVERRIDES[k] = v.trim();
-    });
+  function workerBase() {
+    var b = (typeof window !== "undefined" && window.DEFI_RISK_WORKER_URL) || "";
+    return String(b).replace(/\/$/, "");
   }
+
+  // Kept so callers that iterate chains for labels still work. The worker is
+  // the authority on which chains are actually read.
   const CHAINS = [
-    { id: "ethereum", name: "Ethereum", symbol: "ETH",   coingeckoId: "ethereum",       rpc: RPC_OVERRIDES.ethereum || "https://eth.llamarpc.com",     explorer: "https://etherscan.io" },
-    { id: "arbitrum", name: "Arbitrum", symbol: "ETH",   coingeckoId: "ethereum",       rpc: RPC_OVERRIDES.arbitrum || "https://arb1.arbitrum.io/rpc", explorer: "https://arbiscan.io" },
-    { id: "polygon",  name: "Polygon",  symbol: "MATIC", coingeckoId: "matic-network",  rpc: RPC_OVERRIDES.polygon  || "https://polygon-rpc.com",      explorer: "https://polygonscan.com" },
+    { id: "ethereum", name: "Ethereum", symbol: "ETH",   explorer: "https://etherscan.io" },
+    { id: "arbitrum", name: "Arbitrum", symbol: "ETH",   explorer: "https://arbiscan.io" },
+    { id: "polygon",  name: "Polygon",  symbol: "MATIC", explorer: "https://polygonscan.com" },
   ];
 
-  async function rpc(url, method, params) {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
-    });
-    if (!res.ok) throw new Error(method + " " + res.status);
+  async function getSnapshotFromWorker(address) {
+    const res = await fetch(
+      workerBase() + "/api/onchain/snapshot?wallet=" + encodeURIComponent(address),
+      { credentials: "omit" }
+    );
+    if (!res.ok) throw new Error("snapshot " + res.status);
     const j = await res.json();
-    if (j.error) throw new Error(j.error.message || method + " error");
-    return j.result;
-  }
-
-  function hexToBigInt(hex) { return BigInt(hex || "0x0"); }
-  function weiToEth(wei) { return Number(wei) / 1e18; }
-
-  async function getPrices() {
-    const ids = Array.from(new Set(CHAINS.map((c) => c.coingeckoId))).join(",");
-    try {
-      const res = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=" + ids + "&vs_currencies=usd");
-      if (!res.ok) throw new Error("price " + res.status);
-      return await res.json();
-    } catch (e) {
-      console.warn("price fetch failed:", e.message);
-      return {};
-    }
-  }
-
-  async function getChainSnapshot(chain, address) {
-    const [balanceHex, nonceHex, blockHex] = await Promise.all([
-      rpc(chain.rpc, "eth_getBalance", [address, "latest"]),
-      rpc(chain.rpc, "eth_getTransactionCount", [address, "latest"]),
-      rpc(chain.rpc, "eth_blockNumber", []),
-    ]);
-    return {
-      chain: chain.id,
-      chainName: chain.name,
-      symbol: chain.symbol,
-      explorer: chain.explorer,
-      nativeWei: hexToBigInt(balanceHex).toString(),
-      nativeAmount: weiToEth(hexToBigInt(balanceHex)),
-      txCount: Number(hexToBigInt(nonceHex)),
-      latestBlock: Number(hexToBigInt(blockHex)),
-    };
+    if (!j.success) throw new Error(j.error || "snapshot failed");
+    return j;
   }
 
   async function getEtherscanHistory(address) {
@@ -84,14 +51,16 @@
 
   async function getWalletSnapshot(address) {
     if (!/^0x[0-9a-fA-F]{40}$/.test(address)) throw new Error("Invalid address");
-    const [snapshots, prices, history] = await Promise.all([
-      Promise.all(CHAINS.map(async (c) => {
-        try { return await getChainSnapshot(c, address); }
-        catch (e) { console.warn(c.id + " snapshot failed:", e.message); return { chain: c.id, chainName: c.name, symbol: c.symbol, explorer: c.explorer, error: e.message, nativeAmount: 0, txCount: 0 }; }
-      })),
-      getPrices(),
+
+    const [snap, history] = await Promise.all([
+      getSnapshotFromWorker(address).catch((e) => {
+        console.warn("snapshot unavailable:", e.message);
+        return { snapshots: [], positions: [], partial: true };
+      }),
       getEtherscanHistory(address),
     ]);
+
+    const snapshots = snap.snapshots || [];
     if (history && history.chains) {
       snapshots.forEach((s) => {
         const h = history.chains[s.chain];
@@ -105,26 +74,11 @@
         }
       });
     }
-    // Native-coin positions (ETH on Ethereum/Arbitrum, MATIC/POL on Polygon).
-    // We surface dust balances too (any > 0) so users see "we did look here";
-    // the heatmap sorts by USD value so dust naturally sinks to the bottom.
-    const nativePositions = snapshots
-      .filter((s) => !s.error && s.nativeAmount > 0)
-      .map((s) => {
-        const cfg = CHAINS.find((c) => c.id === s.chain);
-        const price = (prices[cfg.coingeckoId] && prices[cfg.coingeckoId].usd) || 0;
-        const valueUsd = s.nativeAmount * price;
-        return {
-          name: "Native " + s.symbol,
-          chain: s.chainName,
-          chainId: s.chain,
-          amount: s.nativeAmount,
-          symbol: s.symbol,
-          price_usd: price,
-          value_usd: valueUsd,
-          source: "rpc",
-        };
-      });
+
+    // Native-coin positions, already priced server-side. We surface dust
+    // balances too (any > 0) so users see "we did look here"; the heatmap
+    // sorts by USD value so dust naturally sinks to the bottom.
+    const nativePositions = snap.positions || [];
     // ERC-20 positions discovered server-side via Etherscan tokentx + eth_call.
     // Without these, multi-chain wallets that only hold ERC-20s (RENDER, GRT,
     // USDC, MATIC-as-ERC20, POL, etc.) appear empty in the dashboard.

@@ -68,6 +68,13 @@ import {
   handleWatchedWalletsList, handleWatchedWalletsAdd, handleWatchedWalletsUpdate, handleWatchedWalletsDelete,
 } from "./handlers/watched-wallets.js";
 import { handleScoreExplanation } from "./handlers/explain.js";
+import { authenticateApiKey, chargeApiRequest } from "./lib/api-keys.js";
+import {
+  handleApiKeysList, handleApiKeysCreate, handleApiKeysRevoke,
+} from "./handlers/api-keys.js";
+import { anySanctioned, refreshSanctionsList } from "./lib/sanctions.js";
+import { handleAdminHealth } from "./handlers/admin/health.js";
+import { handleOnchainSnapshot } from "./handlers/onchain-snapshot.js";
 import { handleQuota } from "./handlers/quota.js";
 import {
   handleBillingConfig, handleBillingCheckout, handleBillingPortal,
@@ -242,52 +249,13 @@ function withDisclaimer(payload) {
 }
 
 // ---------------------------------------------------------------------------
-// Phase 4 — OFAC SDN block list.
+// Phase 4 — OFAC SDN screening.
 //
-// This is a fail-closed, deny-list check applied to every wallet address
-// that crosses the worker boundary (request URL or POST body). Matches
-// return a deliberately *generic* 403 ("Request blocked.") with no detail
-// about why, so an attacker can't probe the list.
-//
-// SOURCING: This starter set covers the well-known sanctioned ETH addresses
-// from the August 2022 Tornado Cash OFAC action plus a handful of historical
-// SDN designations. It is intentionally short and conservative; production
-// deployments should swap this for a live feed (OFAC SDN XML, Chainalysis,
-// or TRM) loaded into KV at boot. The interface (`isSanctioned`) does not
-// change — only the source of `SANCTIONED_ADDRESSES`.
+// The list, its refresh and its status now live in worker/lib/sanctions.js so
+// the seed set, the KV overlay and the cron refresh are all one thing. The
+// check remains fail-closed and the 403 remains deliberately generic — never
+// leak why, never confirm a hit, never reveal which address tripped it.
 // ---------------------------------------------------------------------------
-const SANCTIONED_ADDRESSES = new Set([
-  // Tornado Cash – OFAC SDN List, Aug 8 2022
-  "0x8589427373d6d84e98730d7795d8f6f8731fda16",
-  "0x722122df12d4e14e13ac3b6895a86e84145b6967",
-  "0xdd4c48c0b24039969fc16d1cdf626eab821d3384",
-  "0xd90e2f925da726b50c4ed8d0fb90ad053324f31b",
-  "0xd96f2b1c14db8458374d9aca76e26c3d18364307",
-  "0x4736dcf1b7a3d580672ccce6213ca176d69c8b81",
-  "0x910cbd523d972eb0a6f4cae4618ad62622b39dbf",
-  "0xa160cdab225685da1d56aa342ad8841c3b53f291",
-  "0xd4b88df4d29f5cedd6857912842cff3b20c8cfa3",
-  "0xfd8610d20aa15b7b2e3be39b396a1bc3516c7144",
-  "0xf60dd140cff0706bae9cd734ac3ae76ad9ebc32a",
-  "0x22aaa7720ddd5388a3c0a3333430953c68f1849b",
-  "0xba214c1c1928a32bffe790263e38b4af9bfcd659",
-  "0xb1c8094b234dce6e03f10a5b673c1d8c69739a00",
-  "0x527653ea119f3e6a1f5bd18fbf4714081d7b31ce",
-  "0x58e8dcc13be9780fc42e8723d8ead4cf46943df2",
-  "0x2fc93484614a34f26f7970cbb94615ba109bb4bf",
-  "0x12d66f87a04a9e220743712ce6d9bb1b5616b8fc",
-  "0x47ce0c6ed5b0ce3d3a51fdb1c52dc66a7c3c2936",
-  "0x23773e65ed146a459791799d01336db287f25334",
-  "0xd21be7248e0197ee08e0c20d4a96debdac3d20af",
-  "0x610b717796ad172b316836ac95a2ffad065ceab4",
-  "0x178169b423a011fff22b9e3f3abea13414ddd0f1",
-  "0xbb93e510bbcd0b7beb5a853875f9ec60275cf498",
-]);
-
-function isSanctioned(addr) {
-  if (!addr || typeof addr !== "string") return false;
-  return SANCTIONED_ADDRESSES.has(addr.toLowerCase());
-}
 
 // Collect EVERY 0x… address that appears anywhere in the request — URL
 // path, every query-param value, and recursively every string in the JSON
@@ -2356,7 +2324,7 @@ export default {
       // why, never confirm a hit on the SDN list, never reveal which of
       // multiple addresses tripped the check.
       const peekedAddrs = await extractAddressesFromRequest(request);
-      if (peekedAddrs.some(isSanctioned)) {
+      if (await anySanctioned(peekedAddrs, env)) {
         return finalizeResponse(
           new Response(
             JSON.stringify({ success: false, error: "Request blocked." }),
@@ -2388,6 +2356,14 @@ export default {
   async scheduled(event, env, ctx) {
     if (event.cron === "17 3 * * *") {
       ctx.waitUntil(runRetentionPrune(env));
+      // Same daily tick refreshes the sanctions overlay. Independent of the
+      // prune: a failure in either must not skip the other, and the refresh
+      // reports rather than throws.
+      ctx.waitUntil(
+        refreshSanctionsList(env).then((r) => {
+          if (!r.ok && !r.skipped) console.warn("[sanctions] refresh failed:", JSON.stringify(r));
+        })
+      );
       return;
     }
     if (event.cron === "*/5 * * * *") {
@@ -2839,15 +2815,48 @@ async function dispatch(request, env, peekedAddr) {
       return handleScoreExplanation(request, env);
     }
 
+    // Native-balance snapshot for the browser dashboard. Deliberately a
+    // narrow endpoint rather than an RPC proxy — see the handler's header.
+    if (request.method === "GET" && url.pathname === "/api/onchain/snapshot") {
+      const blockedSnap = await rateLimit(request, env, "/api/onchain/snapshot", 30, 60);
+      if (blockedSnap) return blockedSnap;
+      return handleOnchainSnapshot(request, env, corsHeadersFor(request, env));
+    }
+
     if (request.method === "GET" && url.pathname === "/api/wallet-score") {
-      const blockedIp = await rateLimit(request, env, "/api/wallet-score", 30, 60);
-      if (blockedIp) return blockedIp;
-      const wsAddr = (url.searchParams.get("address") || url.searchParams.get("wallet") || "").toLowerCase();
-      if (wsAddr) {
-        const blockedAddr = await rateLimitByAddress(
-          request, env, wsAddr, "/api/wallet-score", 10, 60
-        );
-        if (blockedAddr) return blockedAddr;
+      // API keys are ADDITIVE. This endpoint stays public under the shared IP
+      // limit exactly as /pricing/ promises; presenting a valid key swaps that
+      // shared limit for the account's own metered daily budget. A key that is
+      // present but unusable (unknown, revoked) is an error, not a silent
+      // downgrade to anonymous — otherwise a customer whose key was revoked
+      // sees intermittent success and never learns why.
+      const apiAuth = await authenticateApiKey(request, env);
+      if (apiAuth && apiAuth.error) {
+        return new Response(JSON.stringify({ success: false, error: apiAuth.error }), {
+          status: apiAuth.status,
+          headers: { "Content-Type": "application/json", ...corsHeadersFor(request, env) },
+        });
+      }
+      if (apiAuth) {
+        const charge = await chargeApiRequest(env, apiAuth);
+        if (!charge.ok) {
+          const { ok, status, ...detail } = charge;
+          const headers = { "Content-Type": "application/json", ...corsHeadersFor(request, env) };
+          if (status === 429 && detail.retry_at) {
+            headers["Retry-After"] = String(Math.max(1, Math.ceil((detail.retry_at - Date.now()) / 1000)));
+          }
+          return new Response(JSON.stringify({ success: false, ...detail }), { status, headers });
+        }
+      } else {
+        const blockedIp = await rateLimit(request, env, "/api/wallet-score", 30, 60);
+        if (blockedIp) return blockedIp;
+        const wsAddr = (url.searchParams.get("address") || url.searchParams.get("wallet") || "").toLowerCase();
+        if (wsAddr) {
+          const blockedAddr = await rateLimitByAddress(
+            request, env, wsAddr, "/api/wallet-score", 10, 60
+          );
+          if (blockedAddr) return blockedAddr;
+        }
       }
       return handleWalletScore(request, env, corsHeadersFor(request, env));
     }
@@ -2980,6 +2989,21 @@ async function dispatch(request, env, peekedAddr) {
     // (vs. attaching X-Quota-* headers to every JSON response).
     if (url.pathname === "/api/quota"       && request.method === "GET")  return handleQuota(request, env);
 
+    // --- API keys: the licensing primitive ---------------------------------
+    // Session-authenticated management of the keys that authenticate the
+    // metered API (see /api/wallet-score). Rate-limited: issuing is a write.
+    if (url.pathname === "/api/keys") {
+      const blockedKeys = await rateLimit(request, env, "/api/keys", 30, 60);
+      if (blockedKeys) return blockedKeys;
+      if (request.method === "GET")  return handleApiKeysList(request, env);
+      if (request.method === "POST") return handleApiKeysCreate(request, env);
+    }
+    if (request.method === "DELETE" && url.pathname.startsWith("/api/keys/")) {
+      const blockedKeyDel = await rateLimit(request, env, "/api/keys", 30, 60);
+      if (blockedKeyDel) return blockedKeyDel;
+      return handleApiKeysRevoke(request, env, url.pathname.slice("/api/keys/".length));
+    }
+
     // -----------------------------------------------------------------------
     // T6.5 — Multi-wallet linking.
     //   GET    /api/wallets               list linked wallets
@@ -3073,6 +3097,10 @@ async function dispatch(request, env, peekedAddr) {
     // they're SIWE-gated and require users.is_admin = 1 on the calling user.
     // No bearer-token shortcut here — that's reserved for /api/intel/*.
     // -----------------------------------------------------------------------
+    // Platform health — the checks whose failure mode is silence.
+    if (url.pathname === "/api/admin/health" && request.method === "GET") {
+      return handleAdminHealth(request, env);
+    }
     if (url.pathname === "/api/admin/users" && request.method === "GET") {
       return handleAdminUsersList(request, env, url);
     }

@@ -25,6 +25,10 @@ const SUITES = [
   ["rescore", "scheduled re-scoring: stalest-first selection, freshness gate, score_change loop"],
   ["watchlist", "watched wallets: CRUD, tier caps, isolation, re-score queue membership"],
   ["rwa-provenance", "RWA modules disclose curated-dossier provenance and review dates"],
+  ["claims", "public pricing and landing claims match what the code enforces"],
+  ["api-keys", "API key issuance, bearer auth, per-tier metering, revocation, isolation"],
+  ["sanctions", "OFAC screening: seed floor, KV overlay, feed validation, platform health"],
+  ["onchain", "native-balance snapshot endpoint: validation, no RPC proxying, unreadable != empty"],
 ];
 
 const [maj, min] = process.versions.node.split(".").map(Number);
