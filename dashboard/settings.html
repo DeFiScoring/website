@@ -62,6 +62,21 @@ sitemap: false
   Sign in with your wallet to manage linked wallets, billing, and plan.
 </div>
 
+<section class="ds-keys" id="ds-api-keys-section">
+  <header class="ds-keys__head">
+    <span class="ds-settings__icon" aria-hidden="true"><i data-lucide="key-round"></i></span>
+    <div>
+      <h2 class="ds-settings__title">API keys</h2>
+      <p class="ds-settings__desc">
+        Call the scoring API from your own systems. Requests made with a key are
+        metered against your plan's daily budget instead of the shared public
+        rate limit. See the <a href="/api/">API documentation</a>.
+      </p>
+    </div>
+  </header>
+  <div id="ds-api-keys"></div>
+</section>
+
 <div class="ds-settings">
   <div class="ds-settings__card">
     <span class="ds-settings__icon" aria-hidden="true"><i data-lucide="wallet"></i></span>
@@ -200,3 +215,4 @@ sitemap: false
     }
   })();
 </script>
+<script src="{{ '/assets/js/api-keys.js' | relative_url }}" defer></script>

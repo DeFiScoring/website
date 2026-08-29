@@ -68,6 +68,10 @@ import {
   handleWatchedWalletsList, handleWatchedWalletsAdd, handleWatchedWalletsUpdate, handleWatchedWalletsDelete,
 } from "./handlers/watched-wallets.js";
 import { handleScoreExplanation } from "./handlers/explain.js";
+import { authenticateApiKey, chargeApiRequest } from "./lib/api-keys.js";
+import {
+  handleApiKeysList, handleApiKeysCreate, handleApiKeysRevoke,
+} from "./handlers/api-keys.js";
 import { handleQuota } from "./handlers/quota.js";
 import {
   handleBillingConfig, handleBillingCheckout, handleBillingPortal,
@@ -2840,14 +2844,39 @@ async function dispatch(request, env, peekedAddr) {
     }
 
     if (request.method === "GET" && url.pathname === "/api/wallet-score") {
-      const blockedIp = await rateLimit(request, env, "/api/wallet-score", 30, 60);
-      if (blockedIp) return blockedIp;
-      const wsAddr = (url.searchParams.get("address") || url.searchParams.get("wallet") || "").toLowerCase();
-      if (wsAddr) {
-        const blockedAddr = await rateLimitByAddress(
-          request, env, wsAddr, "/api/wallet-score", 10, 60
-        );
-        if (blockedAddr) return blockedAddr;
+      // API keys are ADDITIVE. This endpoint stays public under the shared IP
+      // limit exactly as /pricing/ promises; presenting a valid key swaps that
+      // shared limit for the account's own metered daily budget. A key that is
+      // present but unusable (unknown, revoked) is an error, not a silent
+      // downgrade to anonymous — otherwise a customer whose key was revoked
+      // sees intermittent success and never learns why.
+      const apiAuth = await authenticateApiKey(request, env);
+      if (apiAuth && apiAuth.error) {
+        return new Response(JSON.stringify({ success: false, error: apiAuth.error }), {
+          status: apiAuth.status,
+          headers: { "Content-Type": "application/json", ...corsHeadersFor(request, env) },
+        });
+      }
+      if (apiAuth) {
+        const charge = await chargeApiRequest(env, apiAuth);
+        if (!charge.ok) {
+          const { ok, status, ...detail } = charge;
+          const headers = { "Content-Type": "application/json", ...corsHeadersFor(request, env) };
+          if (status === 429 && detail.retry_at) {
+            headers["Retry-After"] = String(Math.max(1, Math.ceil((detail.retry_at - Date.now()) / 1000)));
+          }
+          return new Response(JSON.stringify({ success: false, ...detail }), { status, headers });
+        }
+      } else {
+        const blockedIp = await rateLimit(request, env, "/api/wallet-score", 30, 60);
+        if (blockedIp) return blockedIp;
+        const wsAddr = (url.searchParams.get("address") || url.searchParams.get("wallet") || "").toLowerCase();
+        if (wsAddr) {
+          const blockedAddr = await rateLimitByAddress(
+            request, env, wsAddr, "/api/wallet-score", 10, 60
+          );
+          if (blockedAddr) return blockedAddr;
+        }
       }
       return handleWalletScore(request, env, corsHeadersFor(request, env));
     }
@@ -2979,6 +3008,21 @@ async function dispatch(request, env, peekedAddr) {
     // cardinality counts). See worker/handlers/quota.js for the rationale
     // (vs. attaching X-Quota-* headers to every JSON response).
     if (url.pathname === "/api/quota"       && request.method === "GET")  return handleQuota(request, env);
+
+    // --- API keys: the licensing primitive ---------------------------------
+    // Session-authenticated management of the keys that authenticate the
+    // metered API (see /api/wallet-score). Rate-limited: issuing is a write.
+    if (url.pathname === "/api/keys") {
+      const blockedKeys = await rateLimit(request, env, "/api/keys", 30, 60);
+      if (blockedKeys) return blockedKeys;
+      if (request.method === "GET")  return handleApiKeysList(request, env);
+      if (request.method === "POST") return handleApiKeysCreate(request, env);
+    }
+    if (request.method === "DELETE" && url.pathname.startsWith("/api/keys/")) {
+      const blockedKeyDel = await rateLimit(request, env, "/api/keys", 30, 60);
+      if (blockedKeyDel) return blockedKeyDel;
+      return handleApiKeysRevoke(request, env, url.pathname.slice("/api/keys/".length));
+    }
 
     // -----------------------------------------------------------------------
     // T6.5 — Multi-wallet linking.

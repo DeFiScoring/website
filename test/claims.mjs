@@ -41,6 +41,18 @@ for (const [label, isImplemented] of PLANNED) {
   check(`"${label}" is not marked Planned once implemented`, !(marked && isImplemented()), label);
 }
 
+// --- API docs must describe the auth scheme that actually exists -----------
+const apiDocs = read("api.md");
+const apiKeysLib = read("worker/lib/api-keys.js");
+check("API docs do not advertise a header the worker never reads",
+  !/X-API-Key/i.test(apiDocs) || /x-api-key/i.test(read("worker/index.js")), "X-API-Key documented but unimplemented");
+check("API docs document the Bearer scheme the worker implements",
+  /Authorization:\s*Bearer/i.test(apiDocs) && /readBearerKey/.test(apiKeysLib), null);
+check("API docs state the key is shown only once",
+  /shown \*\*once\*\*|shown once/i.test(apiDocs), null);
+check("API docs state the public endpoint needs no key",
+  /No key is required/i.test(apiDocs), null);
+
 // --- the ◷ glyph must always be explained ----------------------------------
 check("comparison table explains the ◷ planned marker",
   !pricing.includes("◷") || /pr-table__legend/.test(pricing), null);

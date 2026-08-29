@@ -62,10 +62,44 @@ The DeFi Scoring API provides programmatic access to real-time risk metrics, AI-
 
 ## 2. Authentication
 
-Public endpoints do not require an API key. For the **AI Insights** and **Personalised Health** endpoints, include your key in the request header:
+**No key is required to read a score.** `GET /api/wallet-score` is public and
+stays that way, under a shared per-IP rate limit.
+
+A key changes *which budget you spend*, not what you can reach. Present one and
+your requests are metered against your plan's own daily quota instead of the
+shared public limit — which is what makes the API usable from a server that
+would otherwise share an IP bucket with everyone else.
 
 ```
-X-API-Key: YOUR_API_KEY
+Authorization: Bearer dfs_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+Keys are issued and revoked in **Settings → API keys** on the dashboard. Notes:
+
+* The key is shown **once**, at creation. We store only a SHA-256 hash, so we
+  cannot recover it for you — issue a new one and revoke the old.
+* Revocation takes effect immediately; the next request with that key gets
+  `401 api_key_revoked`.
+* A key that is present but unknown or revoked is an **error**, never a silent
+  fall back to anonymous access. If it were, a revoked key would appear to keep
+  working intermittently.
+* Daily quota is per **account**, not per key, so adding keys does not add
+  budget. Per-key request counts are shown in the dashboard so you can tell
+  which integration is spending it.
+
+| Plan | Requests / day with a key |
+|---|---|
+| Free | — (no key issuance) |
+| Pro | — (no key issuance) |
+| Plus | 100 |
+| Enterprise | Custom |
+
+Quota responses:
+
+```json
+// 429 — daily budget exhausted (also sends a Retry-After header)
+{ "success": false, "error": "api_quota_exceeded",
+  "used": 100, "limit": 100, "retry_at": 1793491200000 }
 ```
 
 ## 3. Endpoints
@@ -156,21 +190,40 @@ Analyses a wallet's on-chain history to return a DeFi credit score (300 – 850,
 | **404** | Not Found | Protocol or contract not yet indexed. |
 | **429** | Rate Limit | You have exceeded the 100 req/min limit. |
 
-## 5. Integration Example (JavaScript)
+## 5. Integration Example
+
+Scoring a wallet from your own backend, with a key:
 
 ```javascript
-const fetchScore = async (slug) => {
-  try {
-    const response = await fetch(`https://api.defiscoring.com/v1/score/${slug}`, {
-      headers: { 'X-API-Key': 'your_key_here' }
-    });
-    const data = await response.json();
-    console.log(`The score for ${data.protocol} is ${data.aggregate_score}`);
-  } catch (error) {
-    console.error('Error fetching DeFi Scoring data:', error);
-  }
-};
+const WALLET = "0x1f9840a85d5af5bf1d1762f925bdaddc4201f984";
+
+const res = await fetch(
+  `https://defiscoring.com/api/wallet-score?wallet=${WALLET}`,
+  { headers: { Authorization: `Bearer ${process.env.DEFISCORING_API_KEY}` } }
+);
+
+if (res.status === 429) {
+  // Daily budget exhausted. Retry-After is in seconds.
+  const wait = Number(res.headers.get("Retry-After") || 3600);
+  throw new Error(`Quota exhausted, retry in ${wait}s`);
+}
+if (res.status === 401) throw new Error("Key invalid or revoked");
+
+const data = await res.json();
+console.log(data.score, data.score_band, data.coverage);
 ```
+
+The same call works with no `Authorization` header at all — it is then subject
+to the shared public rate limit rather than your plan's budget.
+
+```bash
+curl "https://defiscoring.com/api/wallet-score?wallet=0x1f98...f984"
+```
+
+**Read `coverage` before you act on `score`.** It is the fraction of the model's
+pillars that were backed by real data for this wallet; the rest fell back to a
+neutral default. A 720 at `coverage: 1.0` and a 720 at `coverage: 0.4` are not
+the same claim, and the API tells you which one you have.
 
 ## 6. Webhooks (Pro feature)
 
