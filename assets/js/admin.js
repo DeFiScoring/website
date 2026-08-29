@@ -504,6 +504,73 @@
     $("#modal-body").innerHTML = "";
   }
 
+  // -- panel: health -------------------------------------------------------
+  function healthPill(status) {
+    const map = {
+      ok: ["#2bd4a4", "OK"],
+      idle: ["#9ca3af", "IDLE"],
+      degraded: ["#facc15", "DEGRADED"],
+      failing: ["#ff5d6c", "FAILING"],
+      not_configured: ["#ff5d6c", "NOT CONFIGURED"],
+    };
+    const [color, label] = map[status] || ["#9ca3af", String(status).toUpperCase()];
+    return '<span class="ds-admin__pill" style="color:' + color +
+      ';border-color:' + color + '33;background:' + color + '14">' + label + "</span>";
+  }
+
+  async function loadHealth() {
+    const body = document.getElementById("health-body");
+    if (!body) return;
+    body.innerHTML = "<p>Loading…</p>";
+    let h;
+    try {
+      const r = await api("/api/admin/health");
+      h = r && r.success ? r : null;
+    } catch (_) { h = null; }
+    if (!h) { body.innerHTML = "<p>Could not load health.</p>"; return; }
+
+    let out = "";
+    if (h.warnings && h.warnings.length) {
+      out += '<div class="ds-admin__warns"><h3>Needs attention</h3><ul>' +
+        h.warnings.map((w) => "<li>" + escapeHtml(w) + "</li>").join("") + "</ul></div>";
+    } else {
+      out += '<div class="ds-admin__warns ds-admin__warns--ok">Nothing needs attention.</div>';
+    }
+
+    out += "<h3>Delivery channels</h3><div class=\"ds-admin__table-wrap\">" +
+      '<table class="ds-admin__table"><thead><tr>' +
+      "<th>Channel</th><th>Status</th><th>Detail</th><th>Sent 7d</th><th>Failed 7d</th>" +
+      "</tr></thead><tbody>";
+    (h.channels || []).forEach((c) => {
+      out += "<tr><td>" + escapeHtml(c.channel) + "</td><td>" + healthPill(c.status) + "</td><td>" +
+        escapeHtml(c.detail) + "</td><td>" + c.last_7d.sent + "</td><td>" + c.last_7d.failed + "</td></tr>";
+    });
+    out += "</tbody></table></div>";
+
+    const s2 = h.sanctions || {};
+    out += "<h3>Sanctions screening</h3><div class=\"ds-admin__table-wrap\">" +
+      '<table class="ds-admin__table"><tbody>' +
+      "<tr><th>Enforcing</th><td>" + (s2.enforcing ? "yes" : "no") + "</td></tr>" +
+      "<tr><th>Seed addresses</th><td>" + (s2.seed_count || 0) + "</td></tr>" +
+      "<tr><th>Overlay addresses</th><td>" + (s2.overlay_count || 0) +
+        (s2.seed_only ? " <em>(seed list only)</em>" : "") + "</td></tr>" +
+      "<tr><th>Feed</th><td>" + (s2.feed_configured ? escapeHtml(s2.feed_source || "configured") : "not configured") + "</td></tr>" +
+      "<tr><th>Last refresh</th><td>" +
+        (s2.updated_at ? escapeHtml(new Date(s2.updated_at).toUTCString()) : "—") +
+        (s2.stale ? ' <span style="color:#ff5d6c">stale</span>' : "") + "</td></tr>" +
+      "</tbody></table></div>";
+
+    const j = h.jobs || {};
+    out += "<h3>Scheduled jobs</h3><div class=\"ds-admin__table-wrap\">" +
+      '<table class="ds-admin__table"><tbody>' +
+      "<tr><th>Scores computed (24h)</th><td>" + (j.scores_last_24h ?? "—") + "</td></tr>" +
+      "<tr><th>Active alert rules</th><td>" + (j.active_alert_rules ?? "—") + "</td></tr>" +
+      "<tr><th>Deliveries (24h)</th><td>" + (j.deliveries_last_24h ?? "—") + "</td></tr>" +
+      "</tbody></table></div>";
+
+    body.innerHTML = out;
+  }
+
   const TAB_LOADERS = {
     users: loadUsers,
     subscriptions: loadSubs,
@@ -511,6 +578,7 @@
     leads: loadLeads,
     retention: () => {},
     audit: loadAudit,
+    health: loadHealth,
   };
 
   // -- go ------------------------------------------------------------------

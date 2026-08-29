@@ -24,6 +24,7 @@ sitemap: false
       <button class="ds-admin__tab" data-tab="alerts">Alerts</button>
       <button class="ds-admin__tab" data-tab="leads">Chatbot Leads</button>
       <button class="ds-admin__tab" data-tab="retention">Retention</button>
+      <button class="ds-admin__tab" data-tab="health">Health</button>
       <button class="ds-admin__tab" data-tab="audit">Audit Log</button>
     </nav>
     <div class="ds-admin__me" id="admin-me">
@@ -157,6 +158,21 @@ sitemap: false
         <button class="ds-admin__btn ds-admin__btn--danger" id="retention-run">Run prune now</button>
         <pre id="retention-output" class="ds-admin__pre" hidden></pre>
       </div>
+    </section>
+
+    <section class="ds-admin__panel" data-panel="health">
+      <header class="ds-admin__panel-head">
+        <h2>Platform health</h2>
+        <div class="ds-admin__filters">
+          <button class="ds-admin__btn" id="health-refresh">Refresh</button>
+        </div>
+      </header>
+      <p class="ds-admin__hint">
+        The checks whose failure mode is silence — a delivery channel that is
+        configured but failing, or sanctions screening quietly running on the
+        built-in seed list, looks fine from everywhere else in the product.
+      </p>
+      <div id="health-body"></div>
     </section>
 
     <section class="ds-admin__panel" data-panel="audit">
