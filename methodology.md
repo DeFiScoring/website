@@ -97,7 +97,7 @@ The dashboard shows this as *"Score based on N% live data"* beside the band, dim
 <div class="pillar-grid">
   <div class="pillar"><div class="weight">35%</div><h4>Loan Reliability</h4><p>Aave V3, Spark and Compound V3 health factors across chains.</p></div>
   <div class="pillar"><div class="weight">25%</div><h4>Portfolio Health</h4><p>Diversification, portfolio size, multi-chain presence.</p></div>
-  <div class="pillar"><div class="weight">15%</div><h4>Liquidity Provision</h4><p>Live Uniswap V3 concentrated-liquidity positions.</p></div>
+  <div class="pillar"><div class="weight">15%</div><h4>Liquidity Provision</h4><p>USD value of live Uniswap V3 concentrated liquidity.</p></div>
   <div class="pillar"><div class="weight">15%</div><h4>Account Age</h4><p>Days since the wallet's first Ethereum transaction.</p></div>
   <div class="pillar"><div class="weight">10%</div><h4>Governance</h4><p>Snapshot voting record across DAOs.</p></div>
 </div>
@@ -172,23 +172,29 @@ If no portfolio value is detected at all, the pillar is `real: false` at a neutr
 
 #### C. Liquidity Provision — 15%
 
-**Input:** the number of **live** Uniswap V3 positions — those still holding liquidity — summed across the scanned chains.
+**Input:** the **USD value** of live Uniswap V3 liquidity — positions still holding liquidity — summed across the scanned chains. Where that value cannot be resolved the pillar falls back to counting live positions, and says so.
 
 Uniswap V3 does not burn the position NFT when a position is fully withdrawn, so counting NFTs over-counts: a wallet that closed ten positions still holds ten tokens. Where the infrastructure allows it, each position is read and only those with non-zero liquidity are counted. A wallet holding nothing but closed positions therefore scores as having no LP exposure, and the rationale says the NFTs were found but are empty rather than implying the wallet never provided liquidity.
 
 Two limits apply to that resolution. Up to 20 positions per chain are examined, and beyond that the count is reported as a floor rather than a total. Where the per-position read is unavailable, the raw NFT count stands — and the pillar says so explicitly instead of presenting the number as live positions.
 
-| Live LP positions | Sub-score | Coverage |
+Each position's token amounts are derived from its liquidity, its tick range and the pool's current price — the standard concentrated-liquidity formulas — then priced. A position is only valued when **both** of its tokens can be priced: valuing one leg and reporting it as the total would understate by roughly half while looking like a real number, so an unpriceable position is reported as unvalued instead.
+
+| Live liquidity (USD) | Sub-score | Coverage |
 | :--- | :--- | :--- |
-| ≥ 20 | 95 | `real: true` |
-| 5 – 19 | 80 | `real: true` |
-| 2 – 4 | 65 | `real: true` |
-| 1 | 50 | `real: true` |
-| 0 | 50 | `real: false` |
+| ≥ $250,000 | 95 | `real: true` |
+| $50,000 – $249,999 | 85 | `real: true` |
+| $10,000 – $49,999 | 75 | `real: true` |
+| $1,000 – $9,999 | 65 | `real: true` |
+| $100 – $999 | 55 | `real: true` |
+| < $100 | 50 | `real: true` |
+| No live position | 50 | `real: false` |
 
-A further **+5** (capped at 100) applies when LP positions exist on two or more chains.
+When no position could be valued, the older count-based banding applies instead — ≥20 positions 95, 5–19 80, 2–4 65, 1 50 — and the rationale states that the score rests on a count, not on capital.
 
-Note that one LP position and zero LP positions both land on 50 — the difference is the coverage flag, which is what the dashboard reads.
+A further **+5** (capped at 100) applies when liquidity exists on two or more chains.
+
+Note that a dust position and no position both land near 50 — the difference is the coverage flag, which is what the dashboard reads.
 
 #### D. Account Age — 15%
 
@@ -294,7 +300,7 @@ The version is incremented whenever a change would move an existing wallet's sco
 
 Where a wallet's history spans a model change, the trend chart marks the boundary rather than drawing the step as though the wallet had moved. Rows written before versioning existed carry no version; those are left unmarked, since the absence of a recorded version is not evidence that the model changed at that point.
 
-**Version history.** `2026.09` — account age became multichain (the oldest first-transaction across all Tier 1 chains, where it previously read Ethereum alone), and liquidity provision began counting only live Uniswap V3 positions rather than position NFTs held. Both changes can move a wallet's score without any on-chain action by the wallet, which is precisely what a version boundary exists to mark. `2026.08` — the first versioned model: five pillars as documented on this page.
+**Version history.** `2026.10` — liquidity provision moved from counting live Uniswap V3 positions to valuing them in USD. A wallet holding twenty dust positions previously outscored one holding a single seven-figure position; that is now reversed. `2026.09` — account age became multichain (the oldest first-transaction across all Tier 1 chains, where it previously read Ethereum alone), and liquidity provision began counting only live Uniswap V3 positions rather than position NFTs held. Both changes can move a wallet's score without any on-chain action by the wallet, which is precisely what a version boundary exists to mark. `2026.08` — the first versioned model: five pillars as documented on this page.
 
 ---
 
@@ -303,7 +309,7 @@ Where a wallet's history spans a model change, the trend chart marks the boundar
 - **A fixed protocol list.** Two of the five pillars read specific protocols: loan reliability covers Aave V3, Spark and Compound V3, and liquidity provision covers Uniswap V3. A wallet that borrows exclusively on Morpho scores `real: false` on loan reliability and receives a neutral 50 — not a penalty, but not credit for that activity either.
 - **Compound collateral without a borrow is invisible.** Comet's position check keys off the base-asset balance, which is zero for an account that has deposited collateral but not borrowed against it. Such a wallet reads as having no Compound position. It is also the case where nothing is at risk.
 - **Account age stops at Tier 1.** All five Tier 1 chains are queried, but a wallet whose entire history predates its Tier 1 activity — living only on Gnosis, Linea, zkSync Era or another Tier 2 chain — is still under-rated.
-- **LP positions are counted, not valued.** A live position counts the same whether it holds a few dollars or a few million; the pillar measures whether a wallet provides liquidity, not how much.
+- **LP valuation needs a batch RPC endpoint.** Valuing positions costs six batched reads per chain; without an Alchemy key the worker cannot batch them affordably and the pillar falls back to counting positions. The rationale says which basis was used, so a count-based score is never mistaken for a statement about capital.
 - **Point-in-time.** The score reflects the moment of the scan. A health factor can deteriorate within a single block.
 - **Prices depend on third-party feeds.** When every price tier is unavailable, tokens are still detected but unpriced, and portfolio health degrades to `real: false`.
 - **No Sybil resistance.** The score describes an address, not a person. One person may hold many addresses, and one address may be controlled by many people.
