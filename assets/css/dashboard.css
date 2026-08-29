@@ -726,3 +726,69 @@ body.defi-market-open { --defi-market-strip-h: 96px; }
   .defi-market-strip__items { gap: 12px; }
   body.defi-market-open { --defi-market-strip-h: 130px; }
 }
+
+/* ---- RWA provenance banner ------------------------------------------------
+   Rendered by assets/js/rwa-provenance.js on every curated-research module.
+   Deliberately quiet but not dismissible: it must stay legible next to the
+   figures it qualifies. */
+
+.defi-provenance {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  margin: 0 0 18px;
+  background: var(--ds-surface-2, #1b1b24);
+  border: 1px solid var(--ds-border, #2a2a35);
+  border-left: 3px solid var(--ds-gold, #facc15);
+  border-radius: 10px;
+}
+
+.defi-provenance__icon {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  color: var(--ds-gold, #facc15);
+}
+
+.defi-provenance__body { flex: 1 1 320px; min-width: 0; }
+
+.defi-provenance__summary {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ds-text, #e5e7eb);
+}
+
+.defi-provenance__detail {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--ds-muted, #9ca3af);
+}
+
+.defi-provenance__sources {
+  margin-top: 8px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--ds-muted, #9ca3af);
+}
+
+.defi-provenance__sources span {
+  color: var(--ds-text, #e5e7eb);
+  font-weight: 600;
+}
+
+.defi-provenance__meta {
+  flex: 0 0 auto;
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  color: var(--ds-muted, #9ca3af);
+  white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+  .defi-provenance__meta { white-space: normal; }
+}
