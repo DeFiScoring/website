@@ -92,7 +92,10 @@ function badgeResponse(body, { cacheSecs = 300, status = 200 } = {}) {
  * with the trend chart. No fallback to /api/wallet-score live compute
  * — that would make the endpoint expensive enough to require auth.
  */
-async function latestScoreFor(env, addr) {
+// Exported so the social share card reads the SAME persisted row the badge
+// does. Two readers deriving a score independently is how a badge and a
+// share card end up disagreeing about the same wallet.
+export async function latestScoreFor(env, addr) {
   if (!env.HEALTH_DB) return null;
   const row = await env.HEALTH_DB
     .prepare("SELECT score, computed_at, source_json FROM health_scores WHERE wallet = ? ORDER BY computed_at DESC LIMIT 1")
