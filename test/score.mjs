@@ -519,7 +519,17 @@ async function call(path) {
     { chains: 5, got: lr?.totalCollateralUsd });
   check("only held collateral assets cost a price lookup",
     calls.cometPrice === 1, calls.cometPrice);
+  // Cloudflare's free plan allows 50 subrequests per invocation. This scan was
+  // at 48 before Morpho Blue, and Morpho discovery costs one getLogs per chain
+  // that cannot be avoided (it publishes no on-chain index of a user's
+  // markets), so it is limited to the chains in MORPHO_SCAN_CHAINS. The exact
+  // ceiling is asserted, not just "< 50": a silent drift to 49 would leave the
+  // next protocol with nothing and would surface as a broken scan in
+  // production rather than a failed test here.
   check("borrower stays inside the subrequest budget", calls.etherscan < 50, calls.etherscan);
+  check("the scan's remaining subrequest headroom is known, not assumed",
+    calls.etherscan === 49, { got: calls.etherscan, budget: 50,
+      note: "Morpho discovery on ethereum only; widening it needs headroom first" });
 
   // ---- pillar-level banding, both protocols on one scale -----------------
   const aaveRow = (hf, coll = 10000, debt = 5000) => ({ protocols: [{
@@ -557,8 +567,8 @@ async function call(path) {
     /could not be read/.test(blind.rationale), blind.rationale);
 
   const none = pillarLoanReliability([]);
-  check("no lending anywhere still reads real:false and names all three protocols",
-    none.real === false && /Aave V3, Spark or Compound V3/.test(none.rationale), none);
+  check("no lending anywhere still reads real:false and names every protocol checked",
+    none.real === false && /Aave V3, Spark, Compound V3 or Morpho Blue/.test(none.rationale), none);
 
   // ---- Spark folded into loan reliability --------------------------------
   // Spark is an Aave V3 fork with an unchanged Pool ABI, so its positions

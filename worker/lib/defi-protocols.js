@@ -42,6 +42,23 @@ export const SPARK_POOLS = {
   gnosis:   '0x2Dae5307c5E3FD1CF5A72Cb6F698f915860607e0',
 };
 
+// Morpho Blue core contract, per chain. NOT one deterministic address: the
+// early deployments (Ethereum, Base) share 0xBBBB…FFCb, later chains do not.
+// Addresses verified against DefiLlama's own Morpho Blue adapter config
+// (DefiLlama/DefiLlama-Adapters projects/morpho-blue/config.js) — the same
+// source this worker already trusts for pricing — rather than from memory.
+export const MORPHO_BLUE = {
+  ethereum: '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb',
+  base:     '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb',
+  arbitrum: '0x6c247b1F6182318877311737BaC0844bAa518F5e',
+  optimism: '0xce95AfbB8EA029495c66020883F87aaE8864AF92',
+  polygon:  '0x1bF0c2541F820E775182832f06c0B7Fc27A25f67',
+  scroll:   '0x2d012EdbAdc37eDc2BC62791B666f9193FDF5a55',
+  gnosis:   '0xB74D4dd451E250bC325AFF0556D717e4E2351c66',
+  linea:    '0x6B0D716aC0A45536172308e08fC2C40387262c9F',
+  bnb:      '0x01b0Bd309AA75547f7a37Ad7B1219A898E67a83a',
+};
+
 // Compound V3 (Comet) markets. Each market is a separate contract per
 // collateral asset; we list the headline USDC market per chain since that
 // has the deepest TVL. Future: extend to {chainId: [{symbol, address}]} if

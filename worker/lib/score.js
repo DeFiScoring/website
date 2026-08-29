@@ -13,7 +13,7 @@
 // is the new path the SPA (T7) will move to.
 //
 // Pillars (weights sum to 1.0):
-//   loan_reliability     0.35   Aave/Spark HF + Compound-derived HF, across chains
+//   loan_reliability     0.35   Aave/Spark HF + Compound- and Morpho-derived HF
 //   portfolio_health     0.25   Diversification (top-N concentration) + size
 //   liquidity_provision  0.15   USD value of live Uni V3 liquidity (count as fallback)
 //   governance           0.10   Snapshot vote count
@@ -62,7 +62,7 @@ import { ethCall, abiEncodeSingleAddr, abiHexWord, getFirstTxTimestamp } from '.
 // health_scores row, so a trend line spanning a model change can say so
 // instead of presenting the discontinuity as if the wallet had moved.
 // Format is YYYY.MM of the release that introduced the model.
-export const SCORE_MODEL_VERSION = '2026.10';
+export const SCORE_MODEL_VERSION = '2026.11';
 
 export const BANDS = [
   { key: 'excellent', label: 'Excellent', floor: 720 },
@@ -155,6 +155,15 @@ export function pillarLoanReliability(defiByChain) {
         totalCollateral += p.collateralUsd || 0;
         totalDebt       += p.debtUsd || 0;
         noteHf(p.healthFactor, AAVE_STYLE[p.protocol]);
+      } else if (p.protocol === 'morpho-blue' && p.hasPosition) {
+        // Morpho Blue is a set of ISOLATED markets, so there is no
+        // account-level health factor to read. lib/morpho.js derives one per
+        // market on the same definition Aave publishes (risk-adjusted
+        // collateral over debt) and reports the riskiest, which is what this
+        // pillar bands — so it lands on the same scale with no conversion.
+        hasAnyPosition = true;
+        seen.add('Morpho Blue');
+        noteHf(p.healthFactor, 'Morpho Blue');
       } else if (p.protocol === 'compound-v3' && p.hasPosition) {
         hasAnyPosition = true;
         seen.add('Compound V3');
@@ -174,16 +183,24 @@ export function pillarLoanReliability(defiByChain) {
   }
 
   const protocols = [...seen];
-  const named = protocols.length ? protocols.join(' + ') : 'Aave V3, Spark or Compound V3';
+  const named = protocols.length ? protocols.join(' + ') : 'Aave V3, Spark, Compound V3 or Morpho Blue';
 
   if (!hasAnyPosition) {
     return { real: false, value: 50, lowestHealthFactor: null, totalCollateralUsd: 0, totalDebtUsd: 0,
              protocols: [],
-             rationale: 'No Aave V3, Spark or Compound V3 positions found across any chain — neutral score.' };
+             rationale: 'No Aave V3, Spark, Compound V3 or Morpho Blue positions found across any chain — neutral score.' };
   }
   // No debt? Wallet is supplying as a saver — that's a positive signal but
   // not as informative as a successfully managed leveraged position.
-  if (totalDebt === 0) {
+  //
+  // `totalDebt` is a USD sum, and not every reader can produce one: Morpho
+  // Blue's markets are isolated and priced by per-market oracles, so its
+  // reader reports a health factor without a USD debt figure. A health factor
+  // only EXISTS where there is debt — every reader returns null for a
+  // debt-free position — so an observed HF is proof of borrowing even when
+  // the dollar amount is unknown. Testing USD alone would file a leveraged
+  // Morpho borrower as a debt-free saver and hand them an 80.
+  if (totalDebt === 0 && lowestHf == null) {
     return { real: true, value: 80, lowestHealthFactor: null, totalCollateralUsd: totalCollateral,
              totalDebtUsd: 0, protocols,
              rationale: `${named} supplier with no outstanding debt.` };
