@@ -30,6 +30,7 @@ const SUITES = [
   ["sanctions", "OFAC screening: seed floor, KV overlay, feed validation, platform health"],
   ["onchain", "native-balance snapshot endpoint: validation, no RPC proxying, unreadable != empty"],
   ["nav", "sidebar integrity: links resolve, section tags agree, curated pages grouped as research"],
+  ["univ3", "Uniswap V3 position math and the value-based liquidity pillar"],
   ["share-card", "social share card: coverage survives into the shared context, no invented scores"],
 ];
 

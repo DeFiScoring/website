@@ -9,6 +9,10 @@
 // ----------------------------------------------------------------------------
 
 import { ethCall, abiEncodeSingleAddr, abiHexWord, abiPadAddr, alchemyRpcBatch } from './providers.js';
+import {
+  tickToSqrtPrice, sqrtPriceX96ToSqrtPrice, positionValueUsd, abiWordToInt,
+} from './univ3-math.js';
+import { priceTokensWithFallback } from './prices.js';
 import { CHAINS_BY_ID } from './chains.js';
 import {
   AAVE_V3_POOLS,
@@ -45,6 +49,14 @@ const SEL_UNI_V3_POSITIONS       = '0x99fbab88'; // Uniswap V3 NPM: positions(ui
 // deep enough to separate a real LP from a dust holder and is what the two
 // batched subrequests below can carry.
 const UNI_V3_MAX_ENUMERATE = 20;
+
+// Valuing a position needs the pool it belongs to, that pool's current price,
+// and both tokens' decimals. The factory is at the same address on every chain
+// the canonical V3 deployment reached.
+const UNI_V3_FACTORY   = '0x1F98431c8aD98523631AE4a59f267346ea31F984';
+const SEL_GET_POOL     = '0x1698ee82'; // getPool(address,address,uint24)
+const SEL_SLOT0        = '0x3850c7bd'; // slot0()
+const SEL_DECIMALS     = '0x313ce567'; // decimals()
 
 // =============================================================================
 // Aave V3 — single eth_call per chain returns full account summary in 8d base.
@@ -322,19 +334,141 @@ async function getUniV3ActivePositions(chain, env, wallet, nftCount) {
   }));
   const posResults = await alchemyRpcBatch(chain, env, posCalls);
 
-  // positions() returns 12 words; `liquidity` (uint128) is word 7:
-  // nonce, operator, token0, token1, fee, tickLower, tickUpper, liquidity, ...
+  // positions() returns 12 words:
+  //   0 nonce, 1 operator, 2 token0, 3 token1, 4 fee,
+  //   5 tickLower, 6 tickUpper, 7 liquidity, ...
+  // Ticks are int24 and are routinely NEGATIVE, so they must be read signed —
+  // see abiWordToInt. The rest are unsigned.
   let active = 0;
   let read = 0;
+  const positions = [];
   for (const hex of posResults) {
     if (typeof hex !== 'string' || hex === '0x') continue;
     read += 1;
-    if (abiHexWord(hex, 7) > 0n) active += 1;
+    const liquidity = abiHexWord(hex, 7);
+    if (liquidity <= 0n) continue;          // closed position, holds nothing
+    active += 1;
+    positions.push({
+      token0:    '0x' + abiHexWord(hex, 2).toString(16).padStart(40, '0'),
+      token1:    '0x' + abiHexWord(hex, 3).toString(16).padStart(40, '0'),
+      fee:       Number(abiHexWord(hex, 4)),
+      tickLower: abiWordToInt(abiHexWord(hex, 5)),
+      tickUpper: abiWordToInt(abiHexWord(hex, 6)),
+      liquidity,
+    });
   }
   if (!read) return null;
 
   return { activeLpCount: active, positionsRead: read, enumerated: tokenIds.length,
-           truncated: nftCount > UNI_V3_MAX_ENUMERATE };
+           positions, truncated: nftCount > UNI_V3_MAX_ENUMERATE };
+}
+
+/**
+ * Put a USD value on live Uniswap V3 positions.
+ *
+ * Counting positions treats twenty dust NFTs as more liquidity provision than
+ * one seven-figure position. Valuing them fixes that, at the cost of three
+ * extra reads per chain — each a BATCH, so three HTTP subrequests, not three
+ * per position:
+ *
+ *   1. factory.getPool(token0, token1, fee)  → the pool for each position
+ *   2. pool.slot0()                          → its current √price
+ *   3. token.decimals()                      → to scale raw amounts
+ *
+ * then one price lookup for the distinct tokens.
+ *
+ * Requires the Alchemy batch endpoint. Without it the caller keeps the count
+ * and says the value is unknown — an unpriced position must never be treated
+ * as a worthless one.
+ *
+ * Returns { valueUsd, valuedCount, unvaluedCount } or null if nothing could be
+ * valued at all.
+ */
+async function valueUniV3Positions(chain, env, positions, fiat = 'USD') {
+  if (!positions?.length || !chain.alchemy || !env.ALCHEMY_KEY) return null;
+
+  // 1 — resolve each position's pool.
+  const poolCalls = positions.map((p) => ({
+    method: 'eth_call',
+    params: [{
+      to: UNI_V3_FACTORY,
+      data: SEL_GET_POOL + abiPadAddr(p.token0) + abiPadAddr(p.token1) +
+            p.fee.toString(16).padStart(64, '0'),
+    }, 'latest'],
+  }));
+  const poolResults = await alchemyRpcBatch(chain, env, poolCalls).catch(() => []);
+
+  const withPool = [];
+  poolResults.forEach((hex, i) => {
+    if (typeof hex !== 'string' || hex === '0x') return;
+    const addr = '0x' + abiHexWord(hex, 0).toString(16).padStart(40, '0');
+    if (/^0x0+$/.test(addr)) return;      // factory returned the zero address
+    withPool.push({ ...positions[i], pool: addr });
+  });
+  if (!withPool.length) return null;
+
+  // 2 — current √price per pool. Distinct pools only: several positions
+  // commonly share one.
+  const pools = [...new Set(withPool.map((p) => p.pool))];
+  const slotCalls = pools.map((pool) => ({
+    method: 'eth_call', params: [{ to: pool, data: SEL_SLOT0 }, 'latest'],
+  }));
+  const slotResults = await alchemyRpcBatch(chain, env, slotCalls).catch(() => []);
+  const sqrtByPool = {};
+  slotResults.forEach((hex, i) => {
+    if (typeof hex !== 'string' || hex === '0x') return;
+    const sp = sqrtPriceX96ToSqrtPrice(abiHexWord(hex, 0));   // slot0 word 0
+    if (sp != null) sqrtByPool[pools[i]] = sp;
+  });
+
+  // 3 — decimals for every distinct token.
+  const tokens = [...new Set(withPool.flatMap((p) => [p.token0, p.token1]))];
+  const decCalls = tokens.map((t) => ({
+    method: 'eth_call', params: [{ to: t, data: SEL_DECIMALS }, 'latest'],
+  }));
+  const decResults = await alchemyRpcBatch(chain, env, decCalls).catch(() => []);
+  const decimalsByToken = {};
+  decResults.forEach((hex, i) => {
+    if (typeof hex !== 'string' || hex === '0x') return;
+    const d = Number(abiHexWord(hex, 0));
+    if (Number.isFinite(d) && d >= 0 && d <= 36) decimalsByToken[tokens[i]] = d;
+  });
+
+  // 4 — prices for those tokens.
+  // priceTokensWithFallback takes {contract} rows and returns
+  // { contract: { usd: price } }, keyed lowercase.
+  const fiatLow = String(fiat || 'USD').toLowerCase();
+  let priceMap = {};
+  try {
+    const priced = await priceTokensWithFallback(
+      chain, env, tokens.map((t) => ({ contract: t })), fiat);
+    for (const [addr, px] of Object.entries(priced || {})) {
+      const v = px && typeof px === 'object' ? Number(px[fiatLow]) : Number(px);
+      if (Number.isFinite(v) && v >= 0) priceMap[addr.toLowerCase()] = v;
+    }
+  } catch { /* unpriced positions are reported as such, not as zero */ }
+
+  let valueUsd = 0;
+  let valued = 0;
+  let unvalued = 0;
+  for (const p of withPool) {
+    const sqrtPrice = sqrtByPool[p.pool];
+    const sqrtLower = tickToSqrtPrice(p.tickLower);
+    const sqrtUpper = tickToSqrtPrice(p.tickUpper);
+    const usd = (sqrtPrice == null || sqrtLower == null || sqrtUpper == null)
+      ? null
+      : positionValueUsd({
+          liquidity: p.liquidity, sqrtPrice, sqrtLower, sqrtUpper,
+          token0: p.token0, token1: p.token1,
+          decimals0: decimalsByToken[p.token0], decimals1: decimalsByToken[p.token1],
+        }, priceMap);
+    if (usd == null) { unvalued += 1; continue; }
+    valueUsd += usd;
+    valued += 1;
+  }
+
+  if (!valued) return null;
+  return { valueUsd, valuedCount: valued, unvaluedCount: unvalued + (positions.length - withPool.length) };
 }
 
 export async function getUniV3LpCount(chain, env, wallet) {
@@ -349,8 +483,12 @@ export async function getUniV3LpCount(chain, env, wallet) {
   // lpCount is NFTs held, which over-counts: closed positions keep their
   // token. Resolve how many are live where we can afford to.
   let live = null;
+  let valued = null;
   if (count > 0 && chain.alchemy && env.ALCHEMY_KEY) {
     live = await getUniV3ActivePositions(chain, env, wallet, count).catch(() => null);
+    if (live?.positions?.length) {
+      valued = await valueUniV3Positions(chain, env, live.positions).catch(() => null);
+    }
   }
 
   return {
@@ -371,7 +509,12 @@ export async function getUniV3LpCount(chain, env, wallet) {
     // True when the wallet holds more NFTs than we enumerate; activeLpCount
     // is then a floor, not a total.
     lpCountTruncated: live ? live.truncated : null,
-    // valueUsd intentionally omitted — needs per-tokenId pool reads (T5).
+    // USD of live liquidity. null means "we could not value it", never zero —
+    // an unpriced position is not a worthless one, and the pillar scores those
+    // two cases differently.
+    lpValueUsd:       valued ? valued.valueUsd : null,
+    lpValuedCount:    valued ? valued.valuedCount : null,
+    lpUnvaluedCount:  valued ? valued.unvaluedCount : null,
   };
 }
 

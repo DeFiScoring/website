@@ -15,7 +15,7 @@
 // Pillars (weights sum to 1.0):
 //   loan_reliability     0.35   Aave/Spark HF + Compound-derived HF, across chains
 //   portfolio_health     0.25   Diversification (top-N concentration) + size
-//   liquidity_provision  0.15   Uni V3 live LP positions (liquidity > 0)
+//   liquidity_provision  0.15   USD value of live Uni V3 liquidity (count as fallback)
 //   governance           0.10   Snapshot vote count
 //   account_age          0.15   Oldest first-tx age across Tier-1 chains
 //
@@ -62,7 +62,7 @@ import { ethCall, abiEncodeSingleAddr, abiHexWord, getFirstTxTimestamp } from '.
 // health_scores row, so a trend line spanning a model change can say so
 // instead of presenting the discontinuity as if the wallet had moved.
 // Format is YYYY.MM of the release that introduced the model.
-export const SCORE_MODEL_VERSION = '2026.09';
+export const SCORE_MODEL_VERSION = '2026.10';
 
 export const BANDS = [
   { key: 'excellent', label: 'Excellent', floor: 720 },
@@ -284,6 +284,18 @@ export function pillarPortfolioHealth(portfolio) {
 // Pillar 3: Liquidity provision — Uni V3 LP NFT count summed across chains.
 // =============================================================================
 
+// Compact USD for rationales: "$1.2M", "$48K", "$720". Rationales are read by
+// people and fed to the AI explainer, so precision past three significant
+// figures is noise.
+function fmtUsd(n) {
+  if (!Number.isFinite(n)) return '$0';
+  const abs = Math.abs(n);
+  if (abs >= 1e9) return `$${(n / 1e9).toFixed(1)}B`;
+  if (abs >= 1e6) return `$${(n / 1e6).toFixed(1)}M`;
+  if (abs >= 1e3) return `$${Math.round(n / 1e3)}K`;
+  return `$${Math.round(n)}`;
+}
+
 export function pillarLiquidityProvision(defiByChain) {
   // lpCount is the number of position NFTs the wallet holds, which over-counts
   // real LP activity: Uniswap V3 does not burn the token when a position is
@@ -296,6 +308,12 @@ export function pillarLiquidityProvision(defiByChain) {
   let unverified = false;    // at least one chain could only give a raw count
   let truncated = false;
   let heldNfts = 0;
+  // Deployed capital, where we could resolve it. Counting positions treats a
+  // wallet with twenty dust NFTs as a bigger liquidity provider than one with
+  // a single seven-figure position; value is the honest signal.
+  let totalValueUsd = 0;
+  let valuedPositions = 0;
+  let unvaluedPositions = 0;
 
   for (const c of defiByChain) {
     for (const p of c.protocols || []) {
@@ -310,6 +328,15 @@ export function pillarLiquidityProvision(defiByChain) {
         totalLpCount += n;
         chainsWithLp += 1;
       }
+      if (typeof p.lpValueUsd === 'number') {
+        totalValueUsd += p.lpValueUsd;
+        valuedPositions += p.lpValuedCount || 0;
+        unvaluedPositions += p.lpUnvaluedCount || 0;
+      } else if (n > 0) {
+        // Live positions we could not put a number on. Tracked separately so
+        // the rationale can say the value is a floor.
+        unvaluedPositions += n;
+      }
     }
   }
 
@@ -323,17 +350,40 @@ export function pillarLiquidityProvision(defiByChain) {
              heldNftCount: heldNfts, chainsWithLp: 0, rationale };
   }
 
-  // Each live position is real deployed capital. 1 = engaged user;
-  // 5+ = active LP'er; 20+ = market maker.
+  // Prefer VALUE when we resolved any. Position count is a weak proxy — it
+  // says how many times someone clicked "add liquidity", not how much capital
+  // is at work — so it is the fallback, not the primary.
   let value;
-  if (totalLpCount >= 20)     value = 95;
-  else if (totalLpCount >= 5) value = 80;
-  else if (totalLpCount >= 2) value = 65;
-  else                         value = 50;
+  let basis;
+  if (valuedPositions > 0) {
+    basis = 'value';
+    if (totalValueUsd >= 250000)     value = 95;   // market maker
+    else if (totalValueUsd >= 50000) value = 85;
+    else if (totalValueUsd >= 10000) value = 75;
+    else if (totalValueUsd >= 1000)  value = 65;
+    else if (totalValueUsd >= 100)   value = 55;   // real but small
+    else                             value = 50;   // dust
+  } else {
+    basis = 'count';
+    if (totalLpCount >= 20)     value = 95;
+    else if (totalLpCount >= 5) value = 80;
+    else if (totalLpCount >= 2) value = 65;
+    else                         value = 50;
+  }
   if (chainsWithLp >= 2) value = Math.min(100, value + 5);
 
   const noun = verified && !unverified ? 'live Uniswap V3 position' : 'Uniswap V3 LP position';
-  let rationale = `${totalLpCount} ${noun}(s) across ${chainsWithLp} chain(s).`;
+  let rationale = basis === 'value'
+    ? `${fmtUsd(totalValueUsd)} of live Uniswap V3 liquidity across ${chainsWithLp} chain(s), ` +
+      `in ${totalLpCount} ${noun}(s).`
+    : `${totalLpCount} ${noun}(s) across ${chainsWithLp} chain(s).`;
+  if (basis === 'count') {
+    // Say plainly that the score rests on a count, so nobody reads it as a
+    // statement about capital.
+    rationale += ' Position values could not be resolved, so this is scored on position count.';
+  } else if (unvaluedPositions > 0) {
+    rationale += ` ${unvaluedPositions} further position(s) could not be priced, so the total is a floor.`;
+  }
   if (verified && heldNfts > totalLpCount) {
     rationale += ` ${heldNfts - totalLpCount} further position NFT(s) hold no liquidity and were not counted.`;
   }
