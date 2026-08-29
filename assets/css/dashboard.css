@@ -792,3 +792,83 @@ body.defi-market-open { --defi-market-strip-h: 96px; }
 @media (max-width: 700px) {
   .defi-provenance__meta { white-space: normal; }
 }
+
+/* ---- API key panel (dashboard/settings) ----------------------------------- */
+
+.ds-keys {
+  margin: 24px 0 8px;
+  padding: 20px;
+  background: var(--ds-surface, #121218);
+  border: 1px solid var(--ds-border, #2a2a35);
+  border-radius: 14px;
+}
+.ds-keys__head { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 16px; }
+.ds-keys__muted { color: var(--ds-muted, #9ca3af); font-size: 13px; margin: 8px 0 0; }
+
+.ds-keys__quota { margin-bottom: 18px; }
+.ds-keys__quota-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-size: 13px; color: var(--ds-text, #e5e7eb); margin-bottom: 6px;
+}
+.ds-keys__quota-num { font-family: "JetBrains Mono", ui-monospace, monospace; color: var(--ds-cyan, #00f5ff); }
+.ds-keys__bar {
+  height: 6px; border-radius: 999px; overflow: hidden;
+  background: var(--ds-surface-2, #1b1b24);
+}
+.ds-keys__bar span {
+  display: block; height: 100%;
+  background: linear-gradient(90deg, var(--ds-cyan, #00f5ff), var(--ds-purple, #a855f7));
+}
+
+.ds-keys__fresh {
+  padding: 14px; margin-bottom: 18px; border-radius: 10px;
+  background: rgba(43, 212, 164, .08);
+  border: 1px solid rgba(43, 212, 164, .3);
+}
+.ds-keys__fresh p { margin: 0 0 10px; font-size: 13px; color: var(--ds-text, #e5e7eb); }
+.ds-keys__secret {
+  display: block; padding: 10px 12px; margin-bottom: 10px; border-radius: 8px;
+  background: var(--ds-bg, #0a0a0a); border: 1px solid var(--ds-border, #2a2a35);
+  font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 12.5px;
+  color: var(--ds-green, #2bd4a4); word-break: break-all;
+}
+
+.ds-keys__table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.ds-keys__table th {
+  text-align: left; padding: 8px 10px; font-size: 11px; letter-spacing: .04em;
+  text-transform: uppercase; color: var(--ds-muted, #9ca3af);
+  border-bottom: 1px solid var(--ds-border, #2a2a35);
+}
+.ds-keys__table td {
+  padding: 10px; border-bottom: 1px solid var(--ds-border, #2a2a35);
+  color: var(--ds-text, #e5e7eb);
+}
+.ds-keys__table tr.is-revoked { opacity: .5; }
+.ds-keys__table code { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 12px; }
+.ds-keys__tag {
+  padding: 1px 7px; border-radius: 999px; font-size: 10px; font-weight: 700;
+  background: rgba(255, 93, 108, .12); color: var(--defi-bad, #ff5d6c);
+}
+.ds-keys__revoke {
+  padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;
+  background: transparent; color: var(--defi-bad, #ff5d6c);
+  border: 1px solid rgba(255, 93, 108, .35);
+}
+.ds-keys__revoke:hover { background: rgba(255, 93, 108, .1); }
+
+.ds-keys__create { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+.ds-keys__create input {
+  flex: 1 1 240px; padding: 9px 12px; border-radius: 8px;
+  background: var(--ds-bg, #0a0a0a); border: 1px solid var(--ds-border, #2a2a35);
+  color: var(--ds-text, #e5e7eb); font-size: 13px;
+}
+.ds-keys__create input:focus { outline: none; border-color: var(--ds-cyan, #00f5ff); }
+.ds-keys__locked { padding: 16px; border-radius: 10px; background: var(--ds-surface-2, #1b1b24); }
+.ds-keys__locked p { margin: 0 0 12px; font-size: 13px; color: var(--ds-text, #e5e7eb); }
+
+/* The key table is the widest thing on the settings page; let it scroll rather
+   than forcing the page to. */
+@media (max-width: 720px) {
+  .ds-keys__list { overflow-x: auto; }
+  .ds-keys__table { min-width: 560px; }
+}
