@@ -66,7 +66,9 @@ async function alchemyRpc(chain, env, method, params) {
 // free plan, and a 5-chain portfolio scan that issued one metadata call per
 // token (up to 100 per chain) blew that budget on the first chain, leaving the
 // rest of the wallet's chains silently unscanned.
-async function alchemyRpcBatch(chain, env, calls) {
+// Exported so protocol readers can amortise per-item reads (e.g. one
+// eth_call per Uniswap V3 position) into a single HTTP subrequest.
+export async function alchemyRpcBatch(chain, env, calls) {
   if (!chain.alchemy || !env.ALCHEMY_KEY) throw new Error('alchemy unavailable');
   if (!calls.length) return [];
   const url = `https://${chain.alchemy}.g.alchemy.com/v2/${env.ALCHEMY_KEY}`;
@@ -99,7 +101,10 @@ async function moralisGet(chain, env, path) {
 
 // ----- Etherscan v2 (single key, every chain via chainid param) -------------
 
-async function etherscanCall(chain, env, params) {
+// Exported for the alerts cron: getLogs (approval scanning) and proxy calls
+// need the raw multichain client, and wrapping each variant separately would
+// just re-implement this function's error handling.
+export async function etherscanCall(chain, env, params) {
   if (!env.ETHERSCAN_API_KEY) throw new Error('ETHERSCAN_API_KEY not configured');
   const url = new URL(ETHERSCAN_V2);
   url.searchParams.set('chainid', String(chain.chainId));
@@ -404,6 +409,19 @@ export async function getFirstTxTimestamp(chain, env, address) {
     return { ok: true, firstTxAt: Number.isFinite(ts) && ts > 0 ? ts : null };
   } catch (e) {
     return { ok: false, firstTxAt: null, error: String((e && e.message) || e) };
+  }
+}
+
+// Latest block number for a chain, or null when it can't be had. The alerts
+// cron uses this as the upper bound of incremental log scans; null means
+// "skip the scan this tick", never "scan from zero".
+export async function getLatestBlockNumber(chain, env) {
+  try {
+    const r = await etherscanCall(chain, env, { module: 'proxy', action: 'eth_blockNumber' });
+    const n = Number(BigInt(r));
+    return Number.isFinite(n) && n > 0 ? n : null;
+  } catch {
+    return null;
   }
 }
 

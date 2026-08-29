@@ -8,10 +8,11 @@
 // not an error. An RPC timeout returns { error } on the row, not a 500.
 // ----------------------------------------------------------------------------
 
-import { ethCall, abiEncodeSingleAddr, abiHexWord, abiPadAddr } from './providers.js';
+import { ethCall, abiEncodeSingleAddr, abiHexWord, abiPadAddr, alchemyRpcBatch } from './providers.js';
 import { CHAINS_BY_ID } from './chains.js';
 import {
   AAVE_V3_POOLS,
+  SPARK_POOLS,
   COMPOUND_V3_MARKETS,
   UNI_V3_POSITION_MANAGER,
   UNI_V3_NPM_CHAINS,
@@ -37,17 +38,34 @@ const SEL_COMET_IS_LIQUIDATABLE  = '0x042e02cf'; // isLiquidatable(address)
 // collateral factors as 18-decimal fractions.
 const COMET_PRICE_SCALE  = 1e8;
 const COMET_FACTOR_SCALE = 1e18;
+const SEL_TOKEN_OF_OWNER_BY_IDX  = '0x2f745c59'; // ERC-721Enumerable: tokenOfOwnerByIndex(address,uint256)
+const SEL_UNI_V3_POSITIONS       = '0x99fbab88'; // Uniswap V3 NPM: positions(uint256)
+
+// Enumerating every position of a farming wallet is unbounded work; 20 is
+// deep enough to separate a real LP from a dust holder and is what the two
+// batched subrequests below can carry.
+const UNI_V3_MAX_ENUMERATE = 20;
 
 // =============================================================================
 // Aave V3 — single eth_call per chain returns full account summary in 8d base.
 // =============================================================================
 
 export async function getAaveV3Position(chain, env, wallet) {
-  const pool = AAVE_V3_POOLS[chain.id];
-  if (!pool) return { protocol: 'aave-v3', chain: chain.id, hasPosition: false, deployed: false };
+  return readAaveStylePool(chain, env, wallet, AAVE_V3_POOLS[chain.id], 'aave-v3');
+}
+
+// Spark is an Aave V3 fork with an unchanged Pool ABI, so its reader IS the
+// Aave reader pointed at Spark's pools — same decode, same healthFactor
+// semantics, no conversion. Only the protocol slug differs.
+export async function getSparkPosition(chain, env, wallet) {
+  return readAaveStylePool(chain, env, wallet, SPARK_POOLS[chain.id], 'spark');
+}
+
+async function readAaveStylePool(chain, env, wallet, pool, slug) {
+  if (!pool) return { protocol: slug, chain: chain.id, hasPosition: false, deployed: false };
   const data = abiEncodeSingleAddr(SEL_GET_USER_ACCOUNT_DATA, wallet);
   const r = await ethCall(chain, env, pool, data);
-  if (!r || r === '0x') return { protocol: 'aave-v3', chain: chain.id, hasPosition: false, deployed: true };
+  if (!r || r === '0x') return { protocol: slug, chain: chain.id, hasPosition: false, deployed: true };
   // Returns: totalCollateralBase, totalDebtBase, availableBorrowsBase,
   //          currentLiquidationThreshold, ltv, healthFactor.
   // *Base values are in the protocol's reference asset (usually USD) at 8 decimals.
@@ -62,7 +80,7 @@ export async function getAaveV3Position(chain, env, wallet) {
   // not Infinity, so JSON.stringify works and the dashboard can show "—".
   const healthFactor = totalDebtBase === 0n ? null : Number(healthFactorRaw) / 1e18;
   return {
-    protocol:           'aave-v3',
+    protocol:           slug,
     category:           'lending',
     chain:              chain.id,
     chainName:          chain.name,
@@ -257,6 +275,68 @@ export async function getCompoundV3Positions(chain, env, wallet) {
 // when we add the score factor for "active LP'er".
 // =============================================================================
 
+/**
+ * Resolve how many of a wallet's Uniswap V3 position NFTs are actually live.
+ *
+ * balanceOf on the position manager counts NFTs, and burning is optional:
+ * a fully-withdrawn position keeps its token, so a wallet that closed ten
+ * positions still reads as a ten-position LP. Only `liquidity > 0` means
+ * capital is currently deployed.
+ *
+ * Costs two subrequests regardless of position count: one batched
+ * tokenOfOwnerByIndex sweep, one batched positions() sweep. Alchemy-only,
+ * because Etherscan's proxy endpoint has no batch equivalent and doing this
+ * one call at a time would cost up to 40 subrequests per chain.
+ *
+ * Returns null when the data can't be had, so callers can fall back to the
+ * raw count instead of reporting a confident zero.
+ */
+async function getUniV3ActivePositions(chain, env, wallet, nftCount) {
+  const want = Math.min(nftCount, UNI_V3_MAX_ENUMERATE);
+  if (want <= 0) return null;
+
+  const idCalls = Array.from({ length: want }, (_, i) => ({
+    method: 'eth_call',
+    params: [{
+      to: UNI_V3_POSITION_MANAGER,
+      data: SEL_TOKEN_OF_OWNER_BY_IDX + abiPadAddr(wallet) + i.toString(16).padStart(64, '0'),
+    }, 'latest'],
+  }));
+  const idResults = await alchemyRpcBatch(chain, env, idCalls);
+
+  const tokenIds = [];
+  for (const hex of idResults) {
+    if (typeof hex !== 'string' || hex === '0x') continue;
+    const id = abiHexWord(hex, 0);
+    tokenIds.push(id);
+  }
+  // Every enumeration slot failed — report unknown rather than zero.
+  if (!tokenIds.length) return null;
+
+  const posCalls = tokenIds.map((id) => ({
+    method: 'eth_call',
+    params: [{
+      to: UNI_V3_POSITION_MANAGER,
+      data: SEL_UNI_V3_POSITIONS + id.toString(16).padStart(64, '0'),
+    }, 'latest'],
+  }));
+  const posResults = await alchemyRpcBatch(chain, env, posCalls);
+
+  // positions() returns 12 words; `liquidity` (uint128) is word 7:
+  // nonce, operator, token0, token1, fee, tickLower, tickUpper, liquidity, ...
+  let active = 0;
+  let read = 0;
+  for (const hex of posResults) {
+    if (typeof hex !== 'string' || hex === '0x') continue;
+    read += 1;
+    if (abiHexWord(hex, 7) > 0n) active += 1;
+  }
+  if (!read) return null;
+
+  return { activeLpCount: active, positionsRead: read, enumerated: tokenIds.length,
+           truncated: nftCount > UNI_V3_MAX_ENUMERATE };
+}
+
 export async function getUniV3LpCount(chain, env, wallet) {
   if (!UNI_V3_NPM_CHAINS.includes(chain.id)) {
     return { protocol: 'uniswap-v3-lp', chain: chain.id, hasPosition: false, deployed: false };
@@ -265,6 +345,14 @@ export async function getUniV3LpCount(chain, env, wallet) {
   const r = await ethCall(chain, env, UNI_V3_POSITION_MANAGER, data);
   if (!r || r === '0x') return { protocol: 'uniswap-v3-lp', chain: chain.id, hasPosition: false, deployed: true };
   const count = Number(abiHexWord(r, 0));
+
+  // lpCount is NFTs held, which over-counts: closed positions keep their
+  // token. Resolve how many are live where we can afford to.
+  let live = null;
+  if (count > 0 && chain.alchemy && env.ALCHEMY_KEY) {
+    live = await getUniV3ActivePositions(chain, env, wallet, count).catch(() => null);
+  }
+
   return {
     protocol:    'uniswap-v3-lp',
     category:    'dex',
@@ -272,8 +360,17 @@ export async function getUniV3LpCount(chain, env, wallet) {
     chainName:   chain.name,
     chainId:     chain.chainId,
     deployed:    true,
-    hasPosition: count > 0,
+    // A wallet holding only closed positions has no LP exposure, so an
+    // active count of 0 means no position even though it holds NFTs.
+    hasPosition: live ? live.activeLpCount > 0 : count > 0,
     lpCount:     count,
+    // null when un-resolvable (no Alchemy key, or the reads failed) — the
+    // scorer must be able to tell "none live" from "we couldn't check".
+    activeLpCount:   live ? live.activeLpCount : null,
+    positionsRead:   live ? live.positionsRead : null,
+    // True when the wallet holds more NFTs than we enumerate; activeLpCount
+    // is then a floor, not a total.
+    lpCountTruncated: live ? live.truncated : null,
     // valueUsd intentionally omitted — needs per-tokenId pool reads (T5).
   };
 }
@@ -319,12 +416,13 @@ export function classifyYieldTokens(chainId, erc20Rows, fiatPriceMap) {
 export async function getAllDeFiPositions(env, wallet, chains) {
   const perChain = await Promise.all(chains.map(async (chain) => {
     try {
-      const [aave, compoundList, uni] = await Promise.all([
+      const [aave, spark, compoundList, uni] = await Promise.all([
         getAaveV3Position(chain, env, wallet).catch((e) => ({ protocol: 'aave-v3', chain: chain.id, error: String(e.message || e) })),
+        getSparkPosition(chain, env, wallet).catch((e) => ({ protocol: 'spark', chain: chain.id, error: String(e.message || e) })),
         getCompoundV3Positions(chain, env, wallet).catch((e) => [{ protocol: 'compound-v3', chain: chain.id, error: String(e.message || e) }]),
         getUniV3LpCount(chain, env, wallet).catch((e) => ({ protocol: 'uniswap-v3-lp', chain: chain.id, error: String(e.message || e) })),
       ]);
-      const protocols = [aave, ...compoundList, uni];
+      const protocols = [aave, spark, ...compoundList, uni];
       const collateralUsd = protocols.reduce((s, p) => s + (p.collateralUsd || p.supplyUsd || 0), 0);
       const debtUsd       = protocols.reduce((s, p) => s + (p.debtUsd || p.borrowUsd || 0), 0);
       return {

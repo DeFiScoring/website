@@ -115,30 +115,48 @@ const setTier = (env, addr, tier) => env.HEALTH_DB.prepare(
     validateWebhookUrl("https://10.0.0.1/x"));
 
   // =========================================================================
-  // 2. Rule kinds with stubbed evaluator inputs are refused at creation
+  // 2. price and approval_change now have live evaluator inputs, so creation
+  //    accepts them — but a price rule whose params the evaluator can't read
+  //    would be the same silent limbo the old refusal prevented, so those
+  //    are validated instead.
   // =========================================================================
   const env = makeEnv();
   const call = makeCall(env);
   const wallet = await signIn(env, call, 21);
   await setTier(env, wallet, "pro");
+  const USDC = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48";
 
-  for (const kind of ["price", "approval_change"]) {
-    const r = await call("POST", "/api/alerts/rules", {
-      wallet_address: wallet, kind, params: {}, channels: ["email"],
-    });
-    check(`rule kind '${kind}' refused as kind_not_yet_supported`,
-      r.status === 400 && r.json.error === "kind_not_yet_supported", r);
-    check(`refusal for '${kind}' explains why in prose`,
-      typeof r.json.message === "string" && r.json.message.length > 40, r.json.message);
-    check(`refusal for '${kind}' lists the kinds that do work`,
-      Array.isArray(r.json.supported_kinds) &&
-      r.json.supported_kinds.includes("health_factor") &&
-      !r.json.supported_kinds.includes(kind), r.json.supported_kinds);
-  }
+  const badPrice = await call("POST", "/api/alerts/rules", {
+    wallet_address: wallet, kind: "price", params: {}, channels: ["email"],
+  });
+  check("price rule without params refused as invalid_price_params",
+    badPrice.status === 400 && badPrice.json.error === "invalid_price_params", badPrice.json);
+  check("price refusal names the params the evaluator reads",
+    /params\.token/.test(badPrice.json.message || ""), badPrice.json.message);
+
+  const badChain = await call("POST", "/api/alerts/rules", {
+    wallet_address: wallet, kind: "price",
+    params: { token: USDC, threshold: 1.1, chain: "notachain" }, channels: ["email"],
+  });
+  check("price rule on an unsupported chain refused",
+    badChain.status === 400 && badChain.json.error === "invalid_price_params", badChain.json);
+
+  // Created inactive so the delivery sections below stay single-rule.
+  const goodPrice = await call("POST", "/api/alerts/rules", {
+    wallet_address: wallet, kind: "price",
+    params: { token: USDC, threshold: 1.1 }, channels: ["email"], is_active: false,
+  });
+  check("price rule with valid params is accepted", goodPrice.json.success === true, goodPrice.json);
+
+  const goodAppr = await call("POST", "/api/alerts/rules", {
+    wallet_address: wallet, kind: "approval_change", params: {}, channels: ["email"], is_active: false,
+  });
+  check("approval_change rule is accepted", goodAppr.json.success === true, goodAppr.json);
+
   const bogus = await call("POST", "/api/alerts/rules", {
     wallet_address: wallet, kind: "nonsense", params: {}, channels: ["email"],
   });
-  check("an unknown kind is still invalid_kind, not kind_not_yet_supported",
+  check("an unknown kind is still invalid_kind",
     bogus.status === 400 && bogus.json.error === "invalid_kind", bogus.json);
 
   const ok = await call("POST", "/api/alerts/rules", {
@@ -297,6 +315,247 @@ const setTier = (env, addr, tier) => env.HEALTH_DB.prepare(
   await call("DELETE", "/api/alerts/channels/" + created.json.id);
   const after = (await env.HEALTH_DB.prepare("SELECT COUNT(*) c FROM alert_deliveries").first()).c;
   check("deleting a channel preserves its delivery history", after === before, { before, after });
+
+  // =========================================================================
+  // 7. Live health factors beat stale snapshots
+  // =========================================================================
+  // The old cron read HF from the last persisted scan — nothing ever wrote
+  // it there, and even if it had, a decaying position between manual scans
+  // was invisible. Here the snapshot says SAFE (2.5) and the chain says
+  // LIQUIDATABLE-adjacent (0.95): the alert must fire.
+  {
+    const env7 = makeEnv();
+    env7.ETHERSCAN_API_KEY = "stub";
+    const call7 = makeCall(env7);
+    const w = await signIn(env7, call7, 31);
+    await setTier(env7, w, "pro");
+    await env7.HEALTH_DB.prepare(
+      "INSERT INTO health_scores (wallet, score, source_json, computed_at) VALUES (?, ?, ?, ?)"
+    ).bind(w.toLowerCase(), 700, JSON.stringify({ health_factor: 2.5 }), Date.now()).run();
+    const rule7 = await call7("POST", "/api/alerts/rules", {
+      wallet_address: w, kind: "health_factor",
+      params: { threshold: 1.5, direction: "below" }, channels: ["email"],
+    });
+    check("live-HF test rule created", rule7.json.success === true, rule7.json);
+
+    const word = (v) => BigInt(v).toString(16).padStart(64, "0");
+    let ethCalls = 0;
+    const realFetch7 = globalThis.fetch;
+    globalThis.fetch = async (input) => {
+      const u = String(input?.url || input);
+      const J = (o) => new Response(JSON.stringify(o), { headers: { "content-type": "application/json" } });
+      if (u.startsWith("https://api.etherscan.io/v2/api")) {
+        const q = new URL(u).searchParams;
+        if (q.get("action") === "eth_call") {
+          ethCalls++;
+          const data = (q.get("data") || "").toLowerCase();
+          // Aave position with HF 0.95 on Ethereum only; every other read
+          // (other chains, Comet) answers cleanly with zeros.
+          if (data.startsWith("0xbf92857c") && q.get("chainid") === "1") {
+            const words = [
+              1000000n * 10n ** 8n,        // collateral
+              400000n * 10n ** 8n,         // debt
+              0n, 8000n, 7500n,
+              950000000000000000n,          // healthFactor 0.95e18
+            ];
+            return J({ jsonrpc: "2.0", id: 1, result: "0x" + words.map(word).join("") });
+          }
+          return J({ jsonrpc: "2.0", id: 1, result: "0x" + word(0n) });
+        }
+        return J({ status: "0", message: "No records found", result: [] });
+      }
+      return J({});
+    };
+
+    const scan1 = await scanAlertRules(env7, { waitUntil() {} });
+    check("fires on live HF 0.95 despite a persisted snapshot saying 2.5",
+      scan1.ok && scan1.fired === 1, scan1);
+
+    const pos = await env7.DEFI_CACHE.get("hfpos:v1:" + w.toLowerCase(), "json");
+    check("discovery sweep cached where the position lives",
+      Array.isArray(pos?.positions) && pos.positions.length === 1 &&
+      pos.positions[0].chain === "ethereum" && pos.positions[0].protocol === "aave-v3", pos);
+
+    const callsAfterSweep = ethCalls;
+    const scan2 = await scanAlertRules(env7, { waitUntil() {} });
+    check("second tick does not re-fire while still on the wrong side",
+      scan2.ok && scan2.fired === 0, scan2);
+    check("second tick reads only the cached position (1 eth_call, not a 15-call sweep)",
+      ethCalls - callsAfterSweep === 1, { sweep: callsAfterSweep, tick2: ethCalls - callsAfterSweep });
+    globalThis.fetch = realFetch7;
+  }
+
+  // =========================================================================
+  // 8. Price alerts: real feed, edge-triggered
+  // =========================================================================
+  {
+    const env8 = makeEnv();
+    const call8 = makeCall(env8);
+    const w = await signIn(env8, call8, 32);
+    await setTier(env8, w, "pro");
+    const TOKEN = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48";
+    const rule8 = await call8("POST", "/api/alerts/rules", {
+      wallet_address: w, kind: "price",
+      params: { token: TOKEN, threshold: 1.10, direction: "below" }, channels: ["email"],
+    });
+    check("price rule created", rule8.json.success === true, rule8.json);
+
+    let price = 1.05;
+    const realFetch8 = globalThis.fetch;
+    globalThis.fetch = async (input) => {
+      const u = String(input?.url || input);
+      const J = (o) => new Response(JSON.stringify(o), { headers: { "content-type": "application/json" } });
+      if (u.includes("llama.fi")) {
+        const keys = decodeURIComponent(u.split("/current/")[1] || "").split(",");
+        const coins = {};
+        for (const k of keys) if (k.endsWith(TOKEN)) coins[k] = { price };
+        return J({ coins });
+      }
+      return J({});
+    };
+    const resetFired = () => env8.HEALTH_DB.prepare(
+      "UPDATE alert_rules SET last_fired_at = NULL WHERE id = ?").bind(rule8.json.id).run();
+
+    const s1 = await scanAlertRules(env8, { waitUntil() {} });
+    check("price below threshold fires", s1.ok && s1.fired === 1, s1);
+
+    await resetFired();
+    const s2 = await scanAlertRules(env8, { waitUntil() {} });
+    check("same price does not re-fire (edge-trigger, not level-trigger)",
+      s2.fired === 0, s2);
+
+    price = 1.20;
+    await resetFired();
+    const s3 = await scanAlertRules(env8, { waitUntil() {} });
+    check("price back above threshold does not fire", s3.fired === 0, s3);
+
+    price = 1.05;
+    await resetFired();
+    const s4 = await scanAlertRules(env8, { waitUntil() {} });
+    check("crossing back below fires again", s4.fired === 1, s4);
+    globalThis.fetch = realFetch8;
+  }
+
+  // =========================================================================
+  // 9. Approval alerts: bootstrap silently, then fire on new risky grants
+  // =========================================================================
+  {
+    const env9 = makeEnv();
+    env9.ETHERSCAN_API_KEY = "stub";
+    const call9 = makeCall(env9);
+    const w = await signIn(env9, call9, 33);
+    await setTier(env9, w, "pro");
+    const rule9 = await call9("POST", "/api/alerts/rules", {
+      wallet_address: w, kind: "approval_change", params: {}, channels: ["email"],
+    });
+    check("approval rule created", rule9.json.success === true, rule9.json);
+
+    const TOPIC = "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925";
+    const pad = (a) => "0x" + "0".repeat(24) + a.toLowerCase().slice(2);
+    const TOKEN9 = "0x" + "aa".repeat(20);
+    const SPENDER = "0x" + "bb".repeat(20);
+    let tip = 0x100000;
+    let logs = [];
+    let logsFail = false;
+    const realFetch9 = globalThis.fetch;
+    globalThis.fetch = async (input) => {
+      const u = String(input?.url || input);
+      const J = (o) => new Response(JSON.stringify(o), { headers: { "content-type": "application/json" } });
+      if (u.startsWith("https://api.etherscan.io/v2/api")) {
+        const q = new URL(u).searchParams;
+        if (q.get("action") === "eth_blockNumber") {
+          return J({ jsonrpc: "2.0", id: 1, result: "0x" + tip.toString(16) });
+        }
+        if (q.get("module") === "logs") {
+          if (logsFail) return J({ status: "0", message: "NOTOK", result: "Max rate limit reached" });
+          // The position lives on Ethereum only — a chain-agnostic stub here
+          // would (correctly) produce five grants, one per scanned chain.
+          const chainLogs = q.get("chainid") === "1" ? logs : [];
+          return J({ status: "1", message: "OK", result: chainLogs });
+        }
+        if (q.get("action") === "eth_call") {
+          return J({ jsonrpc: "2.0", id: 1, result: "0x" + "0".repeat(64) });
+        }
+        return J({ status: "0", message: "No records found", result: [] });
+      }
+      return J({});
+    };
+
+    const t1 = await scanAlertRules(env9, { waitUntil() {} });
+    check("first tick bootstraps without firing on approval history",
+      t1.ok && t1.fired === 0, t1);
+    const cur = await env9.DEFI_CACHE.get("apprcur:v1:ethereum:" + w.toLowerCase());
+    check("bootstrap recorded the chain tip as the cursor", cur === String(tip), cur);
+
+    tip += 16;
+    logs = [
+      { address: TOKEN9, topics: [TOPIC, pad(w), pad(SPENDER)], data: "0x" + "f".repeat(64), blockNumber: "0x100005" },
+      // A revocation in the same range must not alert — it is good news.
+      { address: TOKEN9, topics: [TOPIC, pad(w), pad(SPENDER)], data: "0x" + "0".repeat(64), blockNumber: "0x100006" },
+    ];
+    const t2 = await scanAlertRules(env9, { waitUntil() {} });
+    check("new unlimited approval fires", t2.fired === 1, t2);
+    const lv = await env9.HEALTH_DB.prepare(
+      "SELECT last_value FROM alert_rules WHERE id = ?").bind(rule9.json.id).first();
+    const snap = JSON.parse(lv?.last_value || "{}");
+    check("snapshot carries exactly the one risky grant (revocation filtered)",
+      Array.isArray(snap?.new) && snap.new.length === 1 && snap.new[0].risk === "high", snap);
+
+    tip += 16;
+    logs = [];
+    await env9.HEALTH_DB.prepare(
+      "UPDATE alert_rules SET last_fired_at = NULL WHERE id = ?").bind(rule9.json.id).run();
+    const t3 = await scanAlertRules(env9, { waitUntil() {} });
+    check("a quiet range does not re-fire", t3.fired === 0, t3);
+
+    // A failed scan must keep its cursor so the range is retried — advancing
+    // past a range we never read would silently drop the events in it.
+    const curBefore = await env9.DEFI_CACHE.get("apprcur:v1:ethereum:" + w.toLowerCase());
+    tip += 16;
+    logs = [
+      { address: TOKEN9, topics: [TOPIC, pad(w), pad("0x" + "cc".repeat(20))],
+        data: "0x" + "f".repeat(64), blockNumber: "0x" + (tip - 4).toString(16) },
+    ];
+    logsFail = true;
+    const t4 = await scanAlertRules(env9, { waitUntil() {} });
+    check("a failed log scan does not fire", t4.fired === 0, t4);
+    const curAfterFail = await env9.DEFI_CACHE.get("apprcur:v1:ethereum:" + w.toLowerCase());
+    check("a failed log scan keeps its cursor for retry", curAfterFail === curBefore,
+      { before: curBefore, after: curAfterFail });
+
+    logsFail = false;
+    const t5 = await scanAlertRules(env9, { waitUntil() {} });
+    check("the retried range delivers the grant the failure straddled",
+      t5.fired === 1, t5);
+    globalThis.fetch = realFetch9;
+  }
+
+  // =========================================================================
+  // 10. Budget exhaustion degrades to the snapshot, never to a false alert
+  // =========================================================================
+  {
+    const env10 = makeEnv();
+    env10.ETHERSCAN_API_KEY = "stub";
+    env10.ALERT_LIVE_BUDGET = "0";
+    const call10 = makeCall(env10);
+    const w = await signIn(env10, call10, 34);
+    await setTier(env10, w, "pro");
+    await env10.HEALTH_DB.prepare(
+      "INSERT INTO health_scores (wallet, score, source_json, computed_at) VALUES (?, ?, ?, ?)"
+    ).bind(w.toLowerCase(), 700, JSON.stringify({ health_factor: 2.5 }), Date.now()).run();
+    await call10("POST", "/api/alerts/rules", {
+      wallet_address: w, kind: "health_factor",
+      params: { threshold: 1.5, direction: "below" }, channels: ["email"],
+    });
+    let fetches = 0;
+    const realFetch10 = globalThis.fetch;
+    globalThis.fetch = async () => { fetches++; return new Response("{}", { status: 200 }); };
+    const s10 = await scanAlertRules(env10, { waitUntil() {} });
+    globalThis.fetch = realFetch10;
+    check("budget 0: scan completes on the snapshot without firing",
+      s10.ok && s10.fired === 0, s10);
+    check("budget 0: no live fetches attempted", fetches === 0, fetches);
+  }
 
   const summary = results.filter((r) => !r.ok);
   console.log(`\n${results.length - summary.length}/${results.length} passed`);

@@ -3,15 +3,26 @@
 // subrequest count, and persistence.
 import { D1, KV } from "./d1.mjs";
 import worker from "../worker/index.js";
-import { BANDS, bandForScore, coverageOf, PILLAR_WEIGHTS, pillarLoanReliability, SCORE_MODEL_VERSION } from "../worker/lib/score.js";
+import { BANDS, bandForScore, coverageOf, PILLAR_WEIGHTS, pillarLoanReliability, pillarLiquidityProvision, SCORE_MODEL_VERSION } from "../worker/lib/score.js";
+import { getUniV3LpCount } from "../worker/lib/defi.js";
 import { COMPOUND_V3_MARKETS } from "../worker/lib/defi-protocols.js";
 
 const ORIGIN = "https://defiscoring.com";
 const WALLET = "0x00000000000000000000000000000000000000aa";
 const EMPTY_WALLET = "0x00000000000000000000000000000000000000ee";
+// Holds 3 Uniswap V3 position NFTs; only tokenId 1001 still has liquidity.
+// The other two are closed positions the wallet never burned.
+const LP_WALLET = "0x00000000000000000000000000000000000000c9";
+const LP_NFT_COUNT = 3;
+const LP_LIVE_TOKEN_ID = 1001;
+const ALCHEMY_CHAIN = { id: "ethereum", name: "Ethereum", chainId: 1, alchemy: "eth-mainnet" };
 // Borrows on Compound V3 with collateral behind it — the case that used to
 // score as "no lending history" because the pillar only matched aave-v3.
 const BORROWER = "0x00000000000000000000000000000000000000bb";
+// Borrows on Spark only — its Pool shares Aave's ABI, so the stub answers
+// getUserAccountData on Spark's pool address and nothing else.
+const SPARK_WALLET = "0x00000000000000000000000000000000000000dd";
+const SPARK_ETH_POOL = "0xc13e21b648a5ee794902342038ff3adab66be987";
 
 // Comet stub fixtures. Chosen so the derived health factor is exact:
 //   5 WETH x $3,000       = $15,000 collateral
@@ -69,7 +80,7 @@ const env = {
   SESSION_HMAC_KEY: "k",
 };
 
-let calls = { etherscan: 0, coingecko: 0, snapshot: 0, cometPrice: 0, txlistChains: [], other: [] };
+let calls = { etherscan: 0, coingecko: 0, snapshot: 0, cometPrice: 0, txlistChains: [], alchemyHttp: 0, alchemyCalls: 0, other: [] };
 const realFetch = globalThis.fetch;
 globalThis.fetch = async (input, init) => {
   const u = String(input?.url || input);
@@ -158,6 +169,24 @@ globalThis.fetch = async (input, init) => {
       if (action === "txlist")  return J({ status: "0", message: "No transactions found", result: [] });
       if (action === "eth_call") return J({ jsonrpc: "2.0", id: 1, result: "0x" + "0".repeat(64 * 6) });
     }
+    // ---- Spark-only wallet -------------------------------------------------
+    if (action === "eth_call" && callData.includes(SPARK_WALLET.slice(2))) {
+      const to = (q.get("to") || "").toLowerCase();
+      if (to === SPARK_ETH_POOL) {
+        const w6 = (v) => BigInt(v).toString(16).padStart(64, "0");
+        // collateral $20,000, debt $9,000 (8-dec base), HF 1.8e18
+        return J({ jsonrpc: "2.0", id: 1, result: "0x" +
+          w6(20000n * 10n ** 8n) + w6(9000n * 10n ** 8n) + w6(0n) +
+          w6(8000n) + w6(7500n) + w6(1800000000000000000n) });
+      }
+      return J({ jsonrpc: "2.0", id: 1, result: "0x" + "0".repeat(64 * 6) });
+    }
+    if (callData === "" && (q.get("address") || "").toLowerCase() === SPARK_WALLET) {
+      if (action === "balance") return J({ status: "1", message: "OK", result: "0" });
+      if (action === "tokentx") return J({ status: "0", message: "No token transfers found", result: [] });
+      if (action === "txlist")  return J({ status: "0", message: "No transactions found", result: [] });
+    }
+
     // ---- Compound V3 Comet ------------------------------------------------
     // Intercepted by contract address so Comet's balanceOf (supply) is not
     // answered by the generic ERC-20 balanceOf branch below. Every wallet
@@ -202,6 +231,12 @@ globalThis.fetch = async (input, init) => {
       }
     }
 
+    // LP wallet via the non-Alchemy path: balanceOf on the position manager
+    // returns the NFT count, and there is no batch endpoint to refine it.
+    if (action === "eth_call" && callData.includes(LP_WALLET.slice(2))) {
+      return J({ jsonrpc: "2.0", id: 1, result: "0x" + w(LP_NFT_COUNT) });
+    }
+
     if (action === "balance") return J({ status: "1", message: "OK", result: "1500000000000000000" });
     if (action === "tokentx") {
       return J({ status: "1", message: "OK", result: [{
@@ -222,6 +257,37 @@ globalThis.fetch = async (input, init) => {
     }
     return J({ status: "0", message: "NOTOK", result: "unsupported in stub" });
   }
+  // ---- Alchemy JSON-RPC (single + batch) ---------------------------------
+  if (u.includes(".g.alchemy.com")) {
+    const body = JSON.parse((init && init.body) || "{}");
+    const batched = Array.isArray(body);
+    const reqs = batched ? body : [body];
+    calls.alchemyHttp += 1;
+    calls.alchemyCalls += reqs.length;
+    const answer = (req) => {
+      const pr = (req.params && req.params[0]) || {};
+      const d = String(pr.data || "").toLowerCase();
+      const sel = d.slice(0, 10);
+      if (sel === "0x70a08231") {                       // balanceOf -> NFT count
+        return { jsonrpc: "2.0", id: req.id, result: "0x" + w(LP_NFT_COUNT) };
+      }
+      if (sel === "0x2f745c59") {                       // tokenOfOwnerByIndex
+        const idx = Number(BigInt("0x" + d.slice(74, 138)));
+        return { jsonrpc: "2.0", id: req.id, result: "0x" + w(1000 + idx) };
+      }
+      if (sel === "0x99fbab88") {                       // positions(tokenId)
+        const tokenId = Number(BigInt("0x" + d.slice(10, 74)));
+        // 12 words; liquidity is word 7.
+        const words = Array.from({ length: 12 }, () => w(0));
+        if (tokenId === LP_LIVE_TOKEN_ID) words[7] = w(123456789n);
+        return { jsonrpc: "2.0", id: req.id, result: "0x" + words.join("") };
+      }
+      return { jsonrpc: "2.0", id: req.id, result: "0x" };
+    };
+    const out = reqs.map(answer);
+    return J(batched ? out : out[0]);
+  }
+
   // CoinGecko is "down" (429-style empty) for the whole test — the portfolio
   // must still be priced via the DefiLlama fallback tier.
   if (u.includes("coingecko.com")) { calls.coingecko++; return J({}); }
@@ -247,7 +313,7 @@ async function call(path) {
 
 (async () => {
   // ---- portfolio
-  calls = { etherscan: 0, coingecko: 0, snapshot: 0, cometPrice: 0, txlistChains: [], other: [] };
+  calls = { etherscan: 0, coingecko: 0, snapshot: 0, cometPrice: 0, txlistChains: [], alchemyHttp: 0, alchemyCalls: 0, other: [] };
   const p = await call("/api/portfolio?wallet=" + WALLET);
   check("GET /api/portfolio succeeds", p.json.success, p.json);
   check("portfolio defaults to the 5 Tier-1 chains", (p.json.chains || []).length === 5,
@@ -262,7 +328,7 @@ async function call(path) {
   const portfolioSubrequests = calls.etherscan;
 
   // ---- wallet score
-  calls = { etherscan: 0, coingecko: 0, snapshot: 0, cometPrice: 0, txlistChains: [], other: [] };
+  calls = { etherscan: 0, coingecko: 0, snapshot: 0, cometPrice: 0, txlistChains: [], alchemyHttp: 0, alchemyCalls: 0, other: [] };
   const s = await call("/api/wallet-score?wallet=" + WALLET);
   check("GET /api/wallet-score succeeds", s.json.success, s.json);
   check("score is in the FICO band", s.json.score >= 300 && s.json.score <= 850, s.json.score);
@@ -285,6 +351,54 @@ async function call(path) {
   const svg = await badge.text();
   check("badge renders the persisted score", badge.status === 200 && svg.includes(String(s.json.score)),
     svg.slice(0, 160));
+
+  // ---- coverage on the badge --------------------------------------------
+  // The badge is the one public surface: a score computed from partial data
+  // must not render identically to a fully-observed one. This wallet's scan
+  // resolved four of five pillars (loan_reliability found nothing), so the
+  // persisted row carries coverage 0.65 and the badge must say so.
+  check("partial-coverage badge appends the observed-data share",
+    svg.includes("65% data"), svg.match(/<text[^>]*>[^<]*<\/text>/g));
+  const persistedCov = JSON.parse((await env.HEALTH_DB
+    .prepare("SELECT source_json FROM health_scores WHERE wallet = ? ORDER BY computed_at DESC LIMIT 1")
+    .bind(WALLET).first()).source_json);
+  check("coverage persisted alongside the score", persistedCov.coverage === 0.65, persistedCov);
+  check("pillar summaries persisted for the explanation endpoint",
+    persistedCov.pillars &&
+    Object.keys(persistedCov.pillars).length === 5 &&
+    typeof persistedCov.pillars.account_age?.rationale === "string" &&
+    persistedCov.pillars.loan_reliability?.real === false,
+    persistedCov.pillars && Object.keys(persistedCov.pillars));
+
+  // A row written before coverage existed (no key) must render the plain
+  // band label — unknown coverage is not zero coverage.
+  const LEGACY = "0x00000000000000000000000000000000000000f0";
+  await env.HEALTH_DB.prepare(
+    "INSERT INTO health_scores (wallet, score, source_json, computed_at) VALUES (?, ?, ?, ?)"
+  ).bind(LEGACY, 700, JSON.stringify({ source: "wallet-score" }), Date.now()).run();
+  const legacyBadge = await worker.fetch(new Request(ORIGIN + "/badge/" + LEGACY + ".svg"), env, { waitUntil() {} });
+  const legacySvg = await legacyBadge.text();
+  check("pre-coverage row renders the plain band, not a data suffix",
+    legacyBadge.status === 200 && !legacySvg.includes("% data") && legacySvg.includes("700"),
+    legacySvg.match(/<text[^>]*>[^<]*<\/text>/g));
+
+  // Full coverage stays plain too — the suffix marks the exception, and a
+  // malformed blob must not take the badge down.
+  const FULLCOV = "0x00000000000000000000000000000000000000f1";
+  await env.HEALTH_DB.prepare(
+    "INSERT INTO health_scores (wallet, score, source_json, computed_at) VALUES (?, ?, ?, ?)"
+  ).bind(FULLCOV, 810, JSON.stringify({ coverage: 1 }), Date.now()).run();
+  const fullSvg = await (await worker.fetch(new Request(ORIGIN + "/badge/" + FULLCOV + ".svg"), env, { waitUntil() {} })).text();
+  check("full-coverage badge renders the plain band", !fullSvg.includes("% data") && fullSvg.includes("810"), null);
+  const CORRUPT = "0x00000000000000000000000000000000000000f2";
+  await env.HEALTH_DB.prepare(
+    "INSERT INTO health_scores (wallet, score, source_json, computed_at) VALUES (?, ?, ?, ?)"
+  ).bind(CORRUPT, 640, "{not json", Date.now()).run();
+  const corruptBadge = await worker.fetch(new Request(ORIGIN + "/badge/" + CORRUPT + ".svg"), env, { waitUntil() {} });
+  const corruptSvg = await corruptBadge.text();
+  check("a corrupt source_json still renders the badge (coverage just omitted)",
+    corruptBadge.status === 200 && corruptSvg.includes("640") && !corruptSvg.includes("% data"),
+    corruptBadge.status);
 
   // ---- band-threshold boundary: badge must agree with the score payload
   //
@@ -317,7 +431,7 @@ async function call(path) {
     { expectedLabel, svg: boundarySvg.slice(0, 200) });
 
   // ---- all-chain opt-in
-  calls = { etherscan: 0, coingecko: 0, snapshot: 0, cometPrice: 0, txlistChains: [], other: [] };
+  calls = { etherscan: 0, coingecko: 0, snapshot: 0, cometPrice: 0, txlistChains: [], alchemyHttp: 0, alchemyCalls: 0, other: [] };
   const all = await call("/api/wallet-score?wallet=" + WALLET + "&tier=all");
   check("?tier=all is honoured end to end", all.json.success, all.json.error);
 
@@ -343,7 +457,7 @@ async function call(path) {
   // Regression: pillarLoanReliability only matched protocol === 'aave-v3',
   // so a wallet managing a Compound borrow scored as if it had never
   // borrowed at all (real:false, neutral 50).
-  calls = { etherscan: 0, coingecko: 0, snapshot: 0, cometPrice: 0, other: [] };
+  calls = { etherscan: 0, coingecko: 0, snapshot: 0, cometPrice: 0, alchemyHttp: 0, alchemyCalls: 0, other: [] };
   const b = await call("/api/wallet-score?wallet=" + BORROWER);
   const lr = b.json.pillars?.loan_reliability;
   check("Compound-only borrower is scored, not treated as no lending history",
@@ -404,8 +518,47 @@ async function call(path) {
     /could not be read/.test(blind.rationale), blind.rationale);
 
   const none = pillarLoanReliability([]);
-  check("no lending anywhere still reads real:false and names both protocols",
-    none.real === false && /Aave V3 or Compound V3/.test(none.rationale), none);
+  check("no lending anywhere still reads real:false and names all three protocols",
+    none.real === false && /Aave V3, Spark or Compound V3/.test(none.rationale), none);
+
+  // ---- Spark folded into loan reliability --------------------------------
+  // Spark is an Aave V3 fork with an unchanged Pool ABI, so its positions
+  // must flow through the same branch as Aave's — same bands, only the label
+  // differs. A wallet that borrows exclusively on Spark used to score
+  // real:false neutral 50, exactly the gap Compound had before it.
+  const sparkRow = (hf, coll = 20000, debt = 9000) => [{ protocols: [{
+    protocol: "spark", hasPosition: true, healthFactor: hf,
+    collateralUsd: coll, debtUsd: debt }] }];
+  const sp = pillarLoanReliability(sparkRow(1.4));
+  check("a Spark borrower is scored, not treated as no lending history",
+    sp.real === true && sp.value === 40, sp);
+  check("Spark and Aave land in the same band at the same health factor",
+    sp.value === pillarLoanReliability([{ protocols: [{
+      protocol: "aave-v3", hasPosition: true, healthFactor: 1.4,
+      collateralUsd: 20000, debtUsd: 9000 }] }]).value, sp.value);
+  check("Spark is named in the rationale and protocol list",
+    /Spark/.test(sp.rationale) && sp.protocols.includes("Spark") &&
+    sp.lowestHealthFactorProtocol === "Spark", sp);
+  const sparkAndAave = pillarLoanReliability([
+    ...sparkRow(2.6),
+    { protocols: [{ protocol: "aave-v3", hasPosition: true, healthFactor: 1.1,
+      collateralUsd: 5000, debtUsd: 4000 }] },
+  ]);
+  check("the riskier protocol still sets the band with Spark in the mix",
+    sparkAndAave.value === 20 && sparkAndAave.lowestHealthFactorProtocol === "Aave V3",
+    sparkAndAave);
+
+  // End to end: a wallet whose only footprint is a Spark borrow must be
+  // scored (the honest-score gate counts the position as real signal), with
+  // the pillar reading the health factor off Spark's pool.
+  const sw = await call("/api/wallet-score?wallet=" + SPARK_WALLET);
+  const slr = sw.json.pillars?.loan_reliability;
+  check("Spark-only wallet is scored end to end",
+    sw.json.scored === true && slr?.real === true, { scored: sw.json.scored, slr });
+  check("Spark HF read from the pool and banded like Aave's",
+    slr?.lowestHealthFactor === 1.8 && slr?.value === 65, slr);
+  check("end-to-end rationale names Spark",
+    /Spark/.test(slr?.rationale || "") && slr?.lowestHealthFactorProtocol === "Spark", slr?.rationale);
   // ---- model versioning --------------------------------------------------
   check("scored payload carries the model version",
     s.json.model === SCORE_MODEL_VERSION, { got: s.json.model, expected: SCORE_MODEL_VERSION });
@@ -600,6 +753,70 @@ async function call(path) {
   check("coverage weights match the weights published in the pillars",
     Object.entries(pl).reduce((sum, [, v]) => sum + (v.weight || 0), 0).toFixed(4) === "1.0000",
     Object.entries(pl).map(([k, v]) => [k, v.weight]));
+  // ---- Uniswap V3: live positions, not NFT count -------------------------
+  // Regression: getUniV3LpCount was a balanceOf on the position manager, so
+  // a wallet holding three closed positions scored as a three-position LP.
+  calls = { etherscan: 0, coingecko: 0, snapshot: 0, cometPrice: 0, alchemyHttp: 0, alchemyCalls: 0, other: [] };
+  const lp = await getUniV3LpCount(ALCHEMY_CHAIN, { ALCHEMY_KEY: "stub" }, LP_WALLET);
+  check("holds 3 position NFTs", lp.lpCount === LP_NFT_COUNT, lp);
+  check("only the position with liquidity counts as active",
+    lp.activeLpCount === 1, { activeLpCount: lp.activeLpCount, lpCount: lp.lpCount });
+  check("all 3 positions were actually read", lp.positionsRead === 3, lp.positionsRead);
+  check("hasPosition follows the live count, not the NFT count",
+    lp.hasPosition === true, lp);
+  check("not flagged truncated below the 20-position cap",
+    lp.lpCountTruncated === false, lp.lpCountTruncated);
+  // 1 balanceOf + 3 tokenOfOwnerByIndex + 3 positions = 7 RPC calls, but only
+  // 3 HTTP requests — the two sweeps ride in one batch each.
+  check("enumeration costs 3 HTTP subrequests regardless of position count",
+    calls.alchemyHttp === 3, { http: calls.alchemyHttp, rpcCalls: calls.alchemyCalls });
+  check("the per-position reads are batched, not serial",
+    calls.alchemyCalls === 1 + LP_NFT_COUNT * 2 && calls.alchemyHttp === 3,
+    { http: calls.alchemyHttp, rpcCalls: calls.alchemyCalls });
+
+  // Without an Alchemy key there is no batch endpoint, so the raw count
+  // stands — but the pillar must say so rather than implying it is live.
+  calls = { etherscan: 0, coingecko: 0, snapshot: 0, cometPrice: 0, alchemyHttp: 0, alchemyCalls: 0, other: [] };
+  const lpNoKey = await getUniV3LpCount(ALCHEMY_CHAIN, { ETHERSCAN_API_KEY: "stub" }, LP_WALLET);
+  check("without Alchemy the raw NFT count still comes back",
+    lpNoKey.lpCount === LP_NFT_COUNT, lpNoKey);
+  check("without Alchemy the active count is null, not a guessed zero",
+    lpNoKey.activeLpCount === null, lpNoKey);
+  check("without Alchemy no batch calls are made", calls.alchemyHttp === 0, calls.alchemyHttp);
+
+  // ---- pillar prefers activeLpCount --------------------------------------
+  const chainRow = (row) => [{ protocols: [{ protocol: "uniswap-v3-lp", ...row }] }];
+
+  const live1of3 = pillarLiquidityProvision(chainRow(
+    { lpCount: 3, activeLpCount: 1, positionsRead: 3, lpCountTruncated: false }));
+  check("pillar scores the live count, not the NFT count",
+    live1of3.lpCount === 1 && live1of3.value === 50,
+    { lpCount: live1of3.lpCount, value: live1of3.value });
+  check("pillar says how many NFTs were discounted",
+    /2 further position NFT\(s\) hold no liquidity/.test(live1of3.rationale), live1of3.rationale);
+  check("the same wallet scored on raw NFT count would have ranked higher",
+    pillarLiquidityProvision(chainRow({ lpCount: 3 })).value > live1of3.value,
+    { byNftCount: pillarLiquidityProvision(chainRow({ lpCount: 3 })).value, byLive: live1of3.value });
+
+  const allClosed = pillarLiquidityProvision(chainRow(
+    { lpCount: 4, activeLpCount: 0, positionsRead: 4, lpCountTruncated: false }));
+  check("a wallet whose positions are all closed is not an LP",
+    allClosed.real === false && allClosed.value === 50, allClosed);
+  check("all-closed is reported as observed, not as 'never provided liquidity'",
+    /none currently hold liquidity/.test(allClosed.rationale), allClosed.rationale);
+
+  const unresolved = pillarLiquidityProvision(chainRow({ lpCount: 3, activeLpCount: null }));
+  check("unresolved counts still score, using the raw count",
+    unresolved.real === true && unresolved.lpCount === 3, unresolved);
+  check("unresolved counts are labelled as possibly including closed positions",
+    /may include closed positions/.test(unresolved.rationale), unresolved.rationale);
+  check("unresolved pillar does not claim a verified active count",
+    unresolved.activeLpCount === null, unresolved.activeLpCount);
+
+  const truncatedPillar = pillarLiquidityProvision(chainRow(
+    { lpCount: 40, activeLpCount: 20, positionsRead: 20, lpCountTruncated: true }));
+  check("a truncated enumeration is reported as a floor",
+    /floor/.test(truncatedPillar.rationale), truncatedPillar.rationale);
 
   globalThis.fetch = realFetch;
   const failed = results.filter((r) => !r.ok);

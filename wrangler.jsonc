@@ -83,7 +83,7 @@
   //   "*/5 * * * *"  — every 5 min:    scanAlertRules()    (T6 Alerts)
   // Add new trigger strings here AND a matching branch in scheduled().
   "triggers": {
-    "crons": ["17 3 * * *", "*/5 * * * *"]
+    "crons": ["17 3 * * *", "*/5 * * * *", "*/15 * * * *"]
   },
   // ── Secrets (NOT vars) ───────────────────────────────────────────────
   // Every other env var the Worker reads is a Cloudflare Worker Secret,

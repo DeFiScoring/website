@@ -95,9 +95,9 @@ The dashboard shows this as *"Score based on N% live data"* beside the band, dim
 ### 1.3 The five pillars
 
 <div class="pillar-grid">
-  <div class="pillar"><div class="weight">35%</div><h4>Loan Reliability</h4><p>Aave V3 health factor and debt utilisation across chains.</p></div>
+  <div class="pillar"><div class="weight">35%</div><h4>Loan Reliability</h4><p>Aave V3, Spark and Compound V3 health factors across chains.</p></div>
   <div class="pillar"><div class="weight">25%</div><h4>Portfolio Health</h4><p>Diversification, portfolio size, multi-chain presence.</p></div>
-  <div class="pillar"><div class="weight">15%</div><h4>Liquidity Provision</h4><p>Uniswap V3 concentrated-liquidity positions.</p></div>
+  <div class="pillar"><div class="weight">15%</div><h4>Liquidity Provision</h4><p>Live Uniswap V3 concentrated-liquidity positions.</p></div>
   <div class="pillar"><div class="weight">15%</div><h4>Account Age</h4><p>Days since the wallet's first Ethereum transaction.</p></div>
   <div class="pillar"><div class="weight">10%</div><h4>Governance</h4><p>Snapshot voting record across DAOs.</p></div>
 </div>
@@ -106,13 +106,20 @@ Each pillar produces a **0–100** sub-score. The weights sum to exactly 1.00.
 
 #### A. Loan Reliability — 35%
 
-**Input:** every Aave V3 position found on the scanned chains — collateral, debt, and health factor.
+**Input:** every Aave V3, Spark and Compound V3 position found on the scanned chains — collateral, debt, and health factor. Spark is an Aave V3 fork whose pool reports the same health factor with the same semantics, so its positions flow through the identical logic with no conversion.
 
-We score the **riskiest** position, not the average: the lowest health factor across all chains sets the band. A wallet that is safe on four chains and about to be liquidated on a fifth is a liquidation risk.
+We score the **riskiest** position, not the average: the lowest health factor across all chains and both protocols sets the band. A wallet that is safe on four chains and about to be liquidated on a fifth is a liquidation risk.
+
+Aave reports a health factor directly. Compound V3 has no equivalent view, so
+one is derived on the same definition — risk-adjusted collateral divided by
+debt — from Comet's own price feeds and each collateral asset's liquidation
+collateral factor. Both protocols therefore land on one scale and share the
+bands below, with no conversion factor.
 
 | Condition | Sub-score | Coverage |
 | :--- | :--- | :--- |
-| No Aave V3 position on any chain | 50 | `real: false` |
+| No Aave V3, Spark or Compound V3 position on any chain | 50 | `real: false` |
+| Borrowing, but the collateral backing it could not be read | 50 | `real: true` |
 | Supplying with **zero debt** | 80 | `real: true` |
 | Lowest HF ≥ 3.00 | 95 | `real: true` |
 | Lowest HF 2.00 – 3.00 | 85 | `real: true` |
@@ -122,6 +129,12 @@ We score the **riskiest** position, not the average: the lowest health factor ac
 | Lowest HF < 1.00 (liquidatable) | 0 | `real: true` |
 
 A zero-debt supplier scores 80 rather than 100 by design: successfully managing a leveraged position is a stronger credit signal than never borrowing at all.
+
+The unreadable-collateral row is deliberately neutral rather than optimistic
+or punitive. When a Compound borrow is visible but its backing is not, scoring
+it as safe would guess in the wallet's favour and scoring it as liquidatable
+would guess against it; the amount is reported as `unassessableDebtUsd` so the
+gap is visible rather than absorbed.
 
 #### B. Portfolio Health — 25%
 
@@ -159,9 +172,13 @@ If no portfolio value is detected at all, the pillar is `real: false` at a neutr
 
 #### C. Liquidity Provision — 15%
 
-**Input:** the number of Uniswap V3 LP NFTs held, summed across the scanned chains.
+**Input:** the number of **live** Uniswap V3 positions — those still holding liquidity — summed across the scanned chains.
 
-| LP positions | Sub-score | Coverage |
+Uniswap V3 does not burn the position NFT when a position is fully withdrawn, so counting NFTs over-counts: a wallet that closed ten positions still holds ten tokens. Where the infrastructure allows it, each position is read and only those with non-zero liquidity are counted. A wallet holding nothing but closed positions therefore scores as having no LP exposure, and the rationale says the NFTs were found but are empty rather than implying the wallet never provided liquidity.
+
+Two limits apply to that resolution. Up to 20 positions per chain are examined, and beyond that the count is reported as a floor rather than a total. Where the per-position read is unavailable, the raw NFT count stands — and the pillar says so explicitly instead of presenting the number as live positions.
+
+| Live LP positions | Sub-score | Coverage |
 | :--- | :--- | :--- |
 | ≥ 20 | 95 | `real: true` |
 | 5 – 19 | 80 | `real: true` |
@@ -267,22 +284,26 @@ Unscored results are **not written to score history**. They do not appear in the
 
 ### 1.8 Persistence
 
-A scored result is written to the wallet's score history, which backs the trend chart and the public badge at `/badge/{address}.svg`. The stored row keeps the pillar sub-scores, the raw `Hs`, the band, and the adjustment list alongside the final number.
+A scored result is written to the wallet's score history, which backs the trend chart and the public badge at `/badge/{address}.svg`. The stored row keeps the pillar sub-scores, the raw `Hs`, the band, and the adjustment list alongside the final number. Wallets with active alert rules are additionally re-scored on a schedule (roughly daily, stalest first), so their trend history and score-change alerts work without anyone pressing scan.
 
 ### 1.9 Model versioning
 
-A score is only comparable to another score produced by the same model, so every score carries a **model version** — currently `2026.08` — and every stored row records the version that produced it.
+A score is only comparable to another score produced by the same model, so every score carries a **model version** — currently `2026.09` — and every stored row records the version that produced it.
 
 The version is incremented whenever a change would move an existing wallet's score without its on-chain position having changed: new or reweighted pillars, changed banding, new adjustments, or a new data source feeding an existing pillar. It is *not* incremented for bug fixes that only affect which wallets can be scored at all, nor for refactors.
 
 Where a wallet's history spans a model change, the trend chart marks the boundary rather than drawing the step as though the wallet had moved. Rows written before versioning existed carry no version; those are left unmarked, since the absence of a recorded version is not evidence that the model changed at that point.
 
+**Version history.** `2026.09` — account age became multichain (the oldest first-transaction across all Tier 1 chains, where it previously read Ethereum alone), and liquidity provision began counting only live Uniswap V3 positions rather than position NFTs held. Both changes can move a wallet's score without any on-chain action by the wallet, which is precisely what a version boundary exists to mark. `2026.08` — the first versioned model: five pillars as documented on this page.
+
 ---
 
 ## 2. Wallet Score Limitations
 
-- **Aave V3 and Uniswap V3 only.** Two of the five pillars read specific protocols. A wallet that borrows exclusively on Compound, Morpho, or Spark scores `real: false` on loan reliability and receives a neutral 50 — not a penalty, but not credit for that activity either.
+- **A fixed protocol list.** Two of the five pillars read specific protocols: loan reliability covers Aave V3, Spark and Compound V3, and liquidity provision covers Uniswap V3. A wallet that borrows exclusively on Morpho scores `real: false` on loan reliability and receives a neutral 50 — not a penalty, but not credit for that activity either.
+- **Compound collateral without a borrow is invisible.** Comet's position check keys off the base-asset balance, which is zero for an account that has deposited collateral but not borrowed against it. Such a wallet reads as having no Compound position. It is also the case where nothing is at risk.
 - **Account age stops at Tier 1.** All five Tier 1 chains are queried, but a wallet whose entire history predates its Tier 1 activity — living only on Gnosis, Linea, zkSync Era or another Tier 2 chain — is still under-rated.
+- **LP positions are counted, not valued.** A live position counts the same whether it holds a few dollars or a few million; the pillar measures whether a wallet provides liquidity, not how much.
 - **Point-in-time.** The score reflects the moment of the scan. A health factor can deteriorate within a single block.
 - **Prices depend on third-party feeds.** When every price tier is unavailable, tokens are still detected but unpriced, and portfolio health degrades to `real: false`.
 - **No Sybil resistance.** The score describes an address, not a person. One person may hold many addresses, and one address may be controlled by many people.
@@ -344,7 +365,9 @@ Contract-level pattern analysis is available separately through the AI contract 
 | :--- | :--- |
 | **Etherscan v2 API** | Native and token balances, contract calls, first-transaction age, source verification |
 | **Aave V3 contracts** | Health factor, collateral, debt (read directly on-chain) |
-| **Uniswap V3 contracts** | LP position counts (read directly on-chain) |
+| **Spark (SparkLend) contracts** | Health factor, collateral, debt (read directly on-chain — same ABI as Aave V3) |
+| **Compound V3 (Comet) contracts** | Supply, borrow, per-asset collateral, price feeds, liquidation collateral factors (read directly on-chain) |
+| **Uniswap V3 contracts** | Position counts and per-position liquidity (read directly on-chain) |
 | **CoinGecko** | Token pricing (first tier) |
 | **DefiLlama** | Token pricing (second and third tiers), protocol TVL, market cap, audit counts |
 | **Snapshot** | Wallet governance voting records |

@@ -18,6 +18,7 @@
 import { requireSession, newId } from "../lib/auth.js";
 import { requireTier, tierLimit } from "../lib/tiers.js";
 import { validateWebhookUrl } from "../lib/webhook.js";
+import { CHAINS_BY_ID } from "../lib/chains.js";
 
 const VALID_KINDS = new Set([
   "health_factor", "price", "score_change",
@@ -38,12 +39,10 @@ const VALID_KINDS = new Set([
  * inert. Delete an entry here the moment its evaluator has real inputs —
  * nothing else needs to change.
  */
-const UNSUPPORTED_KINDS = {
-  price: "Price alerts need a live price feed, which isn't wired into the alert scanner yet. " +
-         "Creating one now would leave you with a rule that can never fire.",
-  approval_change: "Approval alerts need the token-approval scanner, which isn't wired into the " +
-         "alert scanner yet. Creating one now would leave you with a rule that can never fire.",
-};
+// Empty since the cron gained a live price feed and the approval scanner —
+// both kinds now have real evaluator inputs. The mechanism stays: any future
+// kind added before its data source ships goes here, not into silent limbo.
+const UNSUPPORTED_KINDS = {};
 
 const VALID_CHANNELS = new Set(["email", "telegram", "webhook"]);
 const WEBHOOK_MIN_TIER = "plus"; // matches the pricing table: Plus and Enterprise
@@ -98,6 +97,29 @@ export async function handleAlertRuleCreate(request, env) {
   }
   if (!Array.isArray(channels) || !channels.length || !channels.every((c) => VALID_CHANNELS.has(c))) {
     return json({ success: false, error: "invalid_channels" }, 400);
+  }
+
+  // A price rule with a malformed token, chain, or threshold would be
+  // accepted into a state where it can never fire — the same silent-limbo
+  // failure the UNSUPPORTED_KINDS mechanism exists to prevent. Validate the
+  // parameters the evaluator will actually read.
+  if (kind === "price") {
+    const p = params || {};
+    const chainId = p.chain || "ethereum";
+    const threshold = Number(p.threshold);
+    const direction = p.direction || "below";
+    if (!/^0x[0-9a-fA-F]{40}$/.test(p.token || "") ||
+        !CHAINS_BY_ID[chainId] ||
+        !Number.isFinite(threshold) || threshold <= 0 ||
+        !["above", "below"].includes(direction)) {
+      return json({
+        success: false,
+        error: "invalid_price_params",
+        message: "A price rule needs params.token (an 0x… contract address), a positive " +
+                 "params.threshold in USD, and optionally params.chain (a supported chain id, " +
+                 "default 'ethereum') and params.direction ('above' or 'below', default 'below').",
+      }, 400);
+    }
   }
 
   // Wallet must be linked to this user

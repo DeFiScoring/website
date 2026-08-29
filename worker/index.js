@@ -63,6 +63,11 @@ import {
   handleWalletsList, handleWalletLink, handleWalletUnlink, handleWalletUpdate,
 } from "./handlers/wallets.js";
 import { handleScoreBadge } from "./handlers/badge.js";
+import { runScheduledRescore } from "./handlers/rescore.js";
+import {
+  handleWatchedWalletsList, handleWatchedWalletsAdd, handleWatchedWalletsUpdate, handleWatchedWalletsDelete,
+} from "./handlers/watched-wallets.js";
+import { handleScoreExplanation } from "./handlers/explain.js";
 import { handleQuota } from "./handlers/quota.js";
 import {
   handleBillingConfig, handleBillingCheckout, handleBillingPortal,
@@ -2389,6 +2394,10 @@ export default {
       ctx.waitUntil(scanAlertRules(env, ctx));
       return;
     }
+    if (event.cron === "*/15 * * * *") {
+      ctx.waitUntil(runScheduledRescore(env, ctx));
+      return;
+    }
     // Unknown cron — log and bail rather than guessing.
     console.warn("[scheduled] unknown cron pattern:", event.cron);
   },
@@ -2824,6 +2833,12 @@ async function dispatch(request, env, peekedAddr) {
     // wired for existing front-end consumers). Internally fans out to
     // /api/portfolio + /api/defi + Snapshot + Etherscan first-tx, so it's
     // the most expensive endpoint we ship — same rate-limit posture.
+    if (request.method === "GET" && url.pathname === "/api/score-explanation") {
+      const blocked = await rateLimit(request, env, "/api/score-explanation", 20, 60);
+      if (blocked) return blocked;
+      return handleScoreExplanation(request, env);
+    }
+
     if (request.method === "GET" && url.pathname === "/api/wallet-score") {
       const blockedIp = await rateLimit(request, env, "/api/wallet-score", 30, 60);
       if (blockedIp) return blockedIp;
@@ -3015,6 +3030,18 @@ async function dispatch(request, env, peekedAddr) {
     //   /api/alerts/channels/{id}/verify   POST (with token) marks verified
     //   /api/alerts/deliveries         GET recent audit log
     // -----------------------------------------------------------------------
+    // User-scoped wallet watchlist — distinct from the legacy per-wallet
+    // protocol watchlist at /api/watchlist/{wallet} below.
+    if (url.pathname === "/api/watched-wallets") {
+      if (request.method === "GET")  return handleWatchedWalletsList(request, env);
+      if (request.method === "POST") return handleWatchedWalletsAdd(request, env);
+    }
+    if (url.pathname.startsWith("/api/watched-wallets/")) {
+      const wid = url.pathname.slice("/api/watched-wallets/".length).replace(/\/$/, "");
+      if (request.method === "PUT")    return handleWatchedWalletsUpdate(request, env, wid);
+      if (request.method === "DELETE") return handleWatchedWalletsDelete(request, env, wid);
+    }
+
     if (url.pathname === "/api/alerts/rules") {
       if (request.method === "GET")  return handleAlertRulesList(request, env);
       if (request.method === "POST") return handleAlertRuleCreate(request, env);
