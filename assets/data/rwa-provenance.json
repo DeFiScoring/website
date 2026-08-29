@@ -1,0 +1,100 @@
+{
+  "dataset_version": "2026.08",
+  "note": "Single source of truth for how every RWA research module got its numbers. assets/js/rwa-provenance.js renders one banner per module from this file. Adding an RWA page without an entry here fails test/rwa-provenance.mjs.",
+  "default": {
+    "kind": "curated",
+    "summary": "Curated research dossier — not a live feed.",
+    "detail": "Figures on this page are hand-compiled from the issuer and custodian disclosures listed below. They are not read from a live oracle, attestation endpoint or on-chain source, and they can go stale between reviews.",
+    "reviewed_at": "2026-08-01",
+    "sources": []
+  },
+  "modules": {
+    "rwa-asset-score": {
+      "summary": "Curated issuer dossier scored by a published rubric — not a live feed.",
+      "detail": "Token and issuer attributes are hand-compiled from public issuer disclosures; the composite score is computed from them by the rubric documented in the methodology. Nothing on this page is read live from an oracle or attestation endpoint.",
+      "reviewed_at": "2026-08-01",
+      "sources": [
+        "Issuer prospectuses and offering documents",
+        "Public token contract registries"
+      ]
+    },
+    "issuer-due-diligence": {
+      "summary": "Curated issuer dossier — not a live feed.",
+      "detail": "Counterparty, domicile and track-record figures are hand-compiled from issuer filings and public disclosures at the review date below.",
+      "reviewed_at": "2026-08-01",
+      "sources": [
+        "Issuer regulatory filings",
+        "Company disclosures and press releases"
+      ]
+    },
+    "custody-por": {
+      "summary": "Curated custody dossier — statuses are issuer-reported, not independently verified by DeFi Scoring.",
+      "detail": "Custodian, attestation status and reserve figures are transcribed from the issuer's and custodian's own published reports at the review date. A status of \"Verified\" means the issuer's attestation provider reported it — DeFi Scoring does not perform the attestation and does not read proof-of-reserves on-chain.",
+      "reviewed_at": "2026-08-01",
+      "sources": [
+        "Issuer attestation and transfer-agent reports",
+        "Custodian SOC 2 reports and custody agreements"
+      ]
+    },
+    "oracle-integrity": {
+      "summary": "Curated oracle dossier — not a live feed.",
+      "detail": "Feed inventory, freshness and failure history are hand-compiled from oracle provider documentation and public incident write-ups. Values are not sampled live from the oracles themselves.",
+      "reviewed_at": "2026-08-01",
+      "sources": [
+        "Oracle provider documentation",
+        "Published incident post-mortems"
+      ]
+    },
+    "liquidity-redemption": {
+      "summary": "Curated redemption-terms dossier — not a live feed.",
+      "detail": "Redemption windows, gates and liquidity figures are transcribed from issuer terms at the review date. On-chain liquidity is not sampled live on this page.",
+      "reviewed_at": "2026-08-01",
+      "sources": [
+        "Issuer redemption terms and subscription agreements",
+        "Fund liquidity disclosures"
+      ]
+    },
+    "legal-compliance": {
+      "summary": "Curated regulatory dossier — research summary, not legal advice.",
+      "detail": "Jurisdiction, licensing and transfer-restriction summaries are hand-compiled from public regulatory records at the review date. This is a research summary, not legal advice, and regulatory status can change without notice.",
+      "reviewed_at": "2026-08-01",
+      "sources": [
+        "Public regulator registers and enforcement records",
+        "Issuer legal disclosures"
+      ]
+    },
+    "portfolio-rwa-exposure": {
+      "summary": "Issuer profiles are a curated dossier; holdings are live when a wallet is connected.",
+      "detail": "Detected holdings come from the connected wallet. When no wallet is connected the page shows a clearly labelled representative portfolio. The per-issuer risk attributes applied to those holdings are hand-compiled research, not a live feed.",
+      "reviewed_at": "2026-08-01",
+      "sources": [
+        "Issuer disclosures",
+        "Connected wallet balances (live, when connected)"
+      ]
+    },
+    "yield-risk-adjusted": {
+      "summary": "Curated yield dossier — not a live rate feed.",
+      "detail": "Advertised yields and the risk attributes used to adjust them are hand-compiled from issuer disclosures at the review date. Rates are not polled live and will drift.",
+      "reviewed_at": "2026-08-01",
+      "sources": [
+        "Issuer yield and NAV disclosures"
+      ]
+    },
+    "audit-toolkit": {
+      "summary": "Exports carry the same provenance as the modules they read.",
+      "detail": "This toolkit assembles the figures already rendered by the other RWA modules. Every exported figure inherits that module's curated-dossier status and review date — check them before circulating an export.",
+      "reviewed_at": "2026-08-01",
+      "sources": [
+        "The RWA research modules listed in each export"
+      ]
+    },
+    "rwa-chatbot": {
+      "summary": "The advisor answers from curated research dossiers — not a live feed.",
+      "detail": "This assistant reasons over the same hand-compiled issuer, custody and regulatory dossiers used by the other RWA modules. It has no live market, attestation or on-chain data, it can be wrong, and nothing it says is investment or legal advice.",
+      "reviewed_at": "2026-08-01",
+      "sources": [
+        "The curated RWA research dossiers used across this section"
+      ]
+    }
+  }
+}

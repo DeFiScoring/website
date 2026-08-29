@@ -200,10 +200,13 @@
     if (score >= 550) return "#f5b042";
     return "#fc6464";
   }
+  // The status describes what the ISSUER's attestation provider reported, not
+  // anything DeFi Scoring verified. The labels say so: a bare "✓ Verified" here
+  // would read as a platform guarantee we are in no position to make.
   function porBadge(status) {
-    if (status === "Verified")          return { bg: "rgba(43,212,164,.15)",  fg: "#2bd4a4", label: "✓ Verified" };
-    if (status === "Partially Verified") return { bg: "rgba(245,176,66,.15)",  fg: "#f5b042", label: "◐ Partially Verified" };
-    return { bg: "rgba(252,100,100,.15)", fg: "#fc6464", label: "⚠ Unverified" };
+    if (status === "Verified")           return { bg: "rgba(43,212,164,.15)", fg: "#2bd4a4", label: "Issuer-attested" };
+    if (status === "Partially Verified") return { bg: "rgba(245,176,66,.15)", fg: "#f5b042", label: "Partially attested" };
+    return { bg: "rgba(252,100,100,.15)", fg: "#fc6464", label: "No attestation found" };
   }
 
   function calculate(issuerKey) {

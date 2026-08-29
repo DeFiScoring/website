@@ -24,6 +24,7 @@ const SUITES = [
   ["explain", "AI score explanations: prompts from persisted data, caching, failure modes"],
   ["rescore", "scheduled re-scoring: stalest-first selection, freshness gate, score_change loop"],
   ["watchlist", "watched wallets: CRUD, tier caps, isolation, re-score queue membership"],
+  ["rwa-provenance", "RWA modules disclose curated-dossier provenance and review dates"],
 ];
 
 const [maj, min] = process.versions.node.split(".").map(Number);
