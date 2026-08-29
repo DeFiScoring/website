@@ -39,3 +39,7 @@ firebase-adminsdk-*.json
 *.log
 .idea/
 .vscode/
+
+# Local scratch — never part of the site build
+attached_assets/
+screenshots/

@@ -363,3 +363,14 @@
 .pr-toast--ok { border-color: rgba(43, 212, 164, 0.5); color: var(--ds-green); }
 .pr-toast--warn { border-color: rgba(250, 204, 21, 0.5); color: var(--ds-gold); }
 .pr-toast--bad { border-color: rgba(255, 93, 108, 0.5); color: #ff5d6c; }
+
+/* Planned-feature marker in the comparison table. Shares the ◷ glyph and gold
+   of .pr-features li.is-soon so the two readings of "planned" match. */
+.pr-table__legend {
+  margin: 14px 2px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--ds-text-dim, #9ca3af);
+}
+.pr-table__legend span { color: var(--ds-gold, #facc15); font-weight: 700; }
+td.is-soon-cell { color: var(--ds-gold, #facc15); font-weight: 700; }

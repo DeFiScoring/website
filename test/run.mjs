@@ -25,6 +25,7 @@ const SUITES = [
   ["rescore", "scheduled re-scoring: stalest-first selection, freshness gate, score_change loop"],
   ["watchlist", "watched wallets: CRUD, tier caps, isolation, re-score queue membership"],
   ["rwa-provenance", "RWA modules disclose curated-dossier provenance and review dates"],
+  ["claims", "public pricing and landing claims match what the code enforces"],
 ];
 
 const [maj, min] = process.versions.node.split(".").map(Number);
