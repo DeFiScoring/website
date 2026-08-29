@@ -52,7 +52,54 @@ export async function getProtocolEnriched(slug, env) {
 // concurrent DeFiLlama lookups happen (the catalog has ~15 entries today,
 // so all-at-once is fine, but the cap exists so a future 200-protocol
 // catalog doesn't fan out 200 HTTPs simultaneously).
+/**
+ * Returns the catalog plus WHEN its TVL figures were actually fetched.
+ *
+ * The handler used to stamp `new Date()` on every response, so an hour-old
+ * cached catalog was presented as if it had just been read. For a tool people
+ * make decisions with, a timestamp that always says "now" is worse than none:
+ * it converts "we do not know how fresh this is" into a false claim of
+ * freshness. `fetched_at` travels with the cached payload so it survives the
+ * cache and reports the truth.
+ */
+export async function getCatalogWithMeta(env, opts = {}) {
+  const { enrich = true, enrichLimit = 20 } = opts;
+  const cacheKey = `catalog:enriched:v1`;
+  if (enrich) {
+    const cached = await cacheGet(env, cacheKey);
+    if (cached && cached.protocols) {
+      return { protocols: cached.protocols, fetched_at: cached.fetched_at, cached: true };
+    }
+    // Payload written before this field existed: report unknown, never now.
+    if (Array.isArray(cached)) return { protocols: cached, fetched_at: null, cached: true };
+  }
+  if (!enrich) return { protocols: PROTOCOLS, fetched_at: null, cached: false };
+
+  const fresh = await enrichAll(env, enrichLimit);
+  const fetched_at = Date.now();
+  await cacheSet(env, cacheKey, { protocols: fresh, fetched_at }, CATALOG_CACHE_TTL);
+  return { protocols: fresh, fetched_at, cached: false };
+}
+
+async function enrichAll(env, enrichLimit) {
+  const out = [];
+  for (let i = 0; i < PROTOCOLS.length; i += enrichLimit) {
+    const slice = PROTOCOLS.slice(i, i + enrichLimit);
+    const enriched = await Promise.all(slice.map(async (p) => {
+      const tvl = await fetchDefillamaTvl(p.slug);
+      return { ...p, defillama: tvl };
+    }));
+    out.push(...enriched);
+  }
+  return out;
+}
+
 export async function getCatalog(env, { enrich = true, enrichLimit = 20 } = {}) {
+  const r = await getCatalogWithMeta(env, { enrich, enrichLimit });
+  return r.protocols;
+}
+
+async function getCatalogLegacy(env, { enrich = true, enrichLimit = 20 } = {}) {
   const cacheKey = `catalog:enriched:v1`;
   if (enrich) {
     const cached = await cacheGet(env, cacheKey);
