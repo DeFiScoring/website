@@ -106,6 +106,19 @@ check("...and says whether the response came from cache",
 check("a cached payload written before fetched_at existed reports unknown, not now",
   /Array\.isArray\(cached\)/.test(protoLib) && /fetched_at: null/.test(protoLib), null);
 
+// --- badge/share URLs must point at the worker, not dead domains ------------
+const badgePage = read("badge/index.html");
+const config = read("_config.yml");
+const workerUrl = (config.match(/worker_url:\s*"([^"]+)"/) || [])[1];
+check("badge page does not reference the unprovisioned api.defiscoring.com host",
+  !/api\.defiscoring\.com/.test(badgePage), null);
+check("badge page builds badge URLs from the configured worker_url",
+  workerUrl && badgePage.includes(workerUrl) && badgePage.includes('WORKER + "/badge/"'), null);
+check("badge page builds share-card URLs from the configured worker_url",
+  workerUrl && badgePage.includes('WORKER + "/share/"') && badgePage.includes('WORKER + "/card/"'), null);
+check("site.webmanifest exists for the link in _includes/head.html",
+  fs.existsSync(path.join(root, "assets/favicon/site.webmanifest")), null);
+
 const failed = results.filter((r) => !r.ok).length;
 console.log(`\n${results.length - failed}/${results.length} passed`);
 process.exit(failed ? 1 : 0);
