@@ -86,27 +86,43 @@ keywords: "DeFi scoring pricing, on-chain credit score plans, Pro Plus Enterpris
     <p class="pr-tier__foot">Cancel anytime · 14-day money back.</p>
   </article>
 
-  <!-- ──────────────── ENTERPRISE ──────────────── -->
+</section>
+
+<!-- Enterprise is not a fourth column. It has no price, no self-serve
+     checkout and a different buyer, so putting it in the price race made the
+     three plans anyone can actually buy compete with a card that says
+     "Custom". It keeps .pr-tier and data-tier="enterprise" because pricing.js
+     resolves the current plan through that selector.
+
+     The feature list stays a <ul> of <li class="is-soon"> items, laid out as a
+     grid rather than rebuilt as <div>s: test/claims.mjs slices from the nearest
+     preceding "<li" to the next "</li>" around each planned label and requires
+     both "is-soon" and "Planned" inside that slice. Divs would pass the slice
+     vacuously — the check would find the wrong <li> or none — which is worse
+     than failing, because it would stop guarding the claim. -->
+<section class="pr-ent">
   <article class="pr-tier pr-tier--ent" data-tier="enterprise">
-    <header class="pr-tier__head">
-      <h2 class="pr-tier__name">Enterprise</h2>
-      <p class="pr-tier__price"><span class="pr-tier__amount">Custom</span></p>
-      <p class="pr-tier__pitch">For protocols, exchanges, custodians.</p>
-    </header>
-    <ul class="pr-features">
+    <div class="pr-ent__head">
+      <div>
+        <h2 class="pr-tier__name">Enterprise</h2>
+        <p class="pr-tier__pitch">For protocols, exchanges and custodians. Priced per contract.</p>
+      </div>
+      <div class="pr-ent__act">
+        <a class="pr-cta pr-cta--ghost" href="mailto:enterprise@defiscoring.com?subject=DeFi%20Scoring%20Enterprise%20enquiry">Contact sales</a>
+        <p class="pr-tier__foot">Typically replies within 1 business day.</p>
+      </div>
+    </div>
+    <ul class="pr-features pr-features--grid">
       <li>Unlimited wallets &amp; scans</li>
       <li>Dedicated API quota <small>+ SLA by contract</small></li>
+      <li>Dedicated CSM &amp; Slack channel</li>
+      <li>Annual invoicing</li>
       <li class="is-soon">OFAC / sanctions screening <span class="pr-soon">Planned</span></li>
       <li class="is-soon">Custom scoring weights <span class="pr-soon">Planned</span></li>
       <li class="is-soon">SSO &amp; user roles <span class="pr-soon">Planned</span></li>
       <li class="is-soon">White-label embeds <span class="pr-soon">Planned</span></li>
-      <li>Dedicated CSM &amp; Slack channel</li>
-      <li>Annual invoicing</li>
     </ul>
-    <a class="pr-cta pr-cta--ghost" href="mailto:enterprise@defiscoring.com?subject=DeFi%20Scoring%20Enterprise%20enquiry">Contact sales</a>
-    <p class="pr-tier__foot">Typically replies within 1 business day.</p>
   </article>
-
 </section>
 
 <section class="pr-compare">
@@ -123,20 +139,20 @@ keywords: "DeFi scoring pricing, on-chain credit score plans, Pro Plus Enterpris
         </tr>
       </thead>
       <tbody>
-        <tr><th>Linked wallets</th><td>1</td><td>3</td><td>10</td><td>Unlimited</td></tr>
-        <tr><th>Score history</th><td>7 days</td><td>30 days</td><td>365 days</td><td>Unlimited</td></tr>
-        <tr><th>Scans</th><td>Fair-use rate limit</td><td>Fair-use rate limit</td><td>Fair-use rate limit</td><td>Fair-use rate limit</td></tr>
-        <tr><th>Real-time alerts (email)</th><td>—</td><td>✓</td><td>✓</td><td>✓</td></tr>
-        <tr><th>Telegram alerts</th><td>—</td><td>✓</td><td>✓</td><td>✓</td></tr>
-        <tr><th>Webhook delivery</th><td>—</td><td>—</td><td>✓</td><td>✓</td></tr>
-        <tr><th>AI Risk Profiler</th><td>—</td><td>—</td><td>✓</td><td>✓</td></tr>
-        <tr><th>RWA research suite <small>(open beta — free to all tiers)</small></th><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
-        <tr><th>PDF report export</th><td>—</td><td>—</td><td>✓</td><td>✓</td></tr>
-        <tr><th>OFAC screening API</th><td>—</td><td>—</td><td>—</td><td class="is-soon-cell">◷</td></tr>
-        <tr><th>Custom scoring weights</th><td>—</td><td>—</td><td>—</td><td class="is-soon-cell">◷</td></tr>
-        <tr><th>SSO &amp; user roles</th><td>—</td><td>—</td><td>—</td><td class="is-soon-cell">◷</td></tr>
-        <tr><th>White-label embeds</th><td>—</td><td>—</td><td>—</td><td class="is-soon-cell">◷</td></tr>
-        <tr><th>Support</th><td>Email</td><td>Priority email</td><td>Priority email</td><td>Dedicated CSM</td></tr>
+        <tr><th>Linked wallets</th><td data-tier-label="Free">1</td><td data-tier-label="Pro">3</td><td data-tier-label="Plus">10</td><td data-tier-label="Enterprise">Unlimited</td></tr>
+        <tr><th>Score history</th><td data-tier-label="Free">7 days</td><td data-tier-label="Pro">30 days</td><td data-tier-label="Plus">365 days</td><td data-tier-label="Enterprise">Unlimited</td></tr>
+        <tr><th>Scans</th><td data-tier-label="Free">Fair-use rate limit</td><td data-tier-label="Pro">Fair-use rate limit</td><td data-tier-label="Plus">Fair-use rate limit</td><td data-tier-label="Enterprise">Fair-use rate limit</td></tr>
+        <tr><th>Real-time alerts (email)</th><td data-tier-label="Free">—</td><td data-tier-label="Pro">✓</td><td data-tier-label="Plus">✓</td><td data-tier-label="Enterprise">✓</td></tr>
+        <tr><th>Telegram alerts</th><td data-tier-label="Free">—</td><td data-tier-label="Pro">✓</td><td data-tier-label="Plus">✓</td><td data-tier-label="Enterprise">✓</td></tr>
+        <tr><th>Webhook delivery</th><td data-tier-label="Free">—</td><td data-tier-label="Pro">—</td><td data-tier-label="Plus">✓</td><td data-tier-label="Enterprise">✓</td></tr>
+        <tr><th>AI Risk Profiler</th><td data-tier-label="Free">—</td><td data-tier-label="Pro">—</td><td data-tier-label="Plus">✓</td><td data-tier-label="Enterprise">✓</td></tr>
+        <tr><th>RWA research suite <small>(open beta — free to all tiers)</small></th><td data-tier-label="Free">✓</td><td data-tier-label="Pro">✓</td><td data-tier-label="Plus">✓</td><td data-tier-label="Enterprise">✓</td></tr>
+        <tr><th>PDF report export</th><td data-tier-label="Free">—</td><td data-tier-label="Pro">—</td><td data-tier-label="Plus">✓</td><td data-tier-label="Enterprise">✓</td></tr>
+        <tr><th>OFAC screening API</th><td data-tier-label="Free">—</td><td data-tier-label="Pro">—</td><td data-tier-label="Plus">—</td><td data-tier-label="Enterprise" class="is-soon-cell">◷</td></tr>
+        <tr><th>Custom scoring weights</th><td data-tier-label="Free">—</td><td data-tier-label="Pro">—</td><td data-tier-label="Plus">—</td><td data-tier-label="Enterprise" class="is-soon-cell">◷</td></tr>
+        <tr><th>SSO &amp; user roles</th><td data-tier-label="Free">—</td><td data-tier-label="Pro">—</td><td data-tier-label="Plus">—</td><td data-tier-label="Enterprise" class="is-soon-cell">◷</td></tr>
+        <tr><th>White-label embeds</th><td data-tier-label="Free">—</td><td data-tier-label="Pro">—</td><td data-tier-label="Plus">—</td><td data-tier-label="Enterprise" class="is-soon-cell">◷</td></tr>
+        <tr><th>Support</th><td data-tier-label="Free">Email</td><td data-tier-label="Pro">Priority email</td><td data-tier-label="Plus">Priority email</td><td data-tier-label="Enterprise">Dedicated CSM</td></tr>
       </tbody>
     </table>
     <p class="pr-table__legend"><span aria-hidden="true">◷</span> Planned — scoped per contract, not yet shipped. We list it so you know it is on the roadmap, not so you assume it is live today.</p>

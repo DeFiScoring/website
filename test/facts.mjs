@@ -267,6 +267,21 @@ for (const b of BAND_META) {
   check(`index.html's legend states ${b.label} as ${range}`, landing.includes(`<em>${range}</em>`), { range });
 }
 
+/* ---------- the low-contrast token never colours text ----------
+ *
+ * --defi-text-mute / --ds-text-mute is #5a5a6a, which is 2.93:1 on the page
+ * ground — below the 4.5:1 AA floor for body text and below 3:1 even for large
+ * text. Both design systems keep it for hairlines and dividers, where contrast
+ * rules do not apply, and both define a --*-text-muted at 4.7:1 for any text
+ * that wants a third, quieter step. Nothing enforced that split, so a `color:`
+ * reaching for the wrong one passed unnoticed.
+ */
+for (const sheet of ["assets/css/dashboard.css", "assets/css/landing.css", "assets/css/pricing.css"]) {
+  const css = read(sheet);
+  const bad = [...css.matchAll(/color:\s*var\(--(?:defi|ds)-text-mute\)/g)].length;
+  check(`${sheet} does not colour text with the sub-AA token`, bad === 0, { bad });
+}
+
 /* ---------- the contribution bars sum to the weighted pillar score ----------
  *
  * The dashboard home used to plot pillar WEIGHTS — 35/25/15/10/15, identical
