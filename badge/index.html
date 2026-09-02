@@ -64,14 +64,13 @@ description: Paste a live DeFi credit-score badge anywhere — forum signatures,
 
   <div class="badge-card">
     <h2>How it works</h2>
-    <p>The badge URL is <code>{{ site.defi.worker_url | default: 'https://defiscoring.guillaumelauzier.workers.dev' }}/badge/&lt;wallet&gt;.svg</code>. We render the latest persisted score from our scoring engine; if the wallet hasn't been scanned yet, the badge shows "no scan yet" until one is captured. The image is cached for 5 minutes at the edge so embeds stay fast.</p>
+    <p>The badge URL is <code>https://defiscoring.com/badge/&lt;wallet&gt;.svg</code>. We render the latest persisted score from our scoring engine; if the wallet hasn't been scanned yet, the badge shows "no scan yet" until one is captured. The image is cached for 5 minutes at the edge so embeds stay fast.</p>
   </div>
 </section>
 
 <script>
 (function () {
-  var WORKER = "{{ site.defi.worker_url | default: 'https://defiscoring.guillaumelauzier.workers.dev' }}".replace(/\/+$/, "");
-  var BADGE_BASE = WORKER + "/badge/";
+  var BADGE_BASE = "/badge/";
   var input = document.getElementById("badge-addr");
   var preview = document.getElementById("badge-preview");
   var img = document.getElementById("badge-img");
@@ -96,9 +95,9 @@ description: Paste a live DeFi credit-score badge anywhere — forum signatures,
     snipMd.textContent  = "[![DeFi Score](" + url + ")](" + profileUrl + ")";
     snipHtml.textContent = '<a href="' + profileUrl + '"><img src="' + url + '" alt="DeFi Score" /></a>';
     snipBb.textContent  = "[url=" + profileUrl + "][img]" + url + "[/img][/url]";
-    var shareUrl = WORKER + "/share/" + v;
+    var shareUrl = "https://defiscoring.com/share/" + v;
     snipShare.textContent = shareUrl;
-    shareImg.src = WORKER + "/card/" + v + ".svg";
+    shareImg.src = "/card/" + v + ".svg";
     shareBlock.style.display = "";
   }
   input.addEventListener("input", update);

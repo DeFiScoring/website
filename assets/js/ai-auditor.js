@@ -142,11 +142,10 @@
   }
 
   async function audit(el, address, chainId) {
-    const base = window.DEFI_RISK_WORKER_URL;
-    if (!base) { setError(el, address, "DEFI_RISK_WORKER_URL not set"); return; }
+    const base = (window.DEFI_RISK_WORKER_URL ?? "").replace(/\/$/, "");
     setLoading(el, address);
     try {
-      const res = await fetch(base.replace(/\/$/, "") + "/api/audit", {
+      const res = await fetch(base + "/api/audit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ address, chain_id: chainId || 1 }),

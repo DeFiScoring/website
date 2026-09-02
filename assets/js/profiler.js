@@ -103,13 +103,13 @@
   }
 
   async function tryAi({ wallet, score, target, summary, breaches }) {
-    const url = window.DEFI_RISK_WORKER_URL;
-    if (!url) return null;
+    const base = (window.DEFI_RISK_WORKER_URL ?? "").replace(/\/$/, "");
+    const root = base || "/";
     const recentActivity = "Target profile: " + (target.name || "n/a") +
       " · Alignment score: " + score + "/100" +
       " · Limit breaches: " + (breaches.length ? breaches.join("; ") : "none");
     try {
-      const res = await fetch(url, {
+      const res = await fetch(root, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

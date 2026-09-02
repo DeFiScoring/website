@@ -42,14 +42,10 @@
   async function loadOne(el) {
     const slug = el.getAttribute("data-protocol");
     if (!slug) return;
-    const base = window.DEFI_RISK_WORKER_URL;
-    if (!base) {
-      setBadge(el, "error", "n/a", null, "DEFI_RISK_WORKER_URL not set");
-      return;
-    }
+    const base = (window.DEFI_RISK_WORKER_URL ?? "").replace(/\/$/, "");
     setBadge(el, "loading", "Scoring…", null, "Fetching " + slug + " score");
     try {
-      const res = await fetch(base.replace(/\/$/, "") + "/api/score/" + encodeURIComponent(slug));
+      const res = await fetch(base + "/api/score/" + encodeURIComponent(slug));
       const data = await res.json();
       if (!data.success) throw new Error(data.error || "score unavailable");
       const cls = data.band || "yellow";

@@ -42,3 +42,18 @@ jobs:
       # is the gate — no extra assertion plumbing needed.
       - name: Run test suites
         run: npm test
+
+  jekyll-build:
+    name: Jekyll site build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3.5'
+          bundler-cache: true
+
+      - name: Build static site
+        run: bundle exec jekyll build

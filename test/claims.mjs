@@ -106,18 +106,22 @@ check("...and says whether the response came from cache",
 check("a cached payload written before fetched_at existed reports unknown, not now",
   /Array\.isArray\(cached\)/.test(protoLib) && /fetched_at: null/.test(protoLib), null);
 
-// --- badge/share URLs must point at the worker, not dead domains ------------
+// --- badge/share URLs use same-origin paths on the unified deployment -------
 const badgePage = read("badge/index.html");
 const config = read("_config.yml");
-const workerUrl = (config.match(/worker_url:\s*"([^"]+)"/) || [])[1];
 check("badge page does not reference the unprovisioned api.defiscoring.com host",
   !/api\.defiscoring\.com/.test(badgePage), null);
-check("badge page builds badge URLs from the configured worker_url",
-  workerUrl && badgePage.includes(workerUrl) && badgePage.includes('WORKER + "/badge/"'), null);
-check("badge page builds share-card URLs from the configured worker_url",
-  workerUrl && badgePage.includes('WORKER + "/share/"') && badgePage.includes('WORKER + "/card/"'), null);
+check("badge page uses same-origin badge paths",
+  badgePage.includes('var BADGE_BASE = "/badge/"'), null);
+check("badge page uses same-origin share-card paths",
+  badgePage.includes('shareImg.src = "/card/"') &&
+  badgePage.includes('"https://defiscoring.com/share/"'), null);
+check("how-it-works documents the apex badge URL",
+  badgePage.includes("https://defiscoring.com/badge/"), null);
 check("site.webmanifest exists for the link in _includes/head.html",
   fs.existsSync(path.join(root, "assets/favicon/site.webmanifest")), null);
+check("_config.yml worker_url is empty for same-origin API calls",
+  /worker_url:\s*""/.test(config), null);
 
 const failed = results.filter((r) => !r.ok).length;
 console.log(`\n${results.length - failed}/${results.length} passed`);

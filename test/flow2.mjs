@@ -82,6 +82,20 @@ function makeCall(env, base = ORIGIN) {
 
 (async () => {
   // =========================================================================
+  // 0. www → apex redirect
+  // =========================================================================
+  {
+    const env = makeEnv();
+    const res = await worker.fetch(
+      new Request("https://www.defiscoring.com/dashboard/", { method: "GET", headers: { origin: ORIGIN } }),
+      env, { waitUntil() {} },
+    );
+    check("www host redirects to apex", res.status === 301 && res.headers.get("location") === "https://defiscoring.com/dashboard/", {
+      status: res.status, location: res.headers.get("location"),
+    });
+  }
+
+  // =========================================================================
   // 1. Cross-site cookie attributes
   // =========================================================================
   {

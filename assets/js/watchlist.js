@@ -70,7 +70,6 @@
   // ── Storage ──────────────────────────────────────────────────────────────
   async function loadRemote(addr) {
     const url = workerUrl();
-    if (!url) throw new Error("no worker configured");
     const res = await fetch(url + "/api/watchlist/" + addr);
     if (!res.ok) throw new Error("HTTP " + res.status);
     const j = await res.json();
@@ -79,7 +78,6 @@
   }
   async function saveRemote(addr, items) {
     const url = workerUrl();
-    if (!url) throw new Error("no worker configured");
     const res = await fetch(url + "/api/watchlist/" + addr, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },

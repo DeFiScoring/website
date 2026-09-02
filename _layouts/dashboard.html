@@ -65,7 +65,7 @@
     })();
   </script>
   <script>
-    window.DEFI_RISK_WORKER_URL = "{{ site.defi.worker_url | default: 'https://defiscoring.guillaumelauzier.workers.dev' }}";
+    window.DEFI_RISK_WORKER_URL = "{{ site.defi.worker_url }}";
     // Cloudflare Web3 Gateway URLs (optional). Set them in _config.yml under
     // `defi.rpc.{ethereum,arbitrum,polygon}` to bypass public RPC rate limits.
     window.DEFI_RPC = {

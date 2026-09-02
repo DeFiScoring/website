@@ -189,11 +189,10 @@
   }
 
   async function loadScore(wallet) {
-    const base = window.DEFI_RISK_WORKER_URL;
-    if (!base) { setNotice("DEFI_RISK_WORKER_URL not set on this page.", true); return; }
+    const base = (window.DEFI_RISK_WORKER_URL ?? "").replace(/\/$/, "");
     setNotice("Computing your DeFi Health Score across Aave, Uniswap V3, Snapshot, and Etherscan…");
     try {
-      const res = await fetch(base.replace(/\/$/, "") + "/api/health-score", {
+      const res = await fetch(base + "/api/health-score", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ wallet }),

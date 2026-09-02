@@ -49,7 +49,7 @@ defi:
     - Arbitrum One
     - Base
     - Polygon
-  worker_url: "https://defiscoring.guillaumelauzier.workers.dev"
+  worker_url: ""   # same-origin — the Worker serves both _site and /api/*
   # Optional Cloudflare Web3 Gateway URLs (Cloudflare dashboard → Web3 →
   # Create Gateway). Leaving these blank keeps the public free-tier RPCs.
   rpc:

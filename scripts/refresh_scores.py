@@ -10,7 +10,7 @@ build, so the static site stays "static" but the content stays fresh.
 Run locally:  python scripts/refresh_scores.py
 GitHub Action: see .github/workflows/refresh-scores.yml
 Env vars:
-  WORKER_BASE_URL   Worker origin (default: https://defiscoring.guillaumelauzier.workers.dev)
+  WORKER_BASE_URL   Worker origin (default: https://defiscoring.com)
   REQUEST_TIMEOUT   Per-request timeout seconds (default: 20)
 """
 from __future__ import annotations
@@ -31,7 +31,7 @@ PROTOCOLS_FILE = ROOT / "_data" / "protocols.yml"
 SCORES_FILE = ROOT / "_data" / "scores.yml"
 
 WORKER_BASE_URL = os.environ.get(
-    "WORKER_BASE_URL", "https://defiscoring.guillaumelauzier.workers.dev"
+    "WORKER_BASE_URL", "https://defiscoring.com"
 ).rstrip("/")
 REQUEST_TIMEOUT = int(os.environ.get("REQUEST_TIMEOUT", "20"))
 
