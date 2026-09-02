@@ -18,8 +18,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { SCORE_MODEL_VERSION } from "../worker/lib/score.js";
+import { SCORE_MODEL_VERSION, BANDS, bandForScore } from "../worker/lib/score.js";
 import { CHAINS } from "../worker/lib/chains.js";
+import { BAND_META, UNKNOWN_BAND, MARK_PATHS, fractionOf } from "../worker/lib/bands.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const read = (p) => fs.readFileSync(path.join(root, p), "utf8");
@@ -128,6 +129,127 @@ check(
 );
 for (const name of tier1) {
   check(`index.html names Tier-1 chain ${name}`, landing.includes(name.split(" ")[0]), { name });
+}
+
+/* ---------- the score band vocabulary, both halves ----------
+ *
+ * worker/lib/bands.js and assets/js/score-bands.js are the same table written
+ * twice, because the browser and the Worker are two bundles that cannot import
+ * each other: wrangler's entry is worker/index.js, `_site` is a static asset
+ * directory rather than part of that module graph, and assets/js/* are plain
+ * IIFEs with no exports. The duplication is structural and permanent.
+ *
+ * This is the pin. It is executable rather than a regex over source text —
+ * score-bands.js assigns to globalThis and touches no DOM, so Node can load it
+ * and the two implementations can be compared by behaviour, not by shape.
+ * That distinction matters: a structural deep-equal written after both copies
+ * have already drifted passes happily. Comparing every score does not.
+ */
+
+const noWindow = typeof globalThis.window === "undefined";
+check("the browser band table loads without a DOM", noWindow, { window: typeof globalThis.window });
+await import("../assets/js/score-bands.js");
+const B = globalThis.DefiBands;
+check("score-bands.js defines globalThis.DefiBands", !!B, null);
+
+const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+// 1. Numeric/semantic axis, against worker/lib/score.js — the model authority.
+check(
+  "browser BANDS match worker BANDS on key, label and floor, in order",
+  eq(B.BANDS.map((b) => [b.key, b.label, b.floor]), BANDS.map((b) => [b.key, b.label, b.floor])),
+  { browser: B.BANDS.map((b) => [b.key, b.label, b.floor]), worker: BANDS.map((b) => [b.key, b.label, b.floor]) },
+);
+
+// 2. Presentation axis, against worker/lib/bands.js.
+check(
+  "browser BANDS match worker BAND_META on ceil, colour, glyph and mark",
+  eq(B.BANDS.map((b) => [b.key, b.ceil, b.color, b.glyph, b.mark]),
+     BAND_META.map((b) => [b.key, b.ceil, b.color, b.glyph, b.mark])),
+  { browser: B.BANDS.map((b) => [b.key, b.ceil, b.color, b.glyph, b.mark]),
+    worker: BAND_META.map((b) => [b.key, b.ceil, b.color, b.glyph, b.mark]) },
+);
+check(
+  "the unscored state agrees across both halves",
+  eq([B.UNKNOWN.key, B.UNKNOWN.label, B.UNKNOWN.color, B.UNKNOWN.glyph, B.UNKNOWN.mark],
+     [UNKNOWN_BAND.key, UNKNOWN_BAND.label, UNKNOWN_BAND.color, UNKNOWN_BAND.glyph, UNKNOWN_BAND.mark]),
+  { browser: B.UNKNOWN, worker: UNKNOWN_BAND },
+);
+
+// 3. Behavioural axis. This is the assertion that would actually have caught
+//    the historical 750/670/580 drift: it compares outputs, not declarations,
+//    so a copied-but-subtly-wrong comparison (`>` where the other has `>=`)
+//    fails here even though every structural check above still passes.
+let bandMismatch = null;
+let fracMismatch = null;
+for (let s = 300; s <= 850; s++) {
+  if (!bandMismatch && B.keyFor(s) !== bandForScore(s)) {
+    bandMismatch = { score: s, browser: B.keyFor(s), worker: bandForScore(s) };
+  }
+  // Strict === on the double, not toFixed: the two gauges must land on the
+  // same pixel, and a difference in the fifth decimal is still a difference.
+  if (!fracMismatch && B.fraction(s) !== fractionOf(s)) {
+    fracMismatch = { score: s, browser: B.fraction(s), worker: fractionOf(s) };
+  }
+}
+check("both halves agree on the band of every score from 300 to 850", !bandMismatch, bandMismatch);
+check("both halves agree on the scale fraction of every score", !fracMismatch, fracMismatch);
+
+const ODD = [299, 851, 0, -1, NaN, Infinity, -Infinity, null, undefined, "700", {}];
+const oddBad = ODD.filter((v) => {
+  const finite = typeof v === "number" && Number.isFinite(v);
+  if (finite) return false; // 299/851/0/-1 clamp rather than degrade; covered below
+  return B.keyFor(v) !== "unknown" || B.fraction(v) !== 0;
+});
+check("non-numeric and non-finite inputs read as unknown with fraction 0", oddBad.length === 0, oddBad);
+check("out-of-range scores clamp rather than escape the scale",
+  B.fraction(299) === 0 && B.fraction(851) === 1 && fractionOf(299) === 0 && fractionOf(851) === 1,
+  { lo: B.fraction(299), hi: B.fraction(851) });
+
+// 4. Palette sanity. A table that silently collapses two bands onto one hex
+//    breaks the colour claim without breaking any equality above — and the
+//    glyph is the fallback for exactly the readers colour already fails.
+const allMeta = B.BANDS.concat([B.UNKNOWN]);
+check("every band colour is a 6-digit hex",
+  allMeta.every((b) => /^#[0-9a-f]{6}$/.test(b.color)), allMeta.map((b) => b.color));
+check("no two bands share a colour",
+  new Set(allMeta.map((b) => b.color)).size === allMeta.length, allMeta.map((b) => b.color));
+check("no two bands share a glyph",
+  new Set(allMeta.map((b) => b.glyph)).size === allMeta.length, allMeta.map((b) => b.glyph));
+check("every glyph is a single code point",
+  allMeta.every((b) => [...b.glyph].length === 1), allMeta.map((b) => b.glyph));
+check("the estimated glyph is not a band glyph",
+  !allMeta.some((b) => b.glyph === B.ESTIMATED_GLYPH), B.ESTIMATED_GLYPH);
+check("every band has a mark path the card can draw",
+  B.BANDS.every((b) => typeof MARK_PATHS[b.mark] === "string") && B.UNKNOWN.mark === "ring",
+  B.BANDS.map((b) => b.mark));
+
+// 5. Copy axis: the published ranges are the table's, not hand-typed.
+for (const b of BAND_META) {
+  const range = `${b.floor}–${b.ceil}`;
+  check(`index.html's legend states ${b.label} as ${range}`, landing.includes(`<em>${range}</em>`), { range });
+}
+
+/* ---------- the vocabulary is loaded before anything that reads it ----------
+ *
+ * DefiState.bandFor resolves window.DefiBands at call time, so a page missing
+ * the tag renders fine until someone opens a score — a silent-until-clicked
+ * failure. Pin the ordering instead.
+ */
+const CONSUMERS = [
+  "landing.js", "dashboard.js", "dashboard-score.js", "dashboard-home.js",
+  "dashboard-watchlist.js", "defi-onchain.js", "health-score.js",
+];
+for (const page of ["_layouts/dashboard.html", "_layouts/default.html", "index.html", "_includes/health-score.html"]) {
+  const html = read(page);
+  const used = CONSUMERS.filter((c) => html.includes("/" + c));
+  if (!used.length) continue;
+  const iVocab = html.indexOf("score-bands.js");
+  check(`${page} loads score-bands.js`, iVocab !== -1, { used });
+  for (const c of used) {
+    check(`${page} loads score-bands.js before ${c}`,
+      iVocab !== -1 && iVocab < html.indexOf("/" + c), { iVocab, consumer: html.indexOf("/" + c) });
+  }
 }
 
 const failed = results.filter((r) => !r.ok).length;

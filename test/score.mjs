@@ -469,6 +469,38 @@ async function call(path) {
     boundaryBadge.status === 200 && boundarySvg.includes(">" + expectedLabel + "<"),
     { expectedLabel, svg: boundarySvg.slice(0, 200) });
 
+  // ---- latestScoreFor reads the blob field by field ------------------------
+  //
+  // source_json has two writers with two shapes, so a reader that trusts the
+  // blob as a whole ("if it parsed, use it") breaks on every legacy row. Each
+  // field is independently optional, and `model` in particular must degrade to
+  // null rather than to the current version: a row produced by an unknown
+  // older model stamped with today's is a fabrication, and it defeats the
+  // reason the version is persisted at all.
+  const { latestScoreFor } = await import("../worker/handlers/badge.js");
+  const BLOB_CASES = [
+    ["wallet-score shaped", JSON.stringify({ source: "wallet-score", model: "2026.11", coverage: 0.8, score_band: "good" }), 0.8, "2026.11"],
+    ["legacy signals",      JSON.stringify({ aave: {}, uniswap: {} }),  null, null],
+    ["corrupt",             "{not json",                                 null, null],
+    ["null blob",           null,                                        null, null],
+    ["model of the wrong type", JSON.stringify({ model: 12345 }),        null, null],
+    ["model of the wrong shape", JSON.stringify({ model: "banana" }),    null, null],
+    ["coverage out of range",  JSON.stringify({ coverage: 4, model: "2026.11" }), null, "2026.11"],
+  ];
+  for (let i = 0; i < BLOB_CASES.length; i++) {
+    const [name, blob, wantCov, wantModel] = BLOB_CASES[i];
+    const w = "0x000000000000000000000000000000000000e" + String(i).padStart(3, "0");
+    await env.HEALTH_DB.prepare(
+      "INSERT INTO health_scores (wallet, score, source_json, computed_at) VALUES (?,?,?,?)"
+    ).bind(w, 700, blob, Date.now()).run();
+    const got = await latestScoreFor(env, w);
+    check("latestScoreFor: a " + name + " blob yields coverage " + JSON.stringify(wantCov) +
+      " and model " + JSON.stringify(wantModel),
+      got && got.coverage === wantCov && got.model === wantModel, got);
+  }
+  check("latestScoreFor returns null for a wallet with no row",
+    (await latestScoreFor(env, "0x000000000000000000000000000000000000eeee")) === null, null);
+
   // ---- all-chain opt-in
   calls = { etherscan: 0, coingecko: 0, snapshot: 0, cometPrice: 0, txlistChains: [], alchemyHttp: 0, alchemyCalls: 0, other: [] };
   const all = await call("/api/wallet-score?wallet=" + WALLET + "&tier=all");

@@ -192,13 +192,11 @@
     return {
       scored: true,
       score,
-      // Mirrors worker/lib/score.js's exported BANDS — 720/660/580 is the
-      // one canonical threshold set. Kept as a local literal (not a
-      // window.DefiState.bandFor call) because this script loads before
-      // dashboard.js and preliminaryScore() must stand alone if a page ever
-      // includes defi-onchain.js without it. If BANDS in score.js changes,
-      // update this line and the copy in assets/js/dashboard.js together.
-      band: score >= 720 ? "Excellent" : score >= 660 ? "Good" : score >= 580 ? "Fair" : "Poor",
+      // score-bands.js, not dashboard.js: this script must stand alone if a
+      // page ever includes defi-onchain.js without the dashboard bundle, and
+      // score-bands.js is a dependency-free constant table loaded ahead of
+      // both. That is why the thresholds are no longer inlined here.
+      band: window.DefiBands.labelFor(score),
       preliminary: !hasHistory,
       factors,
     };

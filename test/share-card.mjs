@@ -65,6 +65,59 @@ for (const s of [300, 579, 580, 659, 660, 719, 720, 850]) {
     svgOut.includes(`>${expected}<`), { expected, band: bandForScore(s) });
 }
 
+// --- the spec strip -------------------------------------------------------
+// Coverage/Band/Model exist for the two cases the card used to render as
+// nothing at all: full coverage, and coverage we never recorded. Those look
+// identical without them, so a reader cannot tell "we saw everything" from
+// "we don't know what we saw".
+const { BAND_META, MARK_PATHS, UNKNOWN_BAND } = await import("../worker/lib/bands.js");
+
+const chipped = cardSvg({ address: WALLET, score: 742, coverage: 1, computedAt: Date.UTC(2026, 7, 20), model: "2026.11" });
+check("full coverage states itself rather than staying silent", chipped.includes("Coverage 100%"), null);
+check("the band chip carries the range, built from BAND_META", chipped.includes("Band 720–850"), null);
+check("the model chip carries the persisted version", chipped.includes("Model 2026.11"), null);
+// The pre-existing pin: on a fully covered card the phrase must not appear at
+// all, which is why the chip reads "Coverage 100%" and not "100% live data".
+check("a full-coverage card still says nothing about live data", !chipped.includes("live data"), null);
+
+check("the band chip range tracks the band",
+  cardSvg({ address: WALLET, score: 400, model: "2026.11" }).includes(`Band ${BAND_META[3].floor}–${BAND_META[3].ceil}`),
+  null);
+check("coverage we never recorded is n/a, never 0%",
+  cardSvg({ address: WALLET, score: 742, model: "2026.11" }).includes("Coverage n/a"), null);
+
+// A row from the legacy writer has no model. No chip beats a wrong one — and
+// beats an invented one, which is what a SCORE_MODEL_VERSION default would be.
+const noModel = cardSvg({ address: WALLET, score: 742, coverage: 1 });
+check("no model, no model chip", !noModel.includes("Model"), null);
+for (const bad of ["banana", "x".repeat(5000), "26.1", 12345]) {
+  const out = cardSvg({ address: WALLET, score: 742, coverage: 1, model: bad });
+  const widest = Math.max(...[...out.matchAll(/x="(\d+(?:\.\d+)?)"/g)].map((m) => Number(m[1])));
+  check(`a malformed model (${String(bad).slice(0, 12)}) cannot push the card off its own canvas`,
+    widest <= 1200, { widest });
+}
+
+// The unscored card stays as minimal as it is: three chips reporting what we
+// don't know make an un-scanned address look like a failure.
+const bare = cardSvg({ address: UNSCORED, score: null });
+check("an unscored card carries no spec strip",
+  !bare.includes("Coverage") && !bare.includes("Band ") && !bare.includes("Model"), null);
+
+// --- the band mark --------------------------------------------------------
+// Geometry, not a text glyph: this image is rasterised by Slack, Discord and
+// LinkedIn with fonts we do not ship, and U+2605 is outside WGL4.
+check("the excellent card draws the star as a path", chipped.includes(MARK_PATHS.star), null);
+check("a fair card draws the diamond",
+  cardSvg({ address: WALLET, score: 600 }).includes(MARK_PATHS.diamond), null);
+check("the unscored card draws the grey ring",
+  bare.includes(`stroke="${UNKNOWN_BAND.color}"`) && bare.includes('r="1"'), null);
+check("no mark is a text node", !/>[★▲◆▼○]</.test(chipped + bare), null);
+// The mark must not have been achieved by touching the pinned label node.
+check("the band label is still a bare text node beside the mark",
+  chipped.includes(">Excellent<") && bare.includes(">Not scored<"), null);
+check("adding the strip did not add a second gauge stroke",
+  (bare.match(/stroke-width="24"/g) || []).length === 1, null);
+
 // --- routes ----------------------------------------------------------------
 const env = {
   HEALTH_DB: new D1("./migrations"),
@@ -97,6 +150,37 @@ r = await get(`/card/${UNSCORED}.svg`);
 check("an unscored wallet still renders a card", r.status === 200, r.status);
 check("...showing no score rather than inventing one",
   (await r.text()).includes("Not scored"), null);
+
+// --- rows the current writer did not write ---------------------------------
+// source_json has two writers: persistWalletScore stores model/coverage/…,
+// while the legacy persistScore in worker/index.js stores the raw signals
+// object with none of those keys. Every chip must therefore be conditional on
+// its own field, not on the blob parsing.
+const LEGACY  = "0x00000000000000000000000000000000000000c3";
+const CORRUPT = "0x00000000000000000000000000000000000000d4";
+await env.HEALTH_DB.prepare(
+  "INSERT INTO health_scores (wallet, score, source_json, computed_at) VALUES (?,?,?,?)"
+).bind(LEGACY, 700, JSON.stringify({ aave: {}, uniswap: {}, snapshot: {} }), Date.UTC(2026, 7, 21)).run();
+await env.HEALTH_DB.prepare(
+  "INSERT INTO health_scores (wallet, score, source_json, computed_at) VALUES (?,?,?,?)"
+).bind(CORRUPT, 640, "{not json", Date.UTC(2026, 7, 21)).run();
+
+const { SCORE_MODEL_VERSION } = await import("../worker/lib/score.js");
+for (const [addr, score, kind] of [[LEGACY, 700, "legacy"], [CORRUPT, 640, "corrupt"]]) {
+  const res = await get(`/card/${addr}.svg`);
+  const svgBody = await res.text();
+  check(`a ${kind} source_json still renders a card`,
+    res.status === 200 && svgBody.includes(`>${score}<`), res.status);
+  check(`...with coverage reported as unknown, not as zero`,
+    svgBody.includes("Coverage n/a") && !svgBody.includes(">0<"), null);
+  check(`...with the band still derived from the score`,
+    svgBody.includes("Band "), null);
+  // The pin that stops someone "fixing" the missing chip with a one-line
+  // default: stamping today's model onto a row produced by an unknown one
+  // would be a fabrication, and it is the tempting change.
+  check(`...and no model invented for it`,
+    !svgBody.includes("Model") && !svgBody.includes(SCORE_MODEL_VERSION), null);
+}
 
 // --- the share page --------------------------------------------------------
 r = await get(`/share/${WALLET}`);

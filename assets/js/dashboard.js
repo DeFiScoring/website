@@ -106,28 +106,20 @@
     return data;
   }
 
-  // BANDS mirrors worker/lib/score.js's exported BANDS constant, the one
-  // canonical definition of the 300–850 → label mapping. There is no
-  // bundler here to `import` it across the server/browser boundary, so this
-  // array is a manual copy — keep the floors byte-identical to score.js if
-  // that file ever changes, or this dashboard will disagree with the badge
-  // and the score payload again, which is the exact bug this comment exists
-  // to prevent a repeat of (this bandFor used to read 750/670/580 while the
-  // backend and the badge used 720/660/580 — the same wallet could show
-  // "Excellent" here and "Good" on its own badge).
-  const BANDS = [
-    { key: "excellent", label: "Excellent", floor: 720 },
-    { key: "good",      label: "Good",      floor: 660 },
-    { key: "fair",      label: "Fair",      floor: 580 },
-    { key: "poor",      label: "Poor",      floor: 300 },
-  ];
-
+  // The 300–850 → label mapping lives in assets/js/score-bands.js, the browser
+  // mirror of worker/lib/score.js's BANDS. It used to be copied inline here
+  // and drifted: this bandFor read 750/670/580 while the backend and the badge
+  // read 720/660/580, so one wallet could show "Excellent" here and "Good" on
+  // its own badge. There is still no bundler to import across the
+  // server/browser boundary, so the copy is structural — what is new is that
+  // test/facts.mjs loads both halves and fails the build if they disagree
+  // about any score from 300 to 850.
+  //
+  // Kept as a named function, and still exported on DefiState below, because
+  // several dashboard-*.js files call DefiState.bandFor and none of them
+  // should have to care where the table moved to.
   function bandFor(score) {
-    if (score == null) return "Unscored";
-    for (const b of BANDS) {
-      if (score >= b.floor) return b.label;
-    }
-    return BANDS[BANDS.length - 1].label;
+    return window.DefiBands.labelFor(score);
   }
 
   // Map the /api/wallet-score payload (5 pillars, weights 35/25/15/10/15)
@@ -196,7 +188,7 @@
       wallet,
       scored: data.scored !== false,
       score: data.score,
-      band: data.scored === false ? "Unscored" : bandFor(data.score),
+      band: data.scored === false ? window.DefiBands.UNKNOWN.label : bandFor(data.score),
       coverage: coverage,
       reason: data.reason || null,
       explanation: data.explanation || null,

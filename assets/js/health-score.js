@@ -32,10 +32,10 @@
     .defi-health__gauge-center{position:absolute;left:0;right:0;bottom:6px;text-align:center}
     .defi-health__score{font-size:42px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
     .defi-health__band{font-size:11px;text-transform:uppercase;letter-spacing:.12em;font-weight:700;margin-top:4px;color:var(--defi-text-dim,#94a3b8)}
-    .defi-health__band--excellent{color:#4ade80}
-    .defi-health__band--good{color:#86efac}
-    .defi-health__band--fair{color:#facc15}
-    .defi-health__band--poor{color:#fca5a5}
+    /* Band colours are appended below from score-bands.js, not typed here.
+       They used to read #4ade80/#86efac/#facc15/#fca5a5 — two greens for
+       Excellent and Good, which is the exact ambiguity the glyphs exist to
+       remove, and a palette no other surface in the product used. */
     .defi-health__breakdown{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:16px}
     .defi-health__pillar{padding:12px 14px;border-radius:10px;background:rgba(148,163,184,.06);border:1px solid var(--defi-border,rgba(148,163,184,.18))}
     .defi-health__pillar-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
@@ -66,7 +66,7 @@
   function injectStyle() {
     if (document.getElementById(STYLE_ID)) return;
     const s = document.createElement("style");
-    s.id = STYLE_ID; s.textContent = CSS;
+    s.id = STYLE_ID; s.textContent = CSS + "\n    " + bandCss();
     document.head.appendChild(s);
   }
 
@@ -90,11 +90,14 @@
     el.className = "defi-health__notice" + (isError ? " defi-health__notice--err" : "");
   }
 
-  function bandColor(score) {
-    if (score >= 720) return "#4ade80";
-    if (score >= 660) return "#86efac";
-    if (score >= 580) return "#facc15";
-    return "#fca5a5";
+  // One rule per band, built from the shared table so this widget cannot
+  // drift from the dashboard and the card the way it had.
+  function bandCss() {
+    var rules = window.DefiBands.BANDS.map(function (b) {
+      return ".defi-health__band--" + b.key + "{color:" + b.color + "}";
+    });
+    rules.push(".defi-health__band--unknown{color:" + window.DefiBands.UNKNOWN.color + "}");
+    return rules.join("\n    ");
   }
 
   function renderGauge(score) {
@@ -102,9 +105,9 @@
     if (!arc) return;
     // SVG arc length ≈ π * r ; here r=80 → ~251.3. We use stroke-dasharray to fill.
     const arcLength = 251.3;
-    const pct = Math.max(0, Math.min(1, (score - 300) / 550));
+    const pct = window.DefiBands.fraction(score);
     arc.style.strokeDasharray = (arcLength * pct).toFixed(1) + " " + arcLength.toFixed(1);
-    arc.style.stroke = bandColor(score);
+    arc.style.stroke = window.DefiBands.colorFor(score);
     $("defi-health-score").textContent = score;
   }
 
@@ -200,10 +203,13 @@
       setNotice(null);
       $("defi-health-body").hidden = false;
       renderGauge(data.score);
-      const band = data.score_band || "fair";
+      // Derived from the score, like every other surface — the persisted
+      // score_band is not consulted, so a stale one cannot contradict the
+      // number beside it. .defi-health__band already uppercases in CSS.
+      const meta = window.DefiBands.forScore(data.score);
       const bandEl = $("defi-health-band");
-      bandEl.textContent = band.toUpperCase();
-      bandEl.className = "defi-health__band defi-health__band--" + band;
+      bandEl.textContent = meta.glyph + " " + meta.label;
+      bandEl.className = "defi-health__band defi-health__band--" + meta.key;
       renderBreakdown(data.pillars);
       renderAdjustments(data.adjustments);
       renderChart(data.history || []);

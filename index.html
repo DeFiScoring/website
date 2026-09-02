@@ -406,6 +406,7 @@ changefreq: "weekly"
 {% include site-footer.html %}
 {% include dashboard/intel-consent.html %}
 
+<script src="{{ '/assets/js/score-bands.js' | relative_url }}?v={{ site.time | date: '%s' }}" defer></script>
 <script src="{{ '/assets/js/landing.js' | relative_url }}?v={{ site.time | date: '%s' }}" defer></script>
 
 </body>
