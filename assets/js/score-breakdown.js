@@ -27,6 +27,13 @@
         "Liquidation count (lifetime)",
         "Average debt utilization vs. collateral",
       ],
+      // Forward-looking, unlike `good`/`bad` which describe what already
+      // happened. Three variants because the same advice is not true in all
+      // three states: telling someone to keep their health factor above 2.0
+      // when we could not read their lending data at all is confidently wrong.
+      improve: "Keep every health factor above 2.0 and repay on schedule. This is the heaviest pillar at 35%, and the riskiest single position sets the band.",
+      improveEstimated: "Nothing on your side \u2014 the lending sources could not be read at scan time, so this is held at a neutral 50. It scores on real positions as soon as they answer.",
+      improveAbsent: "Borrow against collateral on a supported money market and repay on schedule. At 35% this is the heaviest pillar, and the fastest one to move.",
     },
     "Portfolio health": {
       what: "How balanced your positions are right now: concentration, liquidity, and exposure to volatile assets.",
@@ -38,6 +45,9 @@
         "Number of distinct chains active",
         "Number of distinct protocols active",
       ],
+      improve: "Bring your largest position under 50% of portfolio value. Concentration is what this pillar penalises, not size.",
+      improveEstimated: "Nothing on your side \u2014 balances could not be read at scan time, so this is held at a neutral 50 rather than counted as empty.",
+      improveAbsent: "Hold assets in this wallet, spread across more than one position and more than one chain.",
     },
     "Liquidity provision": {
       what: "Your contribution to DEX liquidity, scored on the USD value of your live Uniswap V3 positions rather than how many you hold — twenty dust positions no longer outrank one large one.",
@@ -48,6 +58,9 @@
         "Total LP value (USD)",
         "Number of chains with liquidity",
       ],
+      improve: "Hold LP positions longer and larger \u2014 this is valued in USD, so one meaningful position outranks twenty dust ones.",
+      improveEstimated: "Nothing on your side \u2014 Uniswap positions could not be read at scan time, so this is held at a neutral 50.",
+      improveAbsent: "Provide liquidity on a DEX and leave it in place. Value counts, not the number of positions.",
     },
     "Governance": {
       what: "On-chain governance participation (Snapshot, Tally) — a proxy for engagement and reputation.",
@@ -58,6 +71,9 @@
         "Number of distinct DAOs",
         "Delegations made or received",
       ],
+      improve: "Vote in more proposals, and across more than one DAO \u2014 breadth counts as well as count.",
+      improveEstimated: "Nothing on your side \u2014 Snapshot was unreachable, so this is held at a neutral 50 and marked estimated rather than scored as zero votes.",
+      improveAbsent: "Vote in a DAO proposal. Five votes takes this pillar from empty to strong.",
     },
     "Account age": {
       what: "How long this wallet has been active on-chain. The oldest first transaction across every scored chain wins, so a wallet that started on an L2 keeps that age instead of being reset to the date it bridged to Ethereum.",
@@ -68,6 +84,9 @@
         "Which chain that transaction was on",
         "How many chains answered the lookup",
       ],
+      improve: "Nothing to do \u2014 this rises on its own while the wallet stays active. It reads the oldest first transaction across every scored chain, so an L2 origin keeps its age.",
+      improveEstimated: "Nothing on your side \u2014 the first-transaction lookup failed on every chain, so this is held at a neutral 50. A failed lookup is not an age of zero.",
+      improveAbsent: "Make your first transaction. This pillar then grows on its own, and counts the oldest one found on any scored chain.",
     },
   };
 
@@ -86,12 +105,27 @@
     };
   }
 
+  // A pillar's 0–100 value is a different scale from the 300–850 band, and it
+  // now has different words. This used to read "Excellent / Good / Fair /
+  // Needs work" at 80/60/40 with its own hard-coded hexes — three of those
+  // words also name bands, at unrelated thresholds, so "Good" beside a pillar
+  // and "Good" beside the score meant two different things. score-bands.js
+  // owns both vocabularies now, and keeps them provably distinct.
   function badgeFor(value) {
-    if (value == null) return { text: "no data", color: "#7c8a9b" };
-    if (value >= 80)   return { text: "Excellent", color: "#2bd4a4" };
-    if (value >= 60)   return { text: "Good",      color: "#00f5ff" };
-    if (value >= 40)   return { text: "Fair",      color: "#facc15" };
-    return { text: "Needs work", color: "#ff5d6c" };
+    var t = window.DefiBands.pillarTier(value);
+    return { text: t.label, color: t.color, glyph: t.glyph };
+  }
+
+  /*
+   * The forward-looking line for a pillar, in the state it is actually in.
+   * Exported below so dashboard-score.js's credential and this modal read the
+   * same sentence rather than authoring two.
+   */
+  function improveFor(name, real, hasValue) {
+    var tpl = templateFor(name);
+    if (hasValue === false) return tpl.improveAbsent || tpl.improve || "";
+    if (real === false)     return tpl.improveEstimated || tpl.improve || "";
+    return tpl.improve || "";
   }
 
   function escapeHtml(s) {
@@ -129,6 +163,7 @@
     var weight = factor.weight != null ? factor.weight + "%" : "—";
     var valueStr = factor.value == null ? "no data" : factor.value + " / 100";
     var detail = factor.detail ? '<p class="defi-breakdown-modal__detail">' + escapeHtml(factor.detail) + '</p>' : "";
+    var improve = improveFor(factor.name, factor.real, factor.value != null);
 
     var inputsHtml = tpl.inputs.length
       ? '<ul class="defi-breakdown-modal__inputs">' +
@@ -142,7 +177,7 @@
         '<div class="defi-breakdown-modal__meta">' +
           '<span class="defi-breakdown-modal__weight">Weight ' + weight + '</span>' +
           '<span class="defi-breakdown-modal__badge" style="background:' + badge.color + '">' +
-            valueStr + ' · ' + badge.text +
+            valueStr + ' · ' + badge.glyph + ' ' + badge.text +
           '</span>' +
         '</div>' +
       '</div>' +
@@ -158,6 +193,12 @@
           '<p>' + escapeHtml(tpl.bad) + '</p>' +
         '</div>' +
       '</div>' +
+      (improve
+        ? '<div class="defi-breakdown-modal__improve">' +
+            '<div class="defi-breakdown-modal__col-label">What would move it</div>' +
+            '<p>' + escapeHtml(improve) + '</p>' +
+          '</div>'
+        : "") +
       (inputsHtml
         ? '<div class="defi-breakdown-modal__inputs-wrap">' +
             '<div class="defi-breakdown-modal__col-label">Inputs we look at</div>' +
@@ -189,8 +230,12 @@
       value:  row.dataset.factorValue === "" ? null : Number(row.dataset.factorValue),
       weight: row.dataset.factorWeight === "" ? null : Number(row.dataset.factorWeight),
       detail: row.dataset.factorDetail || "",
+      // Fifth attribute, added with the credential. "false" is the only value
+      // that means estimated; an absent attribute reads as observed, which is
+      // what every caller before this one implied.
+      real:   row.dataset.factorReal !== "false",
     });
   });
 
-  window.DefiScoreBreakdown = { open: open, close: close };
+  window.DefiScoreBreakdown = { open: open, close: close, improveFor: improveFor };
 })();

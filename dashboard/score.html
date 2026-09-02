@@ -13,13 +13,47 @@ sitemap: false
 </div>
 
 <div id="score-main" style="display:none">
-  <div class="defi-card" style="margin-bottom:18px">
-    <div class="defi-score-wrap">
-      <div class="defi-score-circle" id="score-circle"></div>
-      <div class="defi-factors" id="score-factors"></div>
+
+  <!-- ────────────  The credential: score, provenance, pillars  ──────────── -->
+  <div class="defi-card defi-cred" style="margin-bottom:18px">
+    <div class="defi-cred__head">
+      <div class="defi-cred__gauge" id="score-circle"></div>
+      <div class="defi-cred__summary">
+        <div class="defi-cred__band" id="score-band-pill"></div>
+        <div class="defi-cred__headline" id="score-headline"></div>
+        <div class="defi-cred__stamp" id="score-stamp"></div>
+
+        <!-- Coverage as a weighted meter rather than a bare percentage: one
+             segment per pillar, sized by its weight, hatched when the pillar
+             was estimated. "72% live data" does not tell anyone WHICH part of
+             their score is a guess. -->
+        <div class="defi-cred__cov" id="score-coverage"></div>
+
+        <div class="defi-cred__actions">
+          <button type="button" id="score-share-btn" class="defi-btn defi-btn--ghost">Share score card</button>
+          <span class="defi-cred__share-note" id="score-share-note"></span>
+        </div>
+      </div>
     </div>
+
+    <div class="defi-factors" id="score-factors"></div>
+
     <div class="defi-card__delta" id="score-updated" style="margin-top:14px"></div>
     <div id="score-notice" class="defi-card__delta" style="margin-top:8px;font-size:12px;color:var(--defi-text-dim);display:none"></div>
+  </div>
+
+  <!-- ────────────  How the pillar score became the final number  ──────────── -->
+  <div class="defi-card" id="score-ledger-card" style="margin-bottom:18px;display:none">
+    <div class="defi-card__title">How this number was reached</div>
+    <div class="defi-ledger" id="score-ledger"></div>
+    <p class="defi-card__delta" id="score-ledger-note" style="margin:12px 0 0;font-size:12px;color:var(--defi-text-dim)"></p>
+  </div>
+
+  <!-- ────────────  Trend, with the marks where the model changed  ──────────── -->
+  <div class="defi-card" id="score-trend-card" style="margin-bottom:18px;display:none">
+    <div class="defi-card__title">Score over time</div>
+    <div class="defi-trend" id="score-trend"></div>
+    <p class="defi-card__delta" id="score-trend-note" style="margin:10px 0 0;font-size:12px;color:var(--defi-text-dim)"></p>
   </div>
 
   <div class="defi-card">
