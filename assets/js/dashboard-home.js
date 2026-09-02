@@ -399,8 +399,13 @@
         metaEl.textContent = "across " + activeChains + " chain" + (activeChains === 1 ? "" : "s") +
                               " · " + totalTokens + " token" + (totalTokens === 1 ? "" : "s");
       }
-      document.getElementById("stat-positions").textContent = portfolio.positions.length;
-      document.getElementById("stat-alerts").textContent = alerts.items.length;
+      // Both reads are defensive: a payload missing `positions` or `items`
+      // used to throw here and blank the entire page with "Unable to load
+      // on-chain data", turning one absent field into a total outage.
+      document.getElementById("stat-positions").textContent =
+        (Array.isArray(portfolio.positions) ? portfolio.positions : []).length;
+      document.getElementById("stat-alerts").textContent =
+        (alerts && Array.isArray(alerts.items) ? alerts.items : []).length;
 
       // P2/P3 — per-chain scan status + holdings table.
       renderPortfolioStatus(portfolio);

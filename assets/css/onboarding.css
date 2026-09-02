@@ -35,7 +35,7 @@
 .defi-ob-backdrop.is-open .defi-ob { transform: translateY(0) scale(1); }
 .defi-ob__close {
   position: absolute; top: 14px; right: 16px;
-  background: none; border: none; color: var(--defi-text-mute);
+  background: none; border: none; color: var(--defi-text-muted);
   font-size: 22px; cursor: pointer; line-height: 1;
 }
 .defi-ob__close:hover { color: var(--defi-text); }
@@ -103,7 +103,7 @@
 }
 .defi-ob__skip {
   margin-right: auto;
-  background: none; border: none; color: var(--defi-text-mute);
+  background: none; border: none; color: var(--defi-text-muted);
   font-size: 12px; cursor: pointer; text-decoration: underline;
 }
 .defi-ob__skip:hover { color: var(--defi-text-dim); }
@@ -156,7 +156,7 @@
 }
 .defi-nudge__cta:hover { color: #0a0a12; opacity: 0.92; }
 .defi-nudge__close {
-  background: none; border: none; color: var(--defi-text-mute);
+  background: none; border: none; color: var(--defi-text-muted);
   font-size: 20px; cursor: pointer; padding: 0 4px; line-height: 1;
 }
 .defi-nudge__close:hover { color: var(--defi-text); }

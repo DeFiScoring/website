@@ -16,7 +16,12 @@
 
   --ds-text:      #e8e8f0;
   --ds-text-dim:  #8b8b99;
+  /* See the note on --defi-text-mute in dashboard.css: #5a5a6a is 2.93:1 on
+     --ds-bg and fails WCAG AA, so it is for hairlines only. Text uses
+     --ds-text-muted (4.7:1). Both tokens are kept so the two design systems
+     stay in step. */
   --ds-text-mute: #5a5a6a;
+  --ds-text-muted: #7a7a8c;
 
   --ds-cyan:      #00f5ff;
   --ds-purple:    #a855f7;
@@ -311,7 +316,7 @@ code {
   align-items: center;
 }
 .ds-hero__trust b { color: var(--ds-text); font-weight: 700; }
-.ds-sep { color: var(--ds-text-mute); }
+.ds-sep { color: var(--ds-text-muted); }
 
 /* ---------- Score gauge --------------------------------------------------*/
 
@@ -383,14 +388,14 @@ code {
   color: var(--ds-text-dim);
   line-height: 1.25;
 }
-.ds-gauge__band em { font-style: normal; color: var(--ds-text-mute); font-weight: 500; }
+.ds-gauge__band em { font-style: normal; color: var(--ds-text-muted); font-weight: 500; }
 .ds-gauge__band--poor   { border-color: rgba(239, 68, 68, 0.35);  color: #fda4a4; }
 .ds-gauge__band--fair   { border-color: rgba(250, 204, 21, 0.35); color: var(--ds-gold); }
 .ds-gauge__band--good   { border-color: rgba(0, 245, 255, 0.35);  color: var(--ds-cyan); }
 .ds-gauge__band--great  { border-color: rgba(168, 85, 247, 0.4);  color: var(--ds-purple); }
 .ds-gauge__caption {
   font: 500 11px/1 var(--ds-font-mono);
-  color: var(--ds-text-mute);
+  color: var(--ds-text-muted);
   letter-spacing: 0.04em;
 }
 
@@ -405,7 +410,7 @@ code {
 .ds-trust__label {
   margin: 0 0 14px;
   font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em;
-  color: var(--ds-text-mute); font-weight: 700; text-align: center;
+  color: var(--ds-text-muted); font-weight: 700; text-align: center;
 }
 .ds-trust__row {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: center;

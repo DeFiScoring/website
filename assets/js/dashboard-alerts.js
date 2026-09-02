@@ -179,7 +179,7 @@
         var disabled = !c.is_verified;
         return (
           '<label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:' +
-          (disabled ? 'var(--defi-text-mute)' : 'var(--defi-text)') + '">' +
+          (disabled ? 'var(--defi-text-muted)' : 'var(--defi-text)') + '">' +
             '<input type="checkbox" data-channel-kind="' + c.kind + '" ' +
               (i === 0 && !disabled ? "checked" : "") + (disabled ? " disabled" : "") + ">" +
             (c.kind === "email" ? "✉️ " : "✈️ ") + escapeHtml(c.destination) +

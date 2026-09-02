@@ -26,7 +26,7 @@
 
   function chip(entry) {
     if (entry.score == null) {
-      return '<span style="color:var(--defi-text-mute)">no scan yet</span>';
+      return '<span style="color:var(--defi-text-muted)">no scan yet</span>';
     }
     var band = entry.score_band
       ? entry.score_band[0].toUpperCase() + entry.score_band.slice(1)

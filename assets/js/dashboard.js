@@ -2,9 +2,20 @@
  * Wallet connect (EIP-1193) + DefiAPI client backed by REAL on-chain reads
  * via window.DefiOnchain. No fabricated values.
  *
- * Optional remote backend: set window.DEFI_API_BASE to a URL that serves
- * /api/score, /api/portfolio, /api/alerts and it will be used in preference
- * to the on-chain fallback. Otherwise on-chain reads are used directly.
+ * API base: the Worker serves this site AND its /api/* routes from one origin
+ * (wrangler.jsonc — assets.directory + run_worker_first), so the default ""
+ * is the SAME ORIGIN, not "no backend". A relative /api/... reaches the
+ * worker; dashboard-watchlist.js and quota-widget.js have always relied on
+ * that. Setting window.DEFI_API_BASE points the client at a different origin
+ * instead (local wrangler dev, a preview deployment).
+ *
+ * This distinction is load-bearing. Guards of the form `if (API_BASE)` read
+ * the default "" as "no backend configured" and silently routed every score,
+ * portfolio and alert read to the client-side fallback — so the dashboard
+ * rendered DefiOnchain.preliminaryScore()'s six-factor approximation instead
+ * of the worker's five-pillar model, and coverage, per-pillar rationales and
+ * the adjustments ledger never reached the UI at all. Do not reintroduce a
+ * truthiness check on API_BASE.
  */
 (function () {
   const DEFAULT_API_BASE = "";
@@ -81,7 +92,6 @@
 
   /* ---------- API client ---------- */
   async function apiGet(path) {
-    if (!API_BASE) return null;
     const res = await fetch(API_BASE + path, { headers: { "Accept": "application/json" } });
     if (!res.ok) throw new Error("API " + res.status);
     return res.json();
@@ -135,12 +145,20 @@
       real: pl ? pl.real !== false : false,
       detail: pl && (pl.rationale || pl.finding) || "",
     });
+    // The parenthetical names the pillar's live sources, so it has to track
+    // what the worker actually reads: loan reliability gained Spark and Morpho
+    // Blue, account age went multichain in 2026.09, and liquidity provision
+    // moved from counting positions to valuing them in 2026.10.
+    //
+    // The leading phrase before " (" is also the lookup key into
+    // score-breakdown.js's EXPLAIN_TEMPLATES — keep it exactly equal to a
+    // template key or the factor modal falls back to generic copy.
     const factors = [
-      mk(p.loan_reliability,    "Loan reliability (Aave V3, all chains)",    "loan reliability"),
-      mk(p.portfolio_health,    "Portfolio health (size + diversification)", "portfolio health"),
-      mk(p.liquidity_provision, "Liquidity provision (Uniswap V3 LP)",       "liquidity provision"),
-      mk(p.governance,          "Governance participation (Snapshot)",       "governance"),
-      mk(p.account_age,         "Account age (Ethereum first tx)",           "account age"),
+      mk(p.loan_reliability,    "Loan reliability (Aave V3, Spark, Compound V3, Morpho Blue)", "loan reliability"),
+      mk(p.portfolio_health,    "Portfolio health (size + diversification)",                   "portfolio health"),
+      mk(p.liquidity_provision, "Liquidity provision (Uniswap V3 LP, valued in USD)",          "liquidity provision"),
+      mk(p.governance,          "Governance (Snapshot)",                                       "governance"),
+      mk(p.account_age,         "Account age (oldest first tx across scored chains)",          "account age"),
     ];
     // How much of the score rests on observed data. The worker sends this,
     // but derive it from the factor weights when it's absent so an older
@@ -150,10 +168,19 @@
       ? data.coverage
       : factors.reduce(function (sum, f) { return sum + (f.real ? f.weight : 0); }, 0) / 100;
     const estimated = factors.filter(function (f) { return !f.real; });
+    // Keep the adjustments as structured {name, delta, reason} rows. They used
+    // to be flattened into the notice string here, which meant the ledger — the
+    // step from the weighted pillar score to the final number, including the
+    // −150 liquidation penalty — could never be rendered as anything but prose.
+    const adjustments = (Array.isArray(data.adjustments) ? data.adjustments : [])
+      .map(function (a) {
+        if (typeof a === "string") return { name: a, delta: null, reason: a };
+        return { name: a.name || "", delta: typeof a.delta === "number" ? a.delta : null, reason: a.reason || "" };
+      });
     const notes = [];
-    if (Array.isArray(data.adjustments) && data.adjustments.length) {
-      notes.push("Adjustments: " + data.adjustments.map(function (a) {
-        return typeof a === "string" ? a : ((a.delta > 0 ? "+" : "") + a.delta + " " + (a.reason || a.name));
+    if (adjustments.length) {
+      notes.push("Adjustments: " + adjustments.map(function (a) {
+        return (a.delta == null ? "" : (a.delta > 0 ? "+" : "") + a.delta + " ") + (a.reason || a.name);
       }).join("; "));
     }
     if (data.scored === false && data.explanation) notes.push(data.explanation);
@@ -174,6 +201,11 @@
       reason: data.reason || null,
       explanation: data.explanation || null,
       preliminary: false,
+      // A score is only comparable to another from the same model version, so
+      // the version travels with the score rather than being dropped here.
+      model: data.model || null,
+      raw_h_s: typeof data.raw_h_s === "number" ? data.raw_h_s : null,
+      adjustments,
       updated_at: data.timestamp || new Date().toISOString(),
       factors,
       history: [],
@@ -193,89 +225,85 @@
       // legacy model. It is also the only endpoint honest enough to say
       // "unscored" for a wallet with no on-chain footprint instead of
       // inventing a number.
-      if (API_BASE) {
-        try {
-          const res = await fetch(API_BASE + "/api/wallet-score?wallet=" + encodeURIComponent(wallet),
-            { headers: { "Accept": "application/json" } });
-          if (res.ok) {
-            const data = await res.json();
-            if (data && data.success) return mapWalletScore(wallet, data);
-          } else {
-            console.warn("wallet-score HTTP " + res.status);
-          }
-        } catch (e) {
-          console.warn("wallet-score call failed, trying legacy health-score:", e.message);
+      try {
+        const res = await fetch(API_BASE + "/api/wallet-score?wallet=" + encodeURIComponent(wallet),
+          { headers: { "Accept": "application/json" } });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.success) return mapWalletScore(wallet, data);
+        } else {
+          console.warn("wallet-score HTTP " + res.status);
         }
+      } catch (e) {
+        console.warn("wallet-score call failed, trying legacy health-score:", e.message);
       }
       // Fallback #2: legacy Ethereum-only health-score endpoint.
-      if (API_BASE) {
-        try {
-          const res = await fetch(API_BASE + "/api/health-score", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "Accept": "application/json" },
-            body: JSON.stringify({ wallet }),
-          });
-          if (res.ok) {
-            const data = await res.json();
-            if (data && data.success) {
-              const p = data.pillars || {};
-              const clampPillar = (pl) => pl && pl.value != null ? Math.max(0, Math.min(100, Math.round(pl.value))) : null;
-              const factors = [
-                {
-                  name: "Loan reliability (Aave V3 health factor)",
-                  value: clampPillar(p.loan_reliability),
-                  weight: 40,
-                  real: p.loan_reliability ? p.loan_reliability.real !== false : false,
-                  detail: p.loan_reliability && p.loan_reliability.finding,
-                },
-                {
-                  name: "Liquidity provision (Uniswap V3 LP)",
-                  value: clampPillar(p.liquidity_provision),
-                  weight: 30,
-                  real: p.liquidity_provision ? p.liquidity_provision.real !== false : false,
-                  detail: p.liquidity_provision && p.liquidity_provision.finding,
-                },
-                {
-                  name: "Governance participation (Snapshot votes)",
-                  value: clampPillar(p.governance),
-                  weight: 20,
-                  real: p.governance ? p.governance.real !== false : false,
-                  detail: p.governance && p.governance.finding,
-                },
-                {
-                  name: "Account age (Ethereum mainnet)",
-                  value: clampPillar(p.account_age),
-                  weight: 10,
-                  real: p.account_age ? p.account_age.real !== false : false,
-                  detail: p.account_age && p.account_age.finding,
-                },
-              ];
-              const history = (data.history || []).map((h) => ({
-                month: new Date(h.computed_at).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
-                score: h.score,
-              }));
-              const notes = [];
-              if (Array.isArray(data.adjustments) && data.adjustments.length) {
-                notes.push("Adjustments: " + data.adjustments.join("; "));
-              }
-              if (data.persisted === false) notes.push("Score history isn't being persisted yet.");
-              return {
-                wallet,
-                score: data.score,
-                band: bandFor(data.score),
-                preliminary: false,
-                updated_at: data.timestamp || new Date().toISOString(),
-                factors,
-                history,
-                notice: notes.join(" • "),
-              };
+      try {
+        const res = await fetch(API_BASE + "/api/health-score", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          body: JSON.stringify({ wallet }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.success) {
+            const p = data.pillars || {};
+            const clampPillar = (pl) => pl && pl.value != null ? Math.max(0, Math.min(100, Math.round(pl.value))) : null;
+            const factors = [
+              {
+                name: "Loan reliability (Aave V3 health factor)",
+                value: clampPillar(p.loan_reliability),
+                weight: 40,
+                real: p.loan_reliability ? p.loan_reliability.real !== false : false,
+                detail: p.loan_reliability && p.loan_reliability.finding,
+              },
+              {
+                name: "Liquidity provision (Uniswap V3 LP)",
+                value: clampPillar(p.liquidity_provision),
+                weight: 30,
+                real: p.liquidity_provision ? p.liquidity_provision.real !== false : false,
+                detail: p.liquidity_provision && p.liquidity_provision.finding,
+              },
+              {
+                name: "Governance participation (Snapshot votes)",
+                value: clampPillar(p.governance),
+                weight: 20,
+                real: p.governance ? p.governance.real !== false : false,
+                detail: p.governance && p.governance.finding,
+              },
+              {
+                name: "Account age (Ethereum mainnet)",
+                value: clampPillar(p.account_age),
+                weight: 10,
+                real: p.account_age ? p.account_age.real !== false : false,
+                detail: p.account_age && p.account_age.finding,
+              },
+            ];
+            const history = (data.history || []).map((h) => ({
+              month: new Date(h.computed_at).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+              score: h.score,
+            }));
+            const notes = [];
+            if (Array.isArray(data.adjustments) && data.adjustments.length) {
+              notes.push("Adjustments: " + data.adjustments.join("; "));
             }
-          } else {
-            console.warn("health-score HTTP " + res.status);
+            if (data.persisted === false) notes.push("Score history isn't being persisted yet.");
+            return {
+              wallet,
+              score: data.score,
+              band: bandFor(data.score),
+              preliminary: false,
+              updated_at: data.timestamp || new Date().toISOString(),
+              factors,
+              history,
+              notice: notes.join(" • "),
+            };
           }
-        } catch (e) {
-          console.warn("health-score call failed, falling back to on-chain preliminary:", e.message);
+        } else {
+          console.warn("health-score HTTP " + res.status);
         }
+      } catch (e) {
+        console.warn("health-score call failed, falling back to on-chain preliminary:", e.message);
       }
       // Fallback: client-side preliminary from public RPCs only.
       const snap = await getSnapshot(wallet);
