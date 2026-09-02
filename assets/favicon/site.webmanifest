@@ -1,0 +1,21 @@
+{
+  "name": "DeFi Scoring",
+  "short_name": "DeFiScore",
+  "description": "On-chain credit scoring and portfolio risk for DeFi wallets.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "icons": [
+    {
+      "src": "/assets/favicon/favicon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/favicon/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}
