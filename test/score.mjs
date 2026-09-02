@@ -501,6 +501,41 @@ async function call(path) {
   check("latestScoreFor returns null for a wallet with no row",
     (await latestScoreFor(env, "0x000000000000000000000000000000000000eeee")) === null, null);
 
+  /* ---- the ledger identity ------------------------------------------------
+   *
+   * worker/lib/score.js does:
+   *
+   *     base  = round(300 + Hs/100 * 550)
+   *     total = base + Σ adjustment deltas
+   *     score = clamp(total, 300, 850)
+   *
+   * The score page now renders that as a ledger, so every published payload
+   * has to reconcile — otherwise a user reads a column of numbers that does
+   * not add up to the number above it. Nothing pinned this before: `-150`
+   * could have become `-100`, an adjustment could have been dropped from the
+   * array while still moving the score, or the clamp could have been removed,
+   * and every suite would still have passed.
+   */
+  const ADJ_DELTAS = {
+    aave_safe_lender: 50, multichain_user: 30,
+    liquidation_risk: -150, over_concentrated: -50,
+  };
+  function checkLedger(label, payload) {
+    if (!payload || payload.scored === false) return;
+    const adj = payload.adjustments || [];
+    const base = Math.round(300 + (payload.raw_h_s / 100) * 550);
+    const total = adj.reduce((sum, a) => sum + a.delta, base);
+    const clamped = Math.max(300, Math.min(850, total));
+    check(`ledger reconciles for ${label}: round(300 + ${payload.raw_h_s}*5.5) + Σdeltas, clamped === score`,
+      clamped === payload.score, { base, deltas: adj.map((a) => a.delta), total, clamped, score: payload.score });
+    check(`${label}: every adjustment is a known name with its documented delta`,
+      adj.every((a) => ADJ_DELTAS[a.name] === a.delta),
+      adj.map((a) => [a.name, a.delta]));
+    check(`${label}: every adjustment carries a reason`,
+      adj.every((a) => typeof a.reason === "string" && a.reason.length > 0),
+      adj.map((a) => a.reason));
+  }
+
   // ---- all-chain opt-in
   calls = { etherscan: 0, coingecko: 0, snapshot: 0, cometPrice: 0, txlistChains: [], alchemyHttp: 0, alchemyCalls: 0, other: [] };
   const all = await call("/api/wallet-score?wallet=" + WALLET + "&tier=all");
@@ -924,6 +959,22 @@ async function call(path) {
     { lpCount: 40, activeLpCount: 20, positionsRead: 20, lpCountTruncated: true }));
   check("a truncated enumeration is reported as a floor",
     /floor/.test(truncatedPillar.rationale), truncatedPillar.rationale);
+
+  // ---- every scored payload the suite produced must reconcile ------------
+  for (const [label, payload] of [
+    ["the main wallet", s.json], ["the borrower", b.json], ["the Spark wallet", sw.json],
+    ["the Base wallet", bw.json], ["the multichain wallet", mw.json], ["the failed-lookup wallet", fw.json],
+  ]) checkLedger(label, payload);
+
+  // Both clamp ends, computed the way score.js computes them. The reachable
+  // pre-clamp range is [195, 920] — Hs bottoms out at 17.25 and tops out at
+  // 98.25, deltas span -200..+80 — so the clamp is load-bearing at both ends,
+  // and the ceiling is the easy one to reach.
+  const clampTo = (n) => Math.max(300, Math.min(850, n));
+  check("the ceiling bites: a top wallet with both bonuses exceeds 850 before clamping",
+    Math.round(300 + (98.25 / 100) * 550) + 50 + 30 === 920 && clampTo(920) === 850, null);
+  check("the floor bites: a liquidated, concentrated wallet falls under 300 before clamping",
+    Math.round(300 + (17.25 / 100) * 550) - 150 - 50 === 195 && clampTo(195) === 300, null);
 
   globalThis.fetch = realFetch;
   const failed = results.filter((r) => !r.ok);

@@ -220,6 +220,43 @@ check("every glyph is a single code point",
   allMeta.every((b) => [...b.glyph].length === 1), allMeta.map((b) => b.glyph));
 check("the estimated glyph is not a band glyph",
   !allMeta.some((b) => b.glyph === B.ESTIMATED_GLYPH), B.ESTIMATED_GLYPH);
+
+/* The 0–100 pillar scale is a DIFFERENT scale from the 300–850 band, and the
+ * credential puts the two side by side. score-breakdown.js used to label a
+ * pillar "Excellent / Good / Fair" at 80/60/40 — the same three words the band
+ * table uses at 720/660/580 — so one word meant two things depending on which
+ * number it sat next to. Keep them provably apart. */
+const pillarMeta = B.PILLAR_TIERS.concat([B.PILLAR_UNKNOWN]);
+const bandWords = allMeta.map((b) => b.label.toLowerCase());
+const pillarWords = pillarMeta.map((t) => t.label.toLowerCase());
+check("no pillar tier borrows a band's word",
+  !pillarWords.some((w) => bandWords.includes(w)),
+  pillarWords.filter((w) => bandWords.includes(w)));
+check("no pillar tier borrows a band's glyph",
+  !pillarMeta.some((t) => allMeta.some((b) => b.glyph === t.glyph && t.key !== "none")),
+  pillarMeta.map((t) => t.glyph));
+// Ordinal at a glance: each step down fills one fewer slot, and every tier is
+// the same width so they line up in a column.
+check("pillar tier glyphs are a constant-width ramp",
+  B.PILLAR_TIERS.every((t, i) => [...t.glyph].length === 3 &&
+    [...t.glyph].filter((c) => c === "▰").length === B.PILLAR_TIERS.length - 1 - i),
+  B.PILLAR_TIERS.map((t) => t.glyph));
+check("pillar tiers are ordered by descending floor and cover 0",
+  pillarMeta.slice(0, -1).every((t, i, a) => i === 0 || a[i - 1].floor > t.floor) &&
+  B.PILLAR_TIERS[B.PILLAR_TIERS.length - 1].floor === 0,
+  B.PILLAR_TIERS.map((t) => t.floor));
+check("a pillar value with no data is not a pillar value of zero",
+  B.pillarTier(null).key === "none" && B.pillarTier(0).key !== "none",
+  { none: B.pillarTier(null).key, zero: B.pillarTier(0).key });
+// The three pillar SOURCES are the honest-disclosure axis: observed, estimated,
+// nothing read. "Nothing read" must never be able to render as "observed".
+check("pillar sources are three distinct glyphs",
+  new Set(Object.keys(B.SOURCES).map((k) => B.SOURCES[k].glyph)).size === 3,
+  Object.keys(B.SOURCES).map((k) => B.SOURCES[k].glyph));
+check("an estimated pillar reports as estimated, not observed",
+  B.sourceFor(false, true).key === "estimated" && B.sourceFor(true, true).key === "observed" &&
+  B.sourceFor(true, false).key === "absent",
+  null);
 check("every band has a mark path the card can draw",
   B.BANDS.every((b) => typeof MARK_PATHS[b.mark] === "string") && B.UNKNOWN.mark === "ring",
   B.BANDS.map((b) => b.mark));
@@ -239,6 +276,8 @@ for (const b of BAND_META) {
 const CONSUMERS = [
   "landing.js", "dashboard.js", "dashboard-score.js", "dashboard-home.js",
   "dashboard-watchlist.js", "defi-onchain.js", "health-score.js",
+  // Reads DefiBands.pillarTier for the factor modal's badge.
+  "score-breakdown.js",
 ];
 for (const page of ["_layouts/dashboard.html", "_layouts/default.html", "index.html", "_includes/health-score.html"]) {
   const html = read(page);

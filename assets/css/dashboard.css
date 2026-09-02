@@ -283,25 +283,130 @@ body.defi-market-open { --defi-market-strip-h: 96px; }
 .defi-card__delta { font-size: 12px; margin-top: 6px; }
 .defi-delta--up { color: var(--defi-good); }
 .defi-delta--down { color: var(--defi-bad); }
-.defi-score-wrap { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; }
-.defi-score-circle { width: 220px; height: 220px; position: relative; display: flex; align-items: center; justify-content: center; }
-.defi-score-circle svg { transform: rotate(-90deg); }
-.defi-score-circle__inner { position: absolute; text-align: center; }
-.defi-score-circle__value { font-size: 56px; font-weight: 700; line-height: 1; }
-.defi-score-circle__label { color: var(--defi-text-dim); font-size: 13px; margin-top: 6px; }
-.defi-score-band {
-  display: inline-block; padding: 4px 10px; border-radius: 999px;
-  font-size: 11px; font-weight: 600; margin-top: 8px;
+/* ---------- Score credential (/dashboard/score/) ---------- */
+.defi-cred__head {
+  display: flex; align-items: flex-start; gap: 30px; flex-wrap: wrap;
+  padding-bottom: 20px; margin-bottom: 20px;
+  border-bottom: 1px solid var(--defi-border);
 }
+.defi-cred__gauge { position: relative; flex: 0 0 auto; width: 240px; height: 255px; }
+/* No rotate() here, unlike the old full-circle gauge: this arc is positioned
+   in polar coordinates by dashboard-score.js, so the SVG stays upright and
+   the tick labels stay readable. */
+.defi-cred__tick {
+  font-family: var(--defi-font-mono); font-size: 9px; font-weight: 700;
+  fill: var(--defi-text-muted); letter-spacing: .04em;
+}
+.defi-cred__readout {
+  position: absolute; left: 0; right: 0; top: 96px; text-align: center; pointer-events: none;
+}
+.defi-cred__score {
+  font-family: var(--defi-font-mono); font-size: 54px; font-weight: 700;
+  line-height: 1; letter-spacing: -.02em; font-variant-numeric: tabular-nums;
+}
+.defi-cred__scale {
+  margin-top: 8px; font-family: var(--defi-font-mono); font-size: 10px;
+  font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--defi-text-muted);
+}
+.defi-cred__summary { flex: 1; min-width: 280px; display: flex; flex-direction: column; gap: 12px; }
+.defi-cred__band {
+  align-self: flex-start; padding: 5px 13px; border-radius: 999px;
+  font-family: var(--defi-font-mono); font-size: 11px; font-weight: 700;
+  letter-spacing: .12em; text-transform: uppercase;
+}
+.defi-cred__headline { font-size: 20px; font-weight: 700; line-height: 1.35; text-wrap: pretty; }
+.defi-cred__stamp {
+  font-family: var(--defi-font-mono); font-size: 11px; color: var(--defi-text-muted);
+}
+.defi-cred__actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
+.defi-cred__share-note { font-size: 11px; color: var(--defi-text-muted); line-height: 1.45; }
+
+/* Coverage as a weighted meter: each pillar occupies its own weight, so the
+   picture answers "which part of my score is a guess", which a percentage
+   alone never does. */
+.defi-cov__head { display: flex; align-items: baseline; gap: 8px; }
+.defi-cov__pct {
+  font-family: var(--defi-font-mono); font-size: 22px; font-weight: 700;
+  line-height: 1; font-variant-numeric: tabular-nums;
+}
+.defi-cov__cap {
+  font-family: var(--defi-font-mono); font-size: 10px; font-weight: 700;
+  letter-spacing: .14em; text-transform: uppercase; color: var(--defi-text-muted);
+}
+.defi-cov__bar { display: flex; gap: 3px; margin-top: 8px; height: 8px; }
+.defi-cov__seg {
+  border-radius: 3px;
+  background: repeating-linear-gradient(45deg, #33333d 0 4px, #26262e 4px 8px);
+}
+.defi-cov__seg.is-live { background: linear-gradient(90deg, rgba(0,245,255,.55), var(--defi-accent)); }
+.defi-cov__legend { margin-top: 7px; font-size: 11.5px; color: var(--defi-text-dim); line-height: 1.45; }
+
+/* ---------- Pillar rows ---------- */
+.defi-factors { display: flex; flex-direction: column; gap: 14px; }
+.defi-factor { display: flex; flex-direction: column; gap: 7px; }
+.defi-factor__row { display: flex; justify-content: space-between; gap: 14px; font-size: 13px; align-items: baseline; }
+.defi-factor__name { display: inline-flex; align-items: baseline; gap: 7px; min-width: 0; }
+.defi-factor__src { font-size: 11px; line-height: 1; flex: 0 0 auto; }
+.defi-factor__num { flex: 0 0 auto; white-space: nowrap; font-family: var(--defi-font-mono); font-size: 12.5px; }
+.defi-factor__num b { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.defi-factor__of { color: var(--defi-text-muted); }
+.defi-factor__weight { color: var(--defi-text-muted); margin-left: 10px; }
+.defi-factor__bar { height: 8px; background: var(--defi-bg-2); border-radius: 999px; overflow: hidden; }
+.defi-factor__fill { height: 100%; background: linear-gradient(90deg, var(--defi-accent), var(--defi-accent-2)); border-radius: 999px; }
+.defi-factor__detail { font-size: 12px; color: var(--defi-text-dim); line-height: 1.5; }
+.defi-factor__improve { font-size: 12px; color: var(--defi-text-muted); line-height: 1.5; }
+.defi-factor__improve span {
+  font-family: var(--defi-font-mono); font-size: 9px; font-weight: 700;
+  letter-spacing: .12em; text-transform: uppercase; color: var(--defi-accent);
+  margin-right: 6px;
+}
+/* An estimated pillar is hatched, not tinted: the bar must not read as a
+   measured length when nothing was measured. */
+.defi-factor.is-estimated .defi-factor__fill {
+  background: repeating-linear-gradient(45deg, #3a3a45 0 4px, #2a2a33 4px 8px);
+}
+.defi-factor.is-absent .defi-factor__fill { background: transparent; }
+
+/* ---------- The ledger ---------- */
+.defi-ledger { display: flex; flex-direction: column; }
+.defi-ledger__row {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
+  padding: 11px 0; border-bottom: 1px solid var(--defi-border);
+}
+.defi-ledger__row:last-child { border-bottom: 0; }
+.defi-ledger__label { font-size: 13.5px; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.defi-ledger__detail { font-size: 11.5px; color: var(--defi-text-muted); line-height: 1.45; }
+.defi-ledger__amt {
+  flex: 0 0 auto; font-family: var(--defi-font-mono); font-size: 15px; font-weight: 700;
+  font-variant-numeric: tabular-nums; text-align: right; min-width: 64px;
+}
+.defi-ledger__row.is-base .defi-ledger__amt { color: var(--defi-text); }
+.defi-ledger__row.is-up .defi-ledger__amt { color: var(--defi-good); }
+.defi-ledger__row.is-down .defi-ledger__amt { color: var(--defi-bad); }
+/* The clamp reads as neither a bonus nor a penalty, because it is neither —
+   it is the scale ending. */
+.defi-ledger__row.is-clamp .defi-ledger__amt { color: var(--defi-warn); }
+.defi-ledger__row.is-total {
+  border-top: 1px solid var(--defi-border); border-bottom: 0; margin-top: 4px; padding-top: 14px;
+}
+.defi-ledger__row.is-total .defi-ledger__label { font-weight: 700; }
+.defi-ledger__row.is-total .defi-ledger__amt { font-size: 22px; }
+
+/* ---------- Trend ---------- */
+.defi-trend { position: relative; }
+.defi-trend__svg { width: 100%; height: 120px; display: block; overflow: visible; }
+.defi-trend__mark {
+  position: absolute; top: 0; transform: translateX(4px);
+  font-family: var(--defi-font-mono); font-size: 9px; font-weight: 700;
+  letter-spacing: .08em; color: var(--defi-accent-2);
+  background: var(--defi-bg); padding: 1px 4px; border-radius: 3px; white-space: nowrap;
+}
+
 .defi-band--Excellent { background: rgba(43, 212, 164, 0.15); color: var(--defi-good); }
 .defi-band--Good { background: rgba(0, 245, 255, 0.14); color: var(--defi-accent); }
 .defi-band--Fair { background: rgba(250, 204, 21, 0.15); color: var(--defi-warn); }
 .defi-band--Poor { background: rgba(255, 93, 108, 0.15); color: var(--defi-bad); }
-.defi-factors { display: flex; flex-direction: column; gap: 12px; flex: 1; min-width: 280px; }
-.defi-factor { display: flex; flex-direction: column; gap: 6px; }
-.defi-factor__row { display: flex; justify-content: space-between; font-size: 13px; }
-.defi-factor__bar { height: 8px; background: var(--defi-bg-2); border-radius: 999px; overflow: hidden; }
-.defi-factor__fill { height: 100%; background: linear-gradient(90deg, var(--defi-accent), var(--defi-accent-2)); border-radius: 999px; }
 .defi-heatmap { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
 /* When the heatmap renders its empty-state placeholder, let it span every
    column so the message reads as a normal sentence instead of one word per
@@ -556,16 +661,15 @@ body.defi-market-open { --defi-market-strip-h: 96px; }
   .defi-grid { gap: 12px; }
 
   /* Score panel: stack dial above factor bars on mobile. */
-  .defi-score-wrap {
-    flex-direction: column;
-    align-items: center;
-    gap: 22px;
-    justify-content: center;
-  }
-  .defi-score-circle { width: 180px; height: 180px; flex-shrink: 0; }
-  .defi-score-circle svg { width: 180px; height: 180px; }
-  .defi-score-circle__value { font-size: 44px; }
-  .defi-factors { min-width: 0; width: 100%; flex: 1 1 100%; }
+  .defi-cred__head { flex-direction: column; align-items: center; gap: 20px; }
+  .defi-cred__gauge { width: 200px; height: 212px; }
+  .defi-cred__gauge svg { width: 200px; height: 212px; }
+  .defi-cred__readout { top: 78px; }
+  .defi-cred__score { font-size: 44px; }
+  .defi-cred__summary { min-width: 0; width: 100%; }
+  .defi-factors { min-width: 0; width: 100%; }
+  .defi-factor__row { flex-direction: column; gap: 4px; }
+  .defi-factor__num { align-self: flex-start; }
 
   /* Tables overflow horizontally inside their card instead of pushing the
      viewport wider. */

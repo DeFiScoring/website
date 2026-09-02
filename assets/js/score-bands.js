@@ -55,6 +55,45 @@
   // does not make the wallet's band estimated.
   var ESTIMATED_GLYPH = "◔";
 
+  // Where a pillar's data came from, on the same three-way footing as a band:
+  // observed, estimated, or nothing read at all. The last is not the same as a
+  // zero — a pillar we could not read is not a pillar that scored badly.
+  var SOURCES = {
+    observed:  { key: "observed",  label: "observed",     glyph: "●", color: "#2bd4a4" },
+    estimated: { key: "estimated", label: "estimated",    glyph: ESTIMATED_GLYPH, color: "#facc15" },
+    absent:    { key: "absent",    label: "nothing read", glyph: "○", color: "#7c8a9b" },
+  };
+
+  /*
+   * The 0–100 PILLAR scale — a different scale from the 300–850 band, and now
+   * with different words for it.
+   *
+   * score-breakdown.js used to label a pillar value "Excellent / Good / Fair /
+   * Needs work" at 80/60/40 with its own hard-coded hexes. Three of those words
+   * also name 300–850 bands, at thresholds that have nothing to do with these,
+   * so "Good" meant two things depending on which number it sat next to — and
+   * the credential puts pillar values directly beside the band. Different
+   * scale, different vocabulary, and a glyph so neither is carried by colour
+   * alone.
+   */
+  /*
+   * A constant-width three-slot meter rather than one symbol per tier. A single
+   * hollow shape (▯, □) is a bad choice here even though it renders fine: it
+   * looks exactly like a font's missing-glyph box, so a reader cannot tell
+   * "Thin" from "your font failed". A filled/unfilled ramp is unmistakably
+   * deliberate, ordinal at a glance, and survives greyscale.
+   */
+  var PILLAR_TIERS = [
+    { key: "strong", label: "Strong", floor: 80, glyph: "▰▰▰", color: "#2bd4a4" },
+    { key: "solid",  label: "Solid",  floor: 60, glyph: "▰▰▱", color: "#00f5ff" },
+    { key: "thin",   label: "Thin",   floor: 40, glyph: "▰▱▱", color: "#facc15" },
+    { key: "weak",   label: "Weak",   floor: 0,  glyph: "▱▱▱", color: "#ff5d6c" },
+  ];
+
+  var PILLAR_UNKNOWN = {
+    key: "none", label: "no data", floor: null, glyph: "○", color: "#7c8a9b",
+  };
+
   function forScore(score) {
     var n = typeof score === "number" ? score : NaN;
     if (!isFinite(n)) return UNKNOWN;
@@ -70,6 +109,9 @@
     BANDS: BANDS,
     UNKNOWN: UNKNOWN,
     ESTIMATED_GLYPH: ESTIMATED_GLYPH,
+    SOURCES: SOURCES,
+    PILLAR_TIERS: PILLAR_TIERS,
+    PILLAR_UNKNOWN: PILLAR_UNKNOWN,
 
     forScore: forScore,
     keyFor:   function (score) { return forScore(score).key; },
@@ -102,6 +144,22 @@
         }
       }
       return label ? "defi-band--" + label : "";
+    },
+
+    /** Where a pillar's number came from: observed, estimated, or nothing. */
+    sourceFor: function (real, hasValue) {
+      if (hasValue === false) return SOURCES.absent;
+      return real ? SOURCES.observed : SOURCES.estimated;
+    },
+
+    /** A 0–100 pillar value's tier. NOT a band — see PILLAR_TIERS. */
+    pillarTier: function (value) {
+      var n = typeof value === "number" ? value : NaN;
+      if (!isFinite(n)) return PILLAR_UNKNOWN;
+      for (var i = 0; i < PILLAR_TIERS.length; i++) {
+        if (n >= PILLAR_TIERS[i].floor) return PILLAR_TIERS[i];
+      }
+      return PILLAR_TIERS[PILLAR_TIERS.length - 1];
     },
 
     /** Position on the 300–850 scale, 0..1. Every gauge needs this. */
