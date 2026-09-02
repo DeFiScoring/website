@@ -62,6 +62,10 @@ import {
 import {
   handleWalletsList, handleWalletLink, handleWalletUnlink, handleWalletUpdate,
 } from "./handlers/wallets.js";
+// The legacy handleHealthScore below is deliberately frozen, but its band
+// thresholds were the last literal copy of 720/660/580 anywhere in the worker
+// and would have drifted silently. The call is behaviour-identical.
+import { bandForScore } from "./lib/score.js";
 import { handleScoreBadge } from "./handlers/badge.js";
 import { handleShareCard, handleSharePage } from "./handlers/share-card.js";
 import { runScheduledRescore } from "./handlers/rescore.js";
@@ -1527,7 +1531,7 @@ async function handleHealthScore(request, env) {
     success: true,
     wallet: walletLower,
     score: bonus.score,
-    score_band: bonus.score >= 720 ? "excellent" : bonus.score >= 660 ? "good" : bonus.score >= 580 ? "fair" : "poor",
+    score_band: bandForScore(bonus.score),
     raw_h_s: Number(Hs.toFixed(2)),
     pillars: {
       loan_reliability:    { weight: 0.4, ...Lr },

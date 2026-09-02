@@ -190,12 +190,12 @@
         '</svg>';
       return;
     }
-    const min = 300, max = 850;
-    const pct = Math.max(0, Math.min(1, (score - min) / (max - min)));
+    // Note the inline rotate(-90 …) below: this gauge rotates in the SVG,
+    // while #score-circle on the score page rotates in CSS. That is why the
+    // two share a colour table and an offset formula but not an emitter.
     const r = 38, c = 2 * Math.PI * r;
-    const offset = c * (1 - pct);
-    const band = window.DefiState.bandFor(score);
-    const color = ({ Excellent: "#2bd4a4", Good: "#00f5ff", Fair: "#facc15", Poor: "#ff5d6c" })[band] || "#00f5ff";
+    const offset = c * (1 - window.DefiBands.fraction(score));
+    const color = window.DefiBands.colorFor(score);
     el.innerHTML =
       '<svg width="96" height="96" viewBox="0 0 96 96">' +
         '<circle cx="48" cy="48" r="' + r + '" stroke="rgba(255,255,255,0.08)" stroke-width="8" fill="none"/>' +
@@ -361,11 +361,12 @@
       document.getElementById("stat-score").textContent = unscored ? "—" : score.score;
       const bandEl = document.getElementById("stat-band");
       if (unscored) {
-        bandEl.textContent = "No on-chain history yet";
+        bandEl.textContent = window.DefiBands.UNKNOWN.glyph + " No on-chain history yet";
         bandEl.className = "defi-card__delta";
-        bandEl.style.color = "var(--defi-text-dim, #8b8b99)";
+        bandEl.style.color = window.DefiBands.UNKNOWN.color;
       } else {
-        bandEl.textContent = score.band + (score.preliminary ? " (preliminary)" : "");
+        bandEl.textContent = window.DefiBands.glyphFor(score.score) + " " +
+          score.band + (score.preliminary ? " (preliminary)" : "");
         bandEl.className = "defi-card__delta defi-band--" + score.band;
         bandEl.style.color = "";
         // Appended as a node rather than via innerHTML so the band string is
@@ -417,11 +418,13 @@
       if (miniVal) miniVal.textContent = unscored ? "—" : score.score;
       if (miniBand) {
         if (unscored) {
-          miniBand.textContent = "Unscored · no on-chain history";
+          miniBand.textContent = window.DefiBands.UNKNOWN.glyph + " " +
+            window.DefiBands.UNKNOWN.label + " · no on-chain history";
           miniBand.className = "defi-card__delta";
-          miniBand.style.color = "var(--defi-text-dim, #8b8b99)";
+          miniBand.style.color = window.DefiBands.UNKNOWN.color;
         } else {
-          miniBand.textContent = score.band + (score.preliminary ? " · preliminary" : "");
+          miniBand.textContent = window.DefiBands.glyphFor(score.score) + " " +
+            score.band + (score.preliminary ? " · preliminary" : "");
           miniBand.className = "defi-card__delta defi-band--" + score.band;
           miniBand.style.color = "";
         }

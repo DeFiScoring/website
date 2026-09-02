@@ -10,6 +10,10 @@
     const el = document.getElementById("score-circle");
     const valueEl = document.getElementById("score-value");
     const bandEl = document.getElementById("score-band");
+    // "Not scored" is a state with a name, a colour and a glyph, same as any
+    // band — it used to be #8b8b99 and the word "Unscored" here while the
+    // share card said #7c8a9b and "Not scored" for the identical condition.
+    const U = window.DefiBands.UNKNOWN;
     if (score == null) {
       // Unscored — empty track, an em-dash, and an honest label. No number
       // exists for a wallet with no on-chain history, so none is drawn.
@@ -19,36 +23,38 @@
         '</svg>' +
         '<div class="defi-score-circle__inner">' +
           '<div class="defi-score-circle__value">—</div>' +
-          '<div class="defi-score-circle__label">unscored</div>' +
-          '<span class="defi-score-band" style="color:var(--defi-text-dim,#8b8b99)">No on-chain history</span>' +
+          // Parallel to "out of 850" in the scored branch, and the same words
+          // as every other surface — this slot was the last "unscored" left
+          // sitting inches from a span reading "Not scored".
+          '<div class="defi-score-circle__label">not scored</div>' +
+          '<span class="defi-score-band" style="color:' + U.color + '">' + U.glyph + ' No on-chain history</span>' +
         '</div>';
       valueEl && (valueEl.textContent = "—");
-      bandEl && (bandEl.textContent = "Unscored");
+      bandEl && (bandEl.textContent = U.glyph + " " + U.label);
       return;
     }
-    const min = 300, max = 850;
-    const pct = Math.max(0, Math.min(1, (score - min) / (max - min)));
+    const meta = window.DefiBands.forScore(score);
     const r = 90, c = 2 * Math.PI * r;
-    const offset = c * (1 - pct);
-    const band = window.DefiState.bandFor(score);
-    const colorByBand = { Excellent: "#2bd4a4", Good: "#00f5ff", Fair: "#facc15", Poor: "#ff5d6c" }[band] || "#00f5ff";
+    const offset = c * (1 - window.DefiBands.fraction(score));
+    const band = meta.label;
 
     el.innerHTML =
       '<svg width="220" height="220" viewBox="0 0 220 220">' +
         '<circle cx="110" cy="110" r="' + r + '" stroke="rgba(255,255,255,0.08)" stroke-width="14" fill="none"/>' +
-        '<circle cx="110" cy="110" r="' + r + '" stroke="' + colorByBand + '" stroke-width="14" fill="none"' +
+        '<circle cx="110" cy="110" r="' + r + '" stroke="' + meta.color + '" stroke-width="14" fill="none"' +
         ' stroke-linecap="round" stroke-dasharray="' + c + '" stroke-dashoffset="' + offset + '"/>' +
       '</svg>' +
       '<div class="defi-score-circle__inner">' +
         '<div class="defi-score-circle__value">' + score + '</div>' +
         '<div class="defi-score-circle__label">out of 850' + (preliminary ? ' · preliminary' : '') + '</div>' +
-        '<span class="defi-score-band defi-band--' + band + '">' + band + '</span>' +
+        '<span class="defi-score-band ' + window.DefiBands.className(score) + '">' +
+          meta.glyph + ' ' + band + '</span>' +
         coverageMarkup(coverage) +
       '</div>';
     valueEl && (valueEl.textContent = score);
     if (bandEl) {
       const cov = window.DefiState.coverageLabel(coverage);
-      bandEl.textContent = cov ? band + " · " + cov.text : band;
+      bandEl.textContent = meta.glyph + " " + (cov ? band + " · " + cov.text : band);
     }
   }
 

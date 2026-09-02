@@ -26,19 +26,11 @@
  * later is a rendering change, not a rewrite.
  */
 
-import { bandForScore } from "../lib/score.js";
+import { bandMeta, rangeLabel, fractionOf, markSvg } from "../lib/bands.js";
 import { latestScoreFor } from "./badge.js";
 
 const W = 1200;
 const H = 630;
-
-const BAND = {
-  excellent: { color: "#2bd4a4", label: "Excellent" },
-  good:      { color: "#00f5ff", label: "Good" },
-  fair:      { color: "#facc15", label: "Fair" },
-  poor:      { color: "#ff5d6c", label: "Poor" },
-  unknown:   { color: "#7c8a9b", label: "Not scored" },
-};
 
 function escapeXml(s) {
   return String(s).replace(/[<>&'"]/g, (c) => (
@@ -61,10 +53,12 @@ function asOf(ms) {
  * The card, as a pure function of the data. No env, no I/O — so it is testable
  * without a database and swappable for a raster renderer later.
  */
-export function cardSvg({ address, score, coverage, computedAt }) {
+export function cardSvg({ address, score, coverage, computedAt, model }) {
   const has = Number.isFinite(score);
-  const bandKey = has ? bandForScore(score) : "unknown";
-  const band = BAND[bandKey] || BAND.unknown;
+  // Derived from the score, never read back from the persisted score_band. A
+  // stale or corrupt stored band would print a word that contradicts the
+  // 110px number directly above it on the same image.
+  const band = bandMeta(has ? score : null);
   const pct = typeof coverage === "number" ? Math.round(coverage * 100) : null;
   // Only meaningful alongside a score: an "as of" line on a card showing no
   // score implies one was computed at that moment.
@@ -77,7 +71,7 @@ export function cardSvg({ address, score, coverage, computedAt }) {
 
   // Arc geometry for the gauge: 300° sweep, 300 at the low end, 850 at the top.
   const cx = 300, cy = 330, r = 150;
-  const frac = has ? Math.max(0, Math.min(1, (score - 300) / 550)) : 0;
+  const frac = has ? fractionOf(score) : 0;
   const START = -240, SWEEP = 300;
   const pol = (deg) => {
     const rad = (deg * Math.PI) / 180;
@@ -89,7 +83,49 @@ export function cardSvg({ address, score, coverage, computedAt }) {
   const trackPath = `M ${x0.toFixed(1)} ${y0.toFixed(1)} A ${r} ${r} 0 1 1 ${x1.toFixed(1)} ${y1.toFixed(1)}`;
   const valuePath = `M ${x0.toFixed(1)} ${y0.toFixed(1)} A ${r} ${r} 0 ${SWEEP * frac > 180 ? 1 : 0} 1 ${xv.toFixed(1)} ${yv.toFixed(1)}`;
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="DeFi Scoring credit score card">
+  /* The spec strip: what this number is, in the terms someone reading it
+   * cold would need. Its real payoff is the two cases that render nothing
+   * today — a fully-covered card and one whose coverage we never recorded
+   * look identical right now, so a reader cannot tell "we saw everything"
+   * from "we don't know what we saw".
+   *
+   * Fixed row, deliberately not offset by `partial`. The as-of line above
+   * already moves 400↔470, and a layout whose elements shift with the data
+   * is two layouts, with two ways to collide.
+   *
+   * Omitted entirely when there is no score: three chips reporting what we
+   * don't know make an un-scanned address look like a failure rather than a
+   * wallet nobody has asked about yet.
+   */
+  const CHIP_Y = 506, CHIP_H = 36, CHIP_GAP = 14;
+  const chips = [];
+  if (has) {
+    chips.push(`Coverage ${pct == null ? "n/a" : pct + "%"}`);
+    const range = rangeLabel(band);
+    if (range) chips.push(`Band ${range}`);
+    // Absent on rows written by the legacy persistScore, which stored the raw
+    // signals object. No chip beats a wrong one — see latestScoreFor.
+    if (model) chips.push(`Model ${model}`);
+  }
+  let chipX = 620;
+  const chipRow = chips.map((label) => {
+    // Same measurement basis as the coverage pill below: ~0.56em average
+    // advance for Inter semibold, here at 17px, plus 14px padding a side.
+    const w = Math.ceil(label.length * 9.5) + 28;
+    const frag = `<rect x="${chipX}" y="${CHIP_Y}" width="${w}" height="${CHIP_H}" rx="8" fill="rgba(255,255,255,.04)" stroke="rgba(255,255,255,.10)"/>
+  <text x="${chipX + 14}" y="${CHIP_Y + 24}" font-family="Inter,Helvetica,Arial,sans-serif" font-size="17" font-weight="600" fill="#9ca3af">${escapeXml(label)}</text>`;
+    chipX += w + CHIP_GAP;
+    return frag;
+  }).join("\n  ");
+
+  // The only text a screen reader gets from this image. shortAddr, never the
+  // full address — the whole card deliberately never carries one.
+  const alt = has
+    ? `DeFi Scoring credit score ${score} out of 850, ${band.label}` +
+      `${pct == null ? "" : `, ${pct}% coverage`}, wallet ${shortAddr(address)}`
+    : `DeFi Scoring credit score card, wallet ${shortAddr(address)} not scored`;
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${escapeXml(alt)}">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#0a0a0a"/>
@@ -109,6 +145,14 @@ export function cardSvg({ address, score, coverage, computedAt }) {
 
   <path d="${trackPath}" fill="none" stroke="#2a2a35" stroke-width="24" stroke-linecap="round"/>
   ${has ? `<path d="${valuePath}" fill="none" stroke="${band.color}" stroke-width="24" stroke-linecap="round"/>` : ""}
+  ${/* Geometry, not a character. This image is rasterised by Slack, Discord,
+        Telegram, LinkedIn and iMessage with fonts we do not ship, so
+        font-family="Inter,…" resolves to none of them — and ★ (U+2605) and ◆
+        (U+25C6) are outside WGL4. A tofu box where the colourblind-safe
+        affordance should be is worse than no affordance. Sits in the gap
+        between the arc's inner edge (y=192) and the numeral's cap height
+        (~y=273), where it reads as a crest above the score. */
+    markSvg(band, cx, 232, 30)}
   <text x="${cx}" y="${cy + 22}" text-anchor="middle" font-family="Inter,Helvetica,Arial,sans-serif" font-size="110" font-weight="800" fill="${has ? band.color : "#7c8a9b"}">${has ? score : "—"}</text>
   <text x="${cx}" y="${cy + 66}" text-anchor="middle" font-family="Inter,Helvetica,Arial,sans-serif" font-size="26" font-weight="600" fill="#9ca3af">${escapeXml(band.label)}</text>
   <text x="${cx}" y="${cy + 150}" text-anchor="middle" font-family="JetBrains Mono,ui-monospace,monospace" font-size="18" fill="#7a7a8c">300 — 850</text>
@@ -129,6 +173,8 @@ export function cardSvg({ address, score, coverage, computedAt }) {
   })() : ""}
 
   ${date ? `<text x="620" y="${partial ? 470 : 400}" font-family="JetBrains Mono,ui-monospace,monospace" font-size="17" fill="#7a7a8c">as of ${escapeXml(date)}</text>` : ""}
+
+  ${chipRow}
 
   <text x="72" y="${H - 44}" font-family="Inter,Helvetica,Arial,sans-serif" font-size="20" fill="#7a7a8c">defiscoring.com</text>
 </svg>`;
@@ -164,6 +210,7 @@ export async function handleShareCard(request, env, walletPath) {
     score: row && Number.isFinite(row.score) ? row.score : null,
     coverage: row ? row.coverage : null,
     computedAt: row ? row.computed_at : null,
+    model: row ? row.model : null,
   }));
 }
 
@@ -178,7 +225,7 @@ export async function handleSharePage(request, env, wallet) {
   }
   const row = await latestScoreFor(env, addr).catch(() => null);
   const has = row && Number.isFinite(row.score);
-  const band = has ? (BAND[bandForScore(row.score)] || BAND.unknown).label : null;
+  const band = has ? bandMeta(row.score).label : null;
   const pct = row && typeof row.coverage === "number" ? Math.round(row.coverage * 100) : null;
 
   const origin = new URL(request.url).origin;

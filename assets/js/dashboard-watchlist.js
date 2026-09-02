@@ -28,9 +28,12 @@
     if (entry.score == null) {
       return '<span style="color:var(--defi-text-muted)">no scan yet</span>';
     }
-    var band = entry.score_band
-      ? entry.score_band[0].toUpperCase() + entry.score_band.slice(1)
-      : window.DefiState.bandFor(entry.score);
+    // Derived from the score rather than the API's persisted score_band, for
+    // the same reason the share card derives it: a stale stored band would
+    // print a word next to a number that contradicts it. This also retires
+    // the last of the ad-hoc capitalise-the-key bridges.
+    var meta = window.DefiBands.forScore(entry.score);
+    var band = meta.glyph + " " + meta.label;
     var cov = window.DefiState.coverageLabel && window.DefiState.coverageLabel(entry.coverage);
     var covHtml = cov && entry.coverage != null && entry.coverage < 1
       ? ' <span style="color:' + cov.color + ';font-size:11px">· ' + cov.pct + "% data</span>"

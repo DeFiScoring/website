@@ -34,22 +34,29 @@
   const TARGET = 782; // sample wallet score — tuned for an "excellent" look
   const CIRCUMFERENCE = 527.79; // 2πr for r=84
 
-  // Mirrors worker/lib/score.js's exported BANDS (canonical: 720/660/580).
-  // Previously 740/670/580 here — a different threshold set than the real
-  // scoring backend, so the landing page's own demo gauge disagreed with
-  // the product it was demonstrating. Keep this in sync with the copies in
-  // assets/js/dashboard.js and assets/js/defi-onchain.js if BANDS changes.
+  // The band comes from score-bands.js; the letter is the landing page's own
+  // flourish and exists nowhere else in the product. The thresholds used to be
+  // inlined here as 740/670/580 — a different set than the scoring backend, so
+  // the landing gauge disagreed with the product it was demonstrating.
+  //
+  // The rest of this gauge is deliberately unlike every other one: a brand
+  // cyan→purple gradient rather than a band colour, a blur glow, a 2100ms
+  // tween, and a legend whose Excellent swatch is purple. That is a marketing
+  // treatment, not drift — leave it be.
+  const LETTER = { excellent: "A", good: "B", fair: "C", poor: "D" };
+
   function grade(score) {
-    if (score >= 720) return "Excellent · A";
-    if (score >= 660) return "Good · B";
-    if (score >= 580) return "Fair · C";
-    return "Poor · D";
+    const b = window.DefiBands.forScore(score);
+    return b.label + " · " + LETTER[b.key];
   }
 
   function ease(t) { return 1 - Math.pow(1 - t, 3); } // easeOutCubic
 
   function render(score) {
-    const pct = Math.max(0, Math.min(1, (score - MIN) / (MAX - MIN)));
+    // CIRCUMFERENCE stays the hardcoded 527.79 that index.html's
+    // stroke-dasharray also carries; computing 2π·84 would disagree with the
+    // markup's pre-JS initial state in the fifth decimal for no gain.
+    const pct = window.DefiBands.fraction(score);
     arc.setAttribute("stroke-dashoffset", String(CIRCUMFERENCE * (1 - pct)));
     valueEl.textContent = String(Math.round(score));
     gradeEl.textContent = grade(score);
