@@ -33,8 +33,14 @@ sitemap: false
       <span>Delivery channels</span>
       <button type="button" id="channel-new-btn" class="defi-btn defi-btn--ghost">+ Add channel</button>
     </div>
+    <!-- Populated once, by assets/js/dashboard-alerts.js, when a webhook
+         channel is created. The signing secret is returned by that one
+         response and by nothing else, so it needs a surface the user
+         dismisses rather than one that times out. -->
+    <div id="webhook-secret" class="defi-card" style="display:none;margin:14px 0;border-color:var(--defi-accent)"></div>
+
     <div id="channels-empty" class="defi-empty" style="display:none">
-      No delivery channels yet. Add an email or Telegram chat ID to receive alerts.
+      No delivery channels yet. Add an email address, a Telegram chat ID, or a webhook endpoint.
     </div>
     <table class="defi-table" id="channels-table" style="display:none">
       <thead>
@@ -50,6 +56,12 @@ sitemap: false
         <select class="defi-select" id="channel-kind" required>
           <option value="email">Email</option>
           <option value="telegram">Telegram chat ID</option>
+          <!-- Webhook delivery is implemented, SSRF-guarded and gated to Plus
+               in worker/handlers/alerts.js, and sold on the pricing page — it
+               was simply missing from this list, so no subscriber could ever
+               configure one. The option is always offered; the worker answers
+               402 with an upgrade_url below Plus and the JS surfaces that. -->
+          <option value="webhook">Webhook (Plus)</option>
         </select>
       </div>
       <div class="defi-form-group" style="flex:2">
@@ -72,6 +84,13 @@ sitemap: false
       Open <a href="https://t.me/DeFiScoringBot" target="_blank" rel="noopener" style="color:var(--defi-accent)">@DeFiScoringBot</a>,
       send <code>/start</code>, then paste the numeric chat ID it replies with.
     </p>
+    <p id="webhook-hint" class="defi-card__delta" style="display:none;font-size:12px;color:var(--defi-text-dim);margin-top:10px">
+      An HTTPS endpoint we <code>POST</code> each alert to. URLs resolving to private or link-local
+      addresses are rejected. On save you get a signing secret, shown once: verify the
+      <code>X-DeFiScoring-Signature: t=&lt;unix_ms&gt;,v1=&lt;hmac-sha256&gt;</code> header on every request
+      and reject anything that fails, including stale timestamps.
+      Webhook delivery is included on <a href="/pricing/" style="color:var(--defi-accent)">Plus</a>.
+    </p>
   </div>
 
   <!-- ────────────────  Rules (when alerts fire)  ──────────────── -->
@@ -80,12 +99,17 @@ sitemap: false
       <span>Alert rules</span>
       <button type="button" id="rule-new-btn" class="defi-btn defi-btn--ghost">+ Add rule</button>
     </div>
+    <p class="defi-card__delta" style="margin:0 0 12px;font-size:12px;color:var(--defi-text-dim)">
+      Rules are evaluated every 5 minutes; watched wallets are re-scored every 15.
+      <strong>Now</strong> is what the evaluator read on its last pass — a rule can be active and
+      matching yet still silent while it is cooling down.
+    </p>
     <div id="rules-empty" class="defi-empty" style="display:none">
       No rules configured yet. Add a rule above to start monitoring.
     </div>
     <table class="defi-table" id="rules-table" style="display:none">
       <thead>
-        <tr><th>Wallet</th><th>Trigger</th><th>Threshold</th><th>Channels</th><th>Active</th><th>Last fired</th><th></th></tr>
+        <tr><th>Wallet</th><th>Trigger</th><th>Threshold</th><th>Now</th><th>Channels</th><th>Active</th><th>Last fired</th><th></th></tr>
       </thead>
       <tbody id="rules-tbody"></tbody>
     </table>
@@ -103,6 +127,9 @@ sitemap: false
           <option value="liquidation_risk">Liquidation risk detected</option>
           <option value="approval_change">New / changed token approval</option>
           <option value="price">Token price &lt; threshold (USD)</option>
+          <!-- protocol_event has had a live evaluator since UNSUPPORTED_KINDS
+               was emptied; it was the one supported kind with no UI option. -->
+          <option value="protocol_event">Protocol event</option>
         </select>
       </div>
       <div class="defi-form-group" style="flex:1.4;min-width:200px;display:none" id="rule-token-group">
