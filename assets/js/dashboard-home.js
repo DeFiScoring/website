@@ -179,58 +179,75 @@
     el.textContent = text;
   }
 
-  function renderMiniGauge(score) {
-    const el = document.getElementById("score-mini-circle");
-    if (!el) return;
-    if (score == null) {
-      // Unscored wallet — draw the empty track only, no fill and no number.
-      el.innerHTML =
-        '<svg width="96" height="96" viewBox="0 0 96 96">' +
-          '<circle cx="48" cy="48" r="38" stroke="rgba(255,255,255,0.08)" stroke-width="8" fill="none"/>' +
-        '</svg>';
-      return;
+  var C = window.DefiCredential;
+  var B = window.DefiBands;
+
+  // The hero: the same gauge, coverage meter and contribution bars the score
+  // page draws, from assets/js/score-credential.js. renderMiniGauge and
+  // renderBreakdown are gone — the first was a second copy of the arc, and the
+  // second plotted f.weight, which is 35/25/15/10/15 for every wallet on the
+  // platform and therefore told a reader nothing about their own score.
+  function renderCredential(score) {
+    var unscored = score.scored === false || score.score == null;
+    var gauge = document.getElementById("score-mini-circle");
+    if (gauge) gauge.innerHTML = C.gaugeHtml(unscored ? null : score.score);
+
+    var pill = document.getElementById("stat-band");
+    if (pill) {
+      var meta = unscored ? B.UNKNOWN : B.forScore(score.score);
+      pill.className = "defi-cred__band " + (unscored ? "" : B.className(score.score));
+      pill.style.color = unscored ? B.UNKNOWN.color : "";
+      pill.textContent = meta.glyph + " " + meta.label +
+        (unscored ? "" : " · " + B.rangeFor(meta.key)) +
+        (!unscored && score.preliminary ? " · preliminary" : "");
     }
-    // Note the inline rotate(-90 …) below: this gauge rotates in the SVG,
-    // while #score-circle on the score page rotates in CSS. That is why the
-    // two share a colour table and an offset formula but not an emitter.
-    const r = 38, c = 2 * Math.PI * r;
-    const offset = c * (1 - window.DefiBands.fraction(score));
-    const color = window.DefiBands.colorFor(score);
-    el.innerHTML =
-      '<svg width="96" height="96" viewBox="0 0 96 96">' +
-        '<circle cx="48" cy="48" r="' + r + '" stroke="rgba(255,255,255,0.08)" stroke-width="8" fill="none"/>' +
-        '<circle cx="48" cy="48" r="' + r + '" stroke="' + color + '" stroke-width="8" fill="none"' +
-        ' stroke-linecap="round" stroke-dasharray="' + c + '" stroke-dashoffset="' + offset + '"' +
-        ' transform="rotate(-90 48 48)"/>' +
-      '</svg>';
+
+    var head = document.getElementById("score-headline");
+    if (head) {
+      head.textContent = unscored
+        ? "No score yet — nothing has been read on-chain for this wallet."
+        : score.score >= 720
+          ? (score.score - 720) + " points clear of the Excellent threshold."
+          : (720 - score.score) + " points from Excellent (720).";
+    }
+
+    var stamp = document.getElementById("score-mini-meta");
+    if (stamp) {
+      stamp.textContent = unscored
+        ? (score.explanation || "Use this wallet on-chain, then re-scan to get a score.")
+        : ["Computed " + new Date(score.updated_at).toLocaleTimeString(),
+           score.model ? "model " + score.model : null].filter(Boolean).join(" · ");
+    }
+
+    var cov = document.getElementById("score-coverage");
+    if (cov) cov.innerHTML = C.coverageHtml(score.factors, score.coverage, !unscored);
+
+    var contribs = document.getElementById("score-contribs");
+    if (contribs) contribs.innerHTML = C.contributionHtml(score.factors);
   }
 
-  function renderBreakdown(factors) {
-    const canvas = document.getElementById("breakdown-chart");
-    if (!canvas || !factors) return;
-    if (window._breakdownChart) { window._breakdownChart.destroy(); window._breakdownChart = null; }
-    const labels = factors.map((f) => f.name.split(" (")[0]);
-    const weights = factors.map((f) => f.weight || 0);
-    const colors = factors.map((f) => f.real === false ? "#3a3a45" : "#00f5ff");
-    window._breakdownChart = new Chart(canvas.getContext("2d"), {
-      type: "bar",
-      data: { labels, datasets: [{ label: "Weight %", data: weights, backgroundColor: colors, borderRadius: 6 }] },
-      options: {
-        indexAxis: "y", responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false }, tooltip: { callbacks: {
-          label: (ctx) => {
-            const f = factors[ctx.dataIndex];
-            const detail = f.detail ? " · " + f.detail : "";
-            const tag = f.real === false ? " (data unavailable)" : "";
-            return f.weight + "% weight" + tag + detail;
-          },
-        } } },
-        scales: {
-          x: { beginAtZero: true, max: 50, ticks: { color: "#8b8b99" }, grid: { color: "rgba(255,255,255,0.08)" } },
-          y: { ticks: { color: "#8b8b99", font: { size: 11 } }, grid: { display: false } },
-        },
-      },
-    });
+  // Watched wallets against the plan's allowance. /api/quota already reports
+  // it as {used, limit, remaining}; quota-widget.js fetches the same endpoint,
+  // but this tile is the only place the number is stated as a fraction of what
+  // the tier allows rather than as a bare count.
+  async function renderWatchedQuota() {
+    var val = document.getElementById("stat-watched");
+    var meta = document.getElementById("stat-watched-meta");
+    if (!val) return;
+    try {
+      var base = (window.DEFI_RISK_WORKER_URL || "").replace(/\/$/, "");
+      var res = await fetch(base + "/api/quota", { credentials: "include" });
+      if (!res.ok) return;
+      var j = await res.json();
+      var q = j && j.quotas && j.quotas["watchlist.size"];
+      if (!q || typeof q.used !== "number") return;
+      val.textContent = q.used;
+      if (meta) {
+        meta.textContent = typeof q.limit === "number"
+          ? "of " + q.limit + (j.tier ? " on " + j.tier[0].toUpperCase() + j.tier.slice(1) : "")
+          : "no limit on your plan";
+      }
+    } catch (e) { /* the tile just stays at its placeholder */ }
   }
 
   function renderTrend(history, meta) {
@@ -238,6 +255,19 @@
     const note = document.getElementById("score-trend-note");
     if (!canvas) return;
     if (window._trendChart) { window._trendChart.destroy(); window._trendChart = null; }
+    // Chart.js is a CDN script. When it does not load, this used to fall
+    // through to the "no snapshots yet" message below — telling the user their
+    // history is empty when the truth is that we could not draw it. Same rule
+    // as everywhere else here: we could not look is never there is nothing.
+    if (typeof Chart === "undefined") {
+      canvas.style.display = "none";
+      if (note) {
+        note.style.display = "";
+        note.textContent = "The chart library did not load, so the trend cannot be drawn. " +
+          "Your score history is unaffected — reload to try again.";
+      }
+      return;
+    }
     if (!history || history.length === 0) {
       canvas.style.display = "none";
       if (note) {
@@ -357,32 +387,8 @@
         window.DefiAPI.getAlerts(wallet),
       ]);
 
-      const unscored = score.scored === false || score.score == null;
-      document.getElementById("stat-score").textContent = unscored ? "—" : score.score;
-      const bandEl = document.getElementById("stat-band");
-      if (unscored) {
-        bandEl.textContent = window.DefiBands.UNKNOWN.glyph + " No on-chain history yet";
-        bandEl.className = "defi-card__delta";
-        bandEl.style.color = window.DefiBands.UNKNOWN.color;
-      } else {
-        bandEl.textContent = window.DefiBands.glyphFor(score.score) + " " +
-          score.band + (score.preliminary ? " (preliminary)" : "");
-        bandEl.className = "defi-card__delta defi-band--" + score.band;
-        bandEl.style.color = "";
-        // Appended as a node rather than via innerHTML so the band string is
-        // never re-parsed as markup.
-        const cov = window.DefiState.coverageLabel(score.coverage);
-        if (cov) {
-          const span = document.createElement("span");
-          span.textContent = " · " + cov.text;
-          span.style.color = cov.color;
-          span.style.fontWeight = "400";
-          span.title = cov.low
-            ? "Several pillars had no data and fell back to a neutral score."
-            : "Share of the score's weight backed by data we observed on-chain.";
-          bandEl.appendChild(span);
-        }
-      }
+      renderCredential(score);
+      renderWatchedQuota();
 
       // P2 — fiat-aware total + meta line driven by the API's structured
       // fields. Falls back to legacy fmtUsd when the new fields aren't
@@ -412,33 +418,15 @@
       renderPortfolioStatus(portfolio);
       renderHoldings(portfolio);
 
-      const miniVal = document.getElementById("score-mini-value");
-      const miniBand = document.getElementById("score-mini-band");
-      const miniMeta = document.getElementById("score-mini-meta");
-      if (miniVal) miniVal.textContent = unscored ? "—" : score.score;
-      if (miniBand) {
-        if (unscored) {
-          miniBand.textContent = window.DefiBands.UNKNOWN.glyph + " " +
-            window.DefiBands.UNKNOWN.label + " · no on-chain history";
-          miniBand.className = "defi-card__delta";
-          miniBand.style.color = window.DefiBands.UNKNOWN.color;
-        } else {
-          miniBand.textContent = window.DefiBands.glyphFor(score.score) + " " +
-            score.band + (score.preliminary ? " · preliminary" : "");
-          miniBand.className = "defi-card__delta defi-band--" + score.band;
-          miniBand.style.color = "";
-        }
-      }
-      if (miniMeta) {
-        miniMeta.textContent = unscored
-          ? (score.explanation || "Use this wallet on-chain, then re-scan to get a score.")
-          : "Updated " + new Date(score.updated_at).toLocaleTimeString();
-      }
-      renderMiniGauge(unscored ? null : score.score);
-      renderBreakdown(score.factors);
 
       // Tier-aware history: ask the worker for the longest window the user's
       // tier allows. Worker clamps to its own cap so we can safely request 365.
+      // The fetch and the render are separated deliberately. Wrapping both
+      // meant a throw inside renderTrend — a missing Chart.js, say — landed in
+      // this catch and re-rendered with score.history, which mapWalletScore
+      // hard-codes to [], producing "no snapshots yet" for a wallet with years
+      // of them. Only a failed FETCH is allowed to fall back.
+      let hist = null, histMeta = null;
       try {
         const base = (window.DEFI_RISK_WORKER_URL || "").replace(/\/$/, "");
         const histResp = await fetch(base + "/api/health-score/" + encodeURIComponent(wallet) + "/history?days=365",
@@ -446,16 +434,12 @@
         if (histResp.ok) {
           const j = await histResp.json();
           if (j && j.success) {
-            renderTrend(j.history || [], { tier: j.tier, days_applied: j.days_applied, tier_cap_days: j.tier_cap_days });
-          } else {
-            renderTrend(score.history);
+            hist = j.history || [];
+            histMeta = { tier: j.tier, days_applied: j.days_applied, tier_cap_days: j.tier_cap_days };
           }
-        } else {
-          renderTrend(score.history);
         }
-      } catch (e) {
-        renderTrend(score.history);
-      }
+      } catch (e) { /* fall back to whatever the score payload carried */ }
+      renderTrend(hist == null ? score.history : hist, histMeta);
 
       const notices = [score.notice, portfolio.notice, alerts.notice].filter(Boolean);
       setNotice("home-status", notices.join("  •  "));

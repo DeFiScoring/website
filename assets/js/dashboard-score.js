@@ -42,128 +42,29 @@
     });
   }
 
-  /* ---------------- gauge ---------------- */
+  var C = window.DefiCredential;
 
-  // 240° of arc, opening at the bottom. Shared by the value arc and the band
-  // ring behind it so the ticks land on the same geometry as the fill.
-  var CX = 110, CY = 110, R = 90, SW = 14;
-  var START = 150, SWEEP = 240;            // degrees
-  var RING = 2 * Math.PI * R;              // full circumference
-  var ARC = RING * (SWEEP / 360);          // the drawn portion
+  /* ---------------- gauge + coverage (shared with /dashboard/) ------------ */
 
-  function polar(v, radius) {
-    var a = (START + SWEEP * B.fraction(v)) * Math.PI / 180;
-    return { x: CX + radius * Math.cos(a), y: CY + radius * Math.sin(a) };
-  }
-
-  // Each band gets a segment of the ring proportional to its width in points,
-  // so the ring is a legend as well as a track: a reader can see how far
-  // "Excellent" actually is without reading a number.
-  function bandRing(dimmed) {
-    var out = "", cum = 0;
-    // A <circle>'s dash pattern starts at 3 o'clock and runs clockwise, but the
-    // value arc and the ticks start at START degrees. Without this head start
-    // the ring sits 150° away from the numbers labelling it — the segments look
-    // plausible and mean nothing.
-    var origin = RING * (START / 360);
-    // Lowest floor first, so the ring is drawn from the low end of the scale.
-    var ordered = B.BANDS.slice().reverse();
-    for (var i = 0; i < ordered.length; i++) {
-      var b = ordered[i];
-      var span = ((b.ceil - b.floor + 1) / (B.MAX - B.MIN)) * ARC;
-      var len = Math.max(0, span - 2);     // 2px gap between segments
-      out += '<circle cx="' + CX + '" cy="' + CY + '" r="' + R + '" fill="none"' +
-        ' stroke="' + (dimmed ? "rgba(255,255,255,0.09)" : b.color) + '"' +
-        ' stroke-opacity="' + (dimmed ? 1 : 0.30) + '" stroke-width="' + SW + '"' +
-        ' stroke-dasharray="' + len.toFixed(2) + " " + (RING - len).toFixed(2) + '"' +
-        ' stroke-dashoffset="' + (-(origin + cum)).toFixed(2) + '"></circle>';
-      cum += span;
-    }
-    return out;
-  }
-
-  function ticks() {
-    var out = "";
-    var marks = [B.MIN].concat(B.BANDS.slice().reverse().map(function (b) { return b.floor; }).slice(1)).concat([B.MAX]);
-    for (var i = 0; i < marks.length; i++) {
-      var a = polar(marks[i], R - SW / 2 - 4), b2 = polar(marks[i], R + SW / 2 + 3);
-      var lab = polar(marks[i], R + SW / 2 + 13);
-      out += '<line x1="' + a.x.toFixed(1) + '" y1="' + a.y.toFixed(1) +
-        '" x2="' + b2.x.toFixed(1) + '" y2="' + b2.y.toFixed(1) +
-        '" stroke="rgba(255,255,255,0.22)" stroke-width="1"></line>' +
-        '<text x="' + lab.x.toFixed(1) + '" y="' + lab.y.toFixed(1) +
-        '" text-anchor="middle" dominant-baseline="middle" class="defi-cred__tick">' + marks[i] + '</text>';
-    }
-    return out;
-  }
-
-  function drawGauge(score, coverage) {
+  function drawGauge(score) {
     var host = el("score-circle");
-    if (!host) return;
+    if (!host) return B.UNKNOWN;
     var scored = score != null;
     var meta = scored ? B.forScore(score) : B.UNKNOWN;
-    var end = polar(scored ? score : B.MIN, R);
-    var start = polar(B.MIN, R);
-    var frac = scored ? B.fraction(score) : 0;
-    var value = scored && frac > 0
-      ? '<path d="M ' + start.x.toFixed(1) + " " + start.y.toFixed(1) +
-        " A " + R + " " + R + " 0 " + (SWEEP * frac > 180 ? 1 : 0) + " 1 " +
-        end.x.toFixed(1) + " " + end.y.toFixed(1) + '"' +
-        ' fill="none" stroke="' + meta.color + '" stroke-width="' + SW + '" stroke-linecap="round"></path>'
-      : "";
-
-    host.innerHTML =
-      '<svg viewBox="0 0 220 234" width="240" height="255" role="img" aria-label="' +
-        esc(scored ? "Score " + score + " out of 850, " + meta.label : "Not scored") + '">' +
-        bandRing(!scored) + value + ticks() +
-      '</svg>' +
-      '<div class="defi-cred__readout">' +
-        '<div class="defi-cred__score"' + (scored ? '' : ' style="color:' + B.UNKNOWN.color + '"') + '>' +
-          (scored ? score : "—") + '</div>' +
-        '<div class="defi-cred__scale">' + (scored ? "out of 850" : "not scored") + '</div>' +
-      '</div>';
+    host.innerHTML = C.gaugeHtml(scored ? score : null);
 
     var pill = el("score-band-pill");
     if (pill) {
       pill.className = "defi-cred__band " + (scored ? B.className(score) : "");
-      if (!scored) pill.style.color = B.UNKNOWN.color;
-      else pill.style.color = "";
-      pill.textContent = meta.glyph + " " + meta.label +
-        (scored ? " · " + B.rangeFor(meta.key) : "");
+      pill.style.color = scored ? "" : B.UNKNOWN.color;
+      pill.textContent = meta.glyph + " " + meta.label + (scored ? " · " + B.rangeFor(meta.key) : "");
     }
     return meta;
   }
 
-  /* ---------------- coverage meter ---------------- */
-
   function drawCoverage(factors, coverage, scored) {
     var host = el("score-coverage");
-    if (!host) return;
-    var segs = factors.map(function (f) {
-      var src = B.sourceFor(f.real, f.value != null);
-      return '<span class="defi-cov__seg' + (src.key === "observed" ? " is-live" : "") +
-        '" style="flex:' + (f.weight || 1) + ' 0 0" title="' +
-        esc(f.short + " · " + src.label) + '"></span>';
-    }).join("");
-
-    var live = factors.filter(function (f) { return f.real && f.value != null; });
-    var est = factors.filter(function (f) { return !f.real && f.value != null; });
-    var pct = typeof coverage === "number" ? Math.round(coverage * 100) : null;
-
-    var legend = !scored
-      ? "0 of " + factors.length + " pillars read — nothing to measure yet"
-      : live.length + " of " + factors.length + " pillars on live data" +
-        (est.length ? " · " + est.map(function (f) { return f.short; }).join(" and ") + " estimated" : " · no estimates");
-
-    host.innerHTML =
-      '<div class="defi-cov__head">' +
-        '<span class="defi-cov__pct" style="color:' +
-          (!scored ? B.UNKNOWN.color : pct >= 80 ? "#2bd4a4" : pct >= 60 ? "#00f5ff" : "#facc15") + '">' +
-          (pct == null ? "—" : pct + "%") + '</span>' +
-        '<span class="defi-cov__cap">live data</span>' +
-      '</div>' +
-      '<div class="defi-cov__bar">' + segs + '</div>' +
-      '<div class="defi-cov__legend">' + esc(legend) + '</div>';
+    if (host) host.innerHTML = C.coverageHtml(factors, coverage, scored);
   }
 
   /* ---------------- pillar cards ---------------- */
@@ -424,7 +325,7 @@
     try {
       var data = await window.DefiAPI.getScore(wallet);
       var scored = data.scored !== false && data.score != null;
-      var meta = drawGauge(scored ? data.score : null, data.coverage);
+      var meta = drawGauge(scored ? data.score : null);
       drawCoverage(data.factors, data.coverage, scored);
       drawFactors(data.factors);
       var ledgerShown = drawLedger(data);

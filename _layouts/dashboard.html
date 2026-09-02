@@ -96,6 +96,9 @@
        resolves it at call time, so a missing tag fails at first render rather
        than at load. test/facts.mjs pins this ordering. -->
   <script src="{{ '/assets/js/score-bands.js' | relative_url }}"></script>
+  <!-- The gauge, coverage meter and contribution bars shared by /dashboard/
+       and /dashboard/score/. Reads DefiBands, so it follows it. -->
+  <script src="{{ '/assets/js/score-credential.js' | relative_url }}"></script>
   <script src="{{ '/assets/js/defi-onchain.js' | relative_url }}"></script>
   <script src="{{ '/assets/js/dashboard.js' | relative_url }}"></script>
   <script src="{{ '/assets/js/quota-widget.js' | relative_url }}?v={{ site.time | date: '%s' }}" defer></script>
