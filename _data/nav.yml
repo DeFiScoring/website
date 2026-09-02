@@ -39,6 +39,11 @@ groups:
   - id: rwa
     label: RWA Research
     icon: building-2
+    # Rendered above this group's items, inside the group, by
+    # _includes/dashboard/sidebar.html. The grouping already implies the
+    # distinction; the caption states it at the moment a reader is choosing a
+    # page, rather than leaving it to the provenance banner they meet after.
+    caption: Curated dossiers · not live feeds
     items:
       - { id: rwa-asset,     label: RWA Asset Risk Score,    path: /dashboard/rwa-asset-score/,        icon: landmark,  match: rwa-asset }
       - { id: rwa-chatbot,   label: AI RWA Advisor,          path: /dashboard/rwa-chatbot/,            icon: sparkles,  match: rwa-chatbot }

@@ -29,6 +29,15 @@
           <i class="defi-sidebar__chevron" data-lucide="chevron-down" aria-hidden="true"></i>
         </summary>
         <div class="defi-sidebar__group-items">
+          {%- comment -%}
+            The caption belongs here, not in .defi-sidebar__group-title: that
+            class is `display: contents`, so a third child would become a third
+            flex item of the summary row, wedged between the label and the
+            chevron.
+          {%- endcomment -%}
+          {%- if group.caption -%}
+          <span class="defi-sidebar__group-caption">{{ group.caption }}</span>
+          {%- endif -%}
           {%- for item in group.items -%}
           <a href="{{ item.path }}" class="defi-sidebar__link {% if item.match == sec %}is-active{% endif %}">
             <i class="defi-icon-svg" data-lucide="{{ item.icon }}" aria-hidden="true"></i>
@@ -56,5 +65,16 @@
       <button type="button" class="defi-chain-btn" data-defi-chain="polygon">POL</button>
     </div>
     <div class="defi-sidebar__gas" data-defi-gas></div>
+    {%- comment -%}
+      The chain buttons above switch which chain the *page* is looking at; the
+      score reads every Tier-1 chain regardless. Without this line the three
+      buttons read as the whole coverage claim. Count and tooltip both come from
+      _config.yml → defi.scored_chains, pinned to worker/lib/chains.js by
+      test/facts.mjs.
+    {%- endcomment -%}
+    {%- assign scored_count = site.defi.scored_chains | size -%}
+    <p class="defi-sidebar__scope" title="{{ site.defi.scored_chains | join: ', ' }}">
+      Scores read {{ scored_count }} chain{% if scored_count != 1 %}s{% endif %}
+    </p>
   </div>
 </aside>

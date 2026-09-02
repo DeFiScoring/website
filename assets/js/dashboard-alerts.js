@@ -52,27 +52,37 @@
 
   /* ---------- channel form ---------- */
 
+  // Three delivery kinds, three glyphs. Each of these sites used to be a
+  // two-way `email ? ✉️ : ✈️`, so a webhook rendered as a Telegram plane.
+  var CHANNEL_ICON = { email: "\u2709\uFE0F", telegram: "\u2708\uFE0F", webhook: "\u2693" };
+  function channelIcon(kind) { return CHANNEL_ICON[kind] || "\u2022"; }
+
   function showChannelForm(show) {
     $("#channel-form").style.display = show ? "" : "none";
     $("#channel-new-btn").textContent = show ? "Cancel" : "+ Add channel";
     if (show) updateChannelForm();
   }
+  // Field shape per channel kind. The worker validates all three server-side
+  // (email regex, numeric chat id, and validateWebhookUrl's SSRF guard), so
+  // this only has to get the user to a plausible value — it is not the check.
+  var CHANNEL_FIELDS = {
+    email:    { label: "Email address",     type: "email", placeholder: "you@example.com", hint: null },
+    telegram: { label: "Telegram chat ID",  type: "text",  placeholder: "123456789",       hint: "#telegram-hint" },
+    webhook:  { label: "Webhook URL",       type: "url",   placeholder: "https://hooks.example.com/defiscoring", hint: "#webhook-hint" },
+  };
+
   function updateChannelForm() {
     var kind = $("#channel-kind").value;
-    var label = $("#channel-destination-label");
+    var spec = CHANNEL_FIELDS[kind] || CHANNEL_FIELDS.email;
     var input = $("#channel-destination");
-    var hint = $("#telegram-hint");
-    if (kind === "email") {
-      label.textContent = "Email address";
-      input.type = "email";
-      input.placeholder = "you@example.com";
-      hint.style.display = "none";
-    } else {
-      label.textContent = "Telegram chat ID";
-      input.type = "text";
-      input.placeholder = "123456789";
-      hint.style.display = "";
-    }
+    $("#channel-destination-label").textContent = spec.label;
+    input.type = spec.type;
+    input.placeholder = spec.placeholder;
+    Object.keys(CHANNEL_FIELDS).forEach(function (k) {
+      var sel = CHANNEL_FIELDS[k].hint;
+      var el = sel && $(sel);
+      if (el) el.style.display = (k === kind && spec.hint) ? "" : "none";
+    });
   }
 
   async function submitChannel(ev) {
@@ -90,6 +100,15 @@
     if (!r.success) {
       if (r.error === "channel_limit_reached") {
         toast("Channel limit reached for your tier — upgrade for more.", "warn");
+      } else if (r.error === "upgrade_required") {
+        // The worker gates webhook channels to Plus and answers 402 with the
+        // tier it wanted. Say which plan, rather than echoing an error code.
+        toast("Webhook delivery is a " + (r.required_tier || "Plus") + " feature — you're on " +
+              (r.current_tier || "a lower tier") + ".", "warn");
+      } else if (r.error === "invalid_webhook_url") {
+        // `reason` distinguishes "not https" from "resolves to a private
+        // address", which is the difference between a typo and a blocked host.
+        toast("That webhook URL was rejected: " + (r.reason || "invalid URL") + ".", "bad");
       } else {
         toast("Couldn't add channel: " + r.error, "bad");
       }
@@ -100,6 +119,11 @@
     showChannelForm(false);
     if (kind === "email") {
       toast("Verification email sent — check your inbox.", "ok");
+    } else if (kind === "webhook") {
+      // The signing secret is returned once and never again — the column
+      // holds it but no endpoint reads it back. Show it in a panel the user
+      // has to dismiss, not a toast that disappears on a timer.
+      showWebhookSecret(r.secret, r.secret_notice);
     } else {
       // Telegram channels are auto-marked as verified once the bot receives
       // /start with the right chat id; we surface the verification token so
@@ -107,6 +131,27 @@
       toast("Telegram channel created. Send /start to the bot to verify.", "ok");
     }
     await renderChannels();
+  }
+
+  // A secret shown once needs somewhere it cannot be missed. Rendered inline
+  // above the channel table and dismissed by hand, because a 4-second toast
+  // is not a place to publish a credential the user cannot recover.
+  function showWebhookSecret(secret, notice) {
+    if (!secret) { toast("Webhook channel created.", "ok"); return; }
+    var host = $("#webhook-secret");
+    if (!host) { toast("Webhook created. Signing secret: " + secret, "ok"); return; }
+    host.innerHTML =
+      '<div class="defi-card__title" style="display:flex;justify-content:space-between;align-items:center;gap:12px">' +
+        "<span>Webhook signing secret</span>" +
+        '<button type="button" class="defi-btn defi-btn--ghost" data-webhook-secret-dismiss>Done</button>' +
+      "</div>" +
+      '<p style="margin:6px 0 10px;font-size:12.5px;color:var(--defi-text-dim);line-height:1.55">' +
+        escapeHtml(notice || "Copy this now — it is shown once and cannot be retrieved later.") +
+      "</p>" +
+      '<code style="display:block;padding:10px 12px;border-radius:8px;background:var(--defi-bg-3);' +
+      'border:1px solid var(--defi-border);font-family:var(--defi-font-mono);font-size:12.5px;' +
+      'word-break:break-all;color:var(--defi-accent)">' + escapeHtml(secret) + "</code>";
+    host.style.display = "";
   }
 
   async function renderChannels() {
@@ -125,7 +170,7 @@
       var status = c.is_verified
         ? '<span style="color:var(--defi-good)">✓ Verified</span>'
         : '<span style="color:var(--defi-warn)">Pending</span>';
-      var icon = c.kind === "email" ? "✉️" : "✈️";
+      var icon = channelIcon(c.kind);
       return (
         "<tr>" +
           "<td>" + icon + " " + escapeHtml(c.kind) + "</td>" +
@@ -182,7 +227,7 @@
           (disabled ? 'var(--defi-text-muted)' : 'var(--defi-text)') + '">' +
             '<input type="checkbox" data-channel-kind="' + c.kind + '" ' +
               (i === 0 && !disabled ? "checked" : "") + (disabled ? " disabled" : "") + ">" +
-            (c.kind === "email" ? "✉️ " : "✈️ ") + escapeHtml(c.destination) +
+            channelIcon(c.kind) + " " + escapeHtml(c.destination) +
             (disabled ? ' <span style="font-size:10px;color:var(--defi-warn)">(unverified)</span>' : "") +
           '</label>'
         );
@@ -288,6 +333,37 @@
     return JSON.stringify(params);
   }
 
+  // What the evaluator last actually read, per kind, from `last_value`.
+  //
+  // The cron writes this on EVERY tick whether or not the rule fires
+  // (cron.js: "Always update last_value so next tick has reference"), so it is
+  // the rule's current reading, refreshed every five minutes — no extra
+  // request, no subrequest, just a column on a row this page already fetches.
+  //
+  // Returns null when there is nothing honest to say. `snapshot` is legitimately
+  // null for a rule that has never been evaluated and for protocol_event with no
+  // open event, and "no reading" must not render as a zero.
+  function describeReading(kind, snap) {
+    if (!snap || typeof snap !== "object") return null;
+    if (kind === "health_factor" || kind === "liquidation_risk") {
+      return typeof snap.hf === "number" ? "HF " + snap.hf.toFixed(2) : null;
+    }
+    if (kind === "price") {
+      return typeof snap.price === "number"
+        ? "$" + snap.price.toLocaleString(undefined, { maximumFractionDigits: 2 }) : null;
+    }
+    if (kind === "score_change") {
+      if (typeof snap.score !== "number") return null;
+      var d = typeof snap.delta === "number" ? snap.delta : null;
+      return "score " + snap.score + (d == null ? "" : " (" + (d > 0 ? "+" : "") + d + ")");
+    }
+    if (kind === "approval_change") {
+      return Array.isArray(snap.approvals)
+        ? snap.approvals.length + " approval" + (snap.approvals.length === 1 ? "" : "s") : null;
+    }
+    return null;
+  }
+
   async function renderRules() {
     var r = await api("/api/alerts/rules");
     var rows = (r && r.success) ? r.rules : [];
@@ -301,15 +377,30 @@
     $("#rules-empty").style.display = "none";
     $("#rules-table").style.display = "";
     tbody.innerHTML = rows.map(function (rl) {
+      var reading = describeReading(rl.kind, rl.last_value);
+      // A rule can be active, matching, and still silent because it is inside
+      // its cooldown window. That is the state people read as "broken", so it
+      // gets said outright rather than left to look like a rule not firing.
+      var cooling = rl.is_cooling_down
+        ? '<div style="margin-top:4px;font-size:11px;color:var(--defi-warn)">Cooling down' +
+          (rl.next_eligible_at ? " · next " + fmtDate(rl.next_eligible_at) : "") + "</div>"
+        : "";
       return (
         "<tr>" +
           "<td><code>" + fmtAddr(rl.wallet_address) + "</code></td>" +
           "<td>" + escapeHtml(KIND_LABELS[rl.kind] || rl.kind) + "</td>" +
           "<td>" + describeParams(rl.kind, rl.params) + "</td>" +
-          "<td>" + (rl.channels || []).map(function (c) { return c === "email" ? "✉️" : "✈️"; }).join(" ") + "</td>" +
+          '<td style="font-family:var(--defi-font-mono);font-size:12px;color:' +
+            (reading ? "var(--defi-good)" : "var(--defi-text-muted)") + '">' +
+            (reading ? escapeHtml(reading) : "not evaluated yet") + "</td>" +
+          "<td>" + (rl.channels || []).map(channelIcon).join(" ") + "</td>" +
           '<td><label class="defi-switch"><input type="checkbox" data-rule-toggle="' + rl.id + '" ' +
-            (rl.is_active ? "checked" : "") + "></label></td>" +
-          "<td style=\"color:var(--defi-text-dim);font-size:12px\">" + fmtDate(rl.last_fired_at) + "</td>" +
+            (rl.is_active ? "checked" : "") + "></label>" + cooling + "</td>" +
+          "<td style=\"color:var(--defi-text-dim);font-size:12px\">" + fmtDate(rl.last_fired_at) +
+            // Separating "last fired" from "last checked" is the difference
+            // between a rule that is quiet and a rule that is not running.
+            '<div style="font-size:11px;color:var(--defi-text-muted);margin-top:3px">checked ' +
+            fmtDate(rl.updated_at) + "</div></td>" +
           '<td><button class="defi-btn defi-btn--ghost" data-rule-del="' + rl.id + '">Remove</button></td>' +
         "</tr>"
       );
@@ -410,6 +501,13 @@
       if (del) { deleteChannel(del.dataset.channelDel); return; }
       var rdel = ev.target.closest("[data-rule-del]");
       if (rdel) { deleteRule(rdel.dataset.ruleDel); return; }
+      if (ev.target.closest("[data-webhook-secret-dismiss]")) {
+        var host = $("#webhook-secret");
+        // Clear the node as well as hiding it — the secret should not sit in
+        // the DOM after the user says they have it.
+        if (host) { host.innerHTML = ""; host.style.display = "none"; }
+        return;
+      }
     });
     document.addEventListener("change", function (ev) {
       var t = ev.target.closest("[data-rule-toggle]");

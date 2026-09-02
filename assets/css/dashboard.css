@@ -603,6 +603,15 @@ body.defi-market-open { --defi-market-strip-h: 96px; }
 }
 .defi-sidebar__group[open] > summary > .defi-sidebar__chevron { transform: rotate(-180deg); }
 .defi-sidebar__group-items { display: flex; flex-direction: column; gap: 2px; padding: 4px 0 6px 14px; }
+/* Group caption (RWA Research). Quieter than the links it sits above, but
+   --defi-text-muted still clears AA on the sidebar ground; --defi-text-dim at
+   this size would not be a legible step down, and anything dimmer would fail. */
+.defi-sidebar__group-caption {
+  display: block; padding: 2px 10px 6px;
+  font-family: var(--defi-font-mono);
+  font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--defi-text-muted); line-height: 1.45; text-wrap: pretty;
+}
 .defi-sidebar__group-items .defi-sidebar__link {
   font-size: 13px; padding: 8px 10px; color: var(--defi-text-dim);
 }
@@ -663,6 +672,14 @@ body.defi-market-open { --defi-market-strip-h: 96px; }
 .defi-chain-btn.is-active { background: linear-gradient(135deg, var(--defi-accent), var(--defi-accent-2)); color: #05060a; font-weight: 700; }
 .defi-sidebar__gas { width: 100%; }
 .defi-sidebar__gas .defi-gas { width: 100%; justify-content: center; }
+/* Coverage line under the chain selector: the selector picks a view, this
+   states what the score actually reads. */
+.defi-sidebar__scope {
+  margin: 0; display: block; text-align: center;
+  font-family: var(--defi-font-mono);
+  font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--defi-text-muted); line-height: 1.5; text-wrap: pretty;
+}
 
 /* ---------- Bottom Live Market strip ---------- */
 .defi-market-strip {
