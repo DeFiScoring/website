@@ -47,6 +47,11 @@
   margin: 0 auto;
   max-width: 580px;
 }
+/* `hidden` is an attribute, not a suggestion — but a bare `display` rule on the
+   same element outranks it, so this pill rendered as an empty 34x18 outline for
+   every signed-out visitor. pricing.js removes the attribute when it has a plan
+   to name. */
+.pr-current-plan[hidden] { display: none; }
 .pr-current-plan {
   margin-top: 22px;
   display: inline-block;
@@ -69,10 +74,13 @@
 .pr-grid {
   display: grid;
   gap: 22px;
-  grid-template-columns: repeat(4, 1fr);
+  /* Three, not four: Enterprise moved to its own strip below. It has no
+     price and no self-serve checkout, so in the race it made the price row
+     read as three numbers and a word. */
+  grid-template-columns: repeat(3, 1fr);
   margin: 0 0 80px;
 }
-@media (max-width: 1100px) { .pr-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 980px)  { .pr-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 600px)  { .pr-grid { grid-template-columns: 1fr; } }
 
 .pr-tier {
@@ -238,7 +246,11 @@
 .pr-tier__foot {
   margin: 12px 0 0;
   font-size: 12px;
-  color: var(--ds-text-mute);
+  /* --ds-text-mute is 2.93:1 on the page ground and fails WCAG AA. It is for
+     hairlines and dividers, where contrast rules do not apply. This is body
+     text — "No credit card required", "Cancel anytime" — so it takes the
+     4.7:1 token, the same move Phase 0 made across the dashboard. */
+  color: var(--ds-text-muted);
   text-align: center;
 }
 
@@ -374,3 +386,67 @@
 }
 .pr-table__legend span { color: var(--ds-gold, #facc15); font-weight: 700; }
 td.is-soon-cell { color: var(--ds-gold, #facc15); font-weight: 700; }
+
+
+/* ─────────────────────────  Phase F: layout  ─────────────────────────
+   Enterprise as a strip, not a fourth column, and a compare table that
+   survives a phone. */
+
+/* Pro carries the only glow. Two competing highlights is no highlight. */
+.pr-tier--popular { box-shadow: 0 0 0 1px rgba(0,245,255,.35), 0 18px 48px rgba(0,245,255,.10); }
+
+.pr-ent { margin-top: 22px; }
+.pr-ent .pr-tier--ent { display: block; }
+.pr-ent__head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 24px; flex-wrap: wrap; margin-bottom: 18px;
+}
+.pr-ent__act { flex: 0 0 auto; text-align: right; }
+.pr-ent__act .pr-cta { display: inline-block; width: auto; }
+.pr-ent__act .pr-tier__foot { margin-top: 8px; }
+/* The planned items keep their <li>/is-soon markup — test/claims.mjs slices
+   around them — and only the list's layout changes. */
+.pr-features--grid {
+  /* 300px, not 240: at 240 the longest label ("OFAC / sanctions screening")
+     pushed its Planned badge onto a second line, so that one cell sat a row
+     out of step with the other seven. */
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 0 26px;
+}
+@media (max-width: 720px) {
+  .pr-ent__head { flex-direction: column; }
+  .pr-ent__act { text-align: left; }
+}
+
+/* ── Compare table on a phone ──
+   The table restacks into one card per feature. The values are NOT duplicated
+   into a second markup tree: each <td> names its column through
+   data-tier-label, so there is one source of truth and no way for an
+   accordion copy to drift from the table. The row <th> keeps its bare
+   <th>Scans</th> shape, which test/claims.mjs matches literally. */
+@media (max-width: 720px) {
+  .pr-compare__scroll { overflow-x: visible; }
+  .pr-compare__table { min-width: 0; width: 100%; display: block; }
+  .pr-compare__table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .pr-compare__table tbody { display: block; }
+  .pr-compare__table tbody tr {
+    display: block; margin-bottom: 12px; padding: 14px 16px;
+    border: 1px solid var(--ds-border, rgba(255,255,255,.08));
+    border-radius: 12px; background: rgba(255,255,255,.02);
+  }
+  .pr-compare__table tbody tr th {
+    display: block; width: auto; padding: 0 0 10px; border: none;
+    font-size: 14px; font-weight: 700; color: var(--ds-text, #e8e8f0);
+  }
+  .pr-compare__table tbody tr td {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 14px;
+    padding: 6px 0; border: none; border-top: 1px solid rgba(255,255,255,.06);
+    font-size: 13px;
+  }
+  .pr-compare__table tbody tr td::before {
+    content: attr(data-tier-label);
+    flex: 0 0 auto; color: var(--ds-text-dim, #8b8b99);
+    font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  }
+  .pr-compare__table tbody tr:last-child td { border-bottom: none; }
+}
