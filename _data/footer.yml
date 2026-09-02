@@ -51,6 +51,14 @@ social:
     icon: youtube
     link: https://www.youtube.com/@DeFiScoring
 
+# Brand line under the logo. `%CHAINS%` is substituted at render time from
+# _config.yml → defi.scored_chains, which test/facts.mjs pins to the Tier-1 set
+# in worker/lib/chains.js — so the sentence is editable here while the chain
+# list stays generated. Do not type chain names into this string.
+tagline: >
+  On-chain credit scoring, portfolio risk, and real-time alerts across
+  %CHAINS%.
+
 # Short text shown in the prominent disclaimer banner above the link columns.
 disclaimer_short: >
   DeFi Scoring provides data-driven insights for educational purposes only.

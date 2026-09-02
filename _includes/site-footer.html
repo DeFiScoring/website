@@ -21,14 +21,28 @@
           <span>DeFi Scoring</span>
         </a>
         {%- comment -%}
-          The chain list is rendered from `_config.yml` → defi.scored_chains,
-          not typed here. It was hardcoded as three chains and stayed that way
-          through two chain promotions; test/facts.mjs now pins the config
-          value to the Tier-1 set in worker/lib/chains.js.
+          Sentence from `_data/footer.yml` → tagline, alongside the rest of the
+          footer's editable copy; the chain list is substituted from
+          `_config.yml` → defi.scored_chains rather than typed into either. It
+          was hardcoded as three chains and stayed that way through two chain
+          promotions; test/facts.mjs now pins the config value to the Tier-1 set
+          in worker/lib/chains.js.
         {%- endcomment -%}
+        {%- comment -%}
+          Built as a sentence, not a join: this is prose, so the list needs its
+          final conjunction. Falls back to a bare join for a one-chain list.
+        {%- endcomment -%}
+        {%- assign chain_n = site.defi.scored_chains | size -%}
+        {%- if chain_n > 1 -%}
+          {%- assign chain_head_n = chain_n | minus: 1 -%}
+          {%- assign chain_head = site.defi.scored_chains | slice: 0, chain_head_n | join: ", " -%}
+          {%- assign chain_last = site.defi.scored_chains | last -%}
+          {%- assign scored_chains = chain_head | append: " and " | append: chain_last -%}
+        {%- else -%}
+          {%- assign scored_chains = site.defi.scored_chains | join: ", " -%}
+        {%- endif -%}
         <p class="df-footer__tagline">
-          On-chain credit scoring, portfolio risk, and real-time alerts across
-          {{ site.defi.scored_chains | join: ", " }}.
+          {{- site.data.footer.tagline | strip_newlines | replace: "%CHAINS%", scored_chains | strip -}}
         </p>
         <ul class="df-footer__social" aria-label="Social media">
           {% for item in site.data.footer.social %}

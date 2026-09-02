@@ -72,6 +72,27 @@ for (const f of fs.readdirSync(dashDir)) {
   }
 }
 
+// The caption is the same claim the grouping makes, said out loud. It must
+// exist, and — because `.defi-sidebar__group-title` is `display: contents` —
+// it must render inside `.defi-sidebar__group-items` rather than in the summary
+// row, where it would become a third flex child between label and chevron.
+check("RWA group carries the curated-dossier caption",
+  /^\s*caption:\s*Curated dossiers · not live feeds\s*$/m.test(rwaGroup), null);
+
+const sidebar = fs.readFileSync(path.join(root, "_includes/dashboard/sidebar.html"), "utf8");
+const iCaption = sidebar.indexOf("defi-sidebar__group-caption");
+check("sidebar renders group.caption", iCaption !== -1, null);
+check("caption renders inside .defi-sidebar__group-items, not the summary row",
+  iCaption > sidebar.indexOf('class="defi-sidebar__group-items"') &&
+  iCaption > sidebar.indexOf("</summary>"), { iCaption });
+
+// The chain selector shows three buttons; the score reads every Tier-1 chain.
+// Both the count and the tooltip come from _config.yml, never typed here.
+check("sidebar footer states the scored-chain count from site.defi.scored_chains",
+  /defi-sidebar__scope/.test(sidebar) &&
+  /site\.defi\.scored_chains \| size/.test(sidebar) &&
+  !/Scores read \d+ chain/.test(sidebar), null);
+
 // Report an Issue is a support affordance, not a daily destination.
 const accountGroup = nav.slice(nav.indexOf("id: account\n    label: Account"));
 check("Report an Issue sits in the Account group, last",

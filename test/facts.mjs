@@ -103,6 +103,21 @@ for (const page of PROSE_PAGES) {
   check(`${page} does not claim the stale three-chain coverage`, !stale, { page });
 }
 
+/* ---------- footer tagline: sentence in data, chains from config ---------- */
+
+// The tagline is prose, so it lives with the rest of the footer's copy — but
+// the chain list inside it is a fact, so it is substituted rather than typed.
+// A typo in either half of that contract renders the literal `%CHAINS%` to
+// every visitor, which no other check would catch.
+const footerData = read("_data/footer.yml");
+const footerInc = read("_includes/site-footer.html");
+check("_data/footer.yml holds the brand tagline", /^tagline:\s*>/m.test(footerData), null);
+check("the tagline defers its chain list to the %CHAINS% placeholder",
+  footerData.includes("%CHAINS%"), null);
+check("site-footer.html substitutes %CHAINS% from defi.scored_chains",
+  footerInc.includes('replace: "%CHAINS%"') && footerInc.includes("site.defi.scored_chains"),
+  null);
+
 // The landing page's own headline count must equal the full registry, not the
 // Tier-1 subset — the two numbers are different claims and both appear there.
 const landing = read("index.html");
