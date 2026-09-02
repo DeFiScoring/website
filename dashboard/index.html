@@ -22,12 +22,32 @@ sitemap: false
 </div>
 
 <div id="defi-home-grid" style="display:none">
-  <div class="defi-grid defi-grid--stats" style="margin-bottom:18px">
-    <div class="defi-card">
-      <div class="defi-card__title">Credit Score</div>
-      <div class="defi-card__value" id="stat-score">—</div>
-      <div class="defi-card__delta" id="stat-band">—</div>
+
+  <!-- ────────────  The score, and what built it  ──────────── -->
+  <div class="defi-card defi-cred" style="margin-bottom:18px">
+    <div class="defi-cred__head">
+      <div class="defi-cred__gauge" id="score-mini-circle"></div>
+      <div class="defi-cred__summary">
+        <div class="defi-cred__band" id="stat-band"></div>
+        <div class="defi-cred__headline" id="score-headline"></div>
+        <div class="defi-cred__stamp" id="score-mini-meta"></div>
+        <div class="defi-cred__cov" id="score-coverage"></div>
+        <div class="defi-cred__actions">
+          <a href="/dashboard/score/" class="defi-btn defi-btn--ghost" style="text-decoration:none">See the full breakdown →</a>
+          <button id="score-refresh-btn" class="defi-btn defi-btn--ghost" type="button">Refresh</button>
+        </div>
+      </div>
     </div>
+
+    <!-- Contribution, not weight. The old chart plotted 35/25/15/10/15 — the
+         same five bars for every wallet on the platform — so it could not tell
+         a reader anything about their own score. These are weight × value,
+         and they sum to the weighted pillar score the /dashboard/score/ ledger
+         opens on. -->
+    <div class="defi-contribs" id="score-contribs"></div>
+  </div>
+
+  <div class="defi-grid defi-grid--stats" style="margin-bottom:18px">
     <div class="defi-card">
       <div class="defi-card__title" style="display:flex;justify-content:space-between;align-items:center">
         <span>Portfolio Value</span>
@@ -47,27 +67,10 @@ sitemap: false
       <div class="defi-card__value" id="stat-alerts">—</div>
       <div class="defi-card__delta">last 7 days</div>
     </div>
-  </div>
-
-  <div class="defi-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px;margin-bottom:18px">
     <div class="defi-card">
-      <div class="defi-card__title" style="display:flex;justify-content:space-between;align-items:center">
-        <span>DeFi Credit Score</span>
-        <button id="score-refresh-btn" class="defi-btn defi-btn--ghost" type="button" style="font-size:12px;padding:4px 10px">Refresh</button>
-      </div>
-      <div id="score-card-body" style="display:flex;align-items:center;gap:18px;margin-top:14px">
-        <div id="score-mini-circle" style="flex:0 0 auto"></div>
-        <div style="min-width:0;flex:1">
-          <div style="font-size:36px;font-weight:700;line-height:1.1" id="score-mini-value">—</div>
-          <div id="score-mini-band" class="defi-card__delta" style="margin-top:4px">—</div>
-          <div id="score-mini-meta" style="font-size:11px;color:var(--defi-text-dim);margin-top:6px">Computed from on-chain activity</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="defi-card">
-      <div class="defi-card__title">Score breakdown (factor weights)</div>
-      <div style="height:220px;margin-top:8px"><canvas id="breakdown-chart"></canvas></div>
+      <div class="defi-card__title">Watched Wallets</div>
+      <div class="defi-card__value" id="stat-watched">—</div>
+      <div class="defi-card__delta" id="stat-watched-meta">of your plan's allowance</div>
     </div>
   </div>
 

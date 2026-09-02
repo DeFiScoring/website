@@ -267,6 +267,40 @@ for (const b of BAND_META) {
   check(`index.html's legend states ${b.label} as ${range}`, landing.includes(`<em>${range}</em>`), { range });
 }
 
+/* ---------- the contribution bars sum to the weighted pillar score ----------
+ *
+ * The dashboard home used to plot pillar WEIGHTS — 35/25/15/10/15, identical
+ * for every wallet on the platform — so the chart could not say anything about
+ * the reader's own score. It now plots weight × value, and the point of those
+ * five numbers is that they add up to `raw_h_s`, which is the first row of the
+ * ledger on /dashboard/score/ and the number that maps onto 300–850. If they
+ * stop adding up, the two pages are telling different stories about one score.
+ */
+await import("../assets/js/score-credential.js");
+const CRED = globalThis.DefiCredential;
+check("score-credential.js loads headless", !!CRED && typeof CRED.contribution === "function", null);
+
+// The pillar set and weights the worker actually publishes.
+const FIXTURE = [
+  { name: "Loan reliability",    weight: 35, value: 65, real: true },
+  { name: "Portfolio health",    weight: 25, value: 90, real: true },
+  { name: "Liquidity provision", weight: 15, value: 79, real: true },
+  { name: "Governance",          weight: 10, value: 50, real: false },
+  { name: "Account age",         weight: 15, value: 85, real: true },
+];
+const contribSum = FIXTURE.reduce((s2, f) => s2 + CRED.contribution(f), 0);
+const hs = (0.35 * 65) + (0.25 * 90) + (0.15 * 79) + (0.10 * 50) + (0.15 * 85);
+check("the contributions sum to the engine's weighted composite",
+  Math.abs(contribSum - hs) < 1e-9, { contribSum, hs });
+check("that composite maps to the ledger's opening row",
+  Math.round(300 + (contribSum / 100) * 550) === Math.round(300 + (hs / 100) * 550), null);
+check("a pillar with no value contributes nothing rather than NaN",
+  CRED.contribution({ weight: 35, value: null }) === 0 && CRED.contribution(null) === 0, null);
+// An estimated pillar still contributes — it is held at neutral 50, not zero —
+// and saying otherwise would understate the score it actually produced.
+check("an estimated pillar still contributes its neutral value",
+  CRED.contribution({ weight: 10, value: 50, real: false }) === 5, null);
+
 /* ---------- the vocabulary is loaded before anything that reads it ----------
  *
  * DefiState.bandFor resolves window.DefiBands at call time, so a page missing
@@ -278,6 +312,8 @@ const CONSUMERS = [
   "dashboard-watchlist.js", "defi-onchain.js", "health-score.js",
   // Reads DefiBands.pillarTier for the factor modal's badge.
   "score-breakdown.js",
+  // The shared gauge / coverage / contribution renderers.
+  "score-credential.js",
 ];
 for (const page of ["_layouts/dashboard.html", "_layouts/default.html", "index.html", "_includes/health-score.html"]) {
   const html = read(page);
