@@ -20,9 +20,15 @@
                alt="" width="32" height="32">
           <span>DeFi Scoring</span>
         </a>
+        {%- comment -%}
+          The chain list is rendered from `_config.yml` → defi.scored_chains,
+          not typed here. It was hardcoded as three chains and stayed that way
+          through two chain promotions; test/facts.mjs now pins the config
+          value to the Tier-1 set in worker/lib/chains.js.
+        {%- endcomment -%}
         <p class="df-footer__tagline">
           On-chain credit scoring, portfolio risk, and real-time alerts across
-          Ethereum, Arbitrum, and Polygon.
+          {{ site.defi.scored_chains | join: ", " }}.
         </p>
         <ul class="df-footer__social" aria-label="Social media">
           {% for item in site.data.footer.social %}
@@ -87,7 +93,12 @@
     <div class="df-footer__meta">
       <div>&copy; {{ 'now' | date: '%Y' }} DeFi Scoring</div>
       <div>
-        Methodology v1.0 · Last security review: {{ site.time | date: '%b %Y' }}
+        {%- comment -%}
+          "Methodology v1.0" was a hand-typed string tracking nothing. The
+          scoring model is what actually versions, and a reader comparing two
+          scores needs to know which model produced them.
+        {%- endcomment -%}
+        Model {{ site.defi.model_version }} · Last security review: {{ site.time | date: '%b %Y' }}
         · Page rendered {{ site.time | date: '%Y-%m-%d %H:%M UTC' }}
       </div>
     </div>

@@ -9,7 +9,7 @@ product:
   - name: Audit Directory
     link: /dashboard/audits/
   - name: Risk Profiler
-    link: /dashboard/risk-chatbot/
+    link: /dashboard/risk-profiler/
   - name: Token Approvals
     link: /dashboard/approvals/
 

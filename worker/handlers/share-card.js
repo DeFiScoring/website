@@ -111,7 +111,7 @@ export function cardSvg({ address, score, coverage, computedAt }) {
   ${has ? `<path d="${valuePath}" fill="none" stroke="${band.color}" stroke-width="24" stroke-linecap="round"/>` : ""}
   <text x="${cx}" y="${cy + 22}" text-anchor="middle" font-family="Inter,Helvetica,Arial,sans-serif" font-size="110" font-weight="800" fill="${has ? band.color : "#7c8a9b"}">${has ? score : "—"}</text>
   <text x="${cx}" y="${cy + 66}" text-anchor="middle" font-family="Inter,Helvetica,Arial,sans-serif" font-size="26" font-weight="600" fill="#9ca3af">${escapeXml(band.label)}</text>
-  <text x="${cx}" y="${cy + 150}" text-anchor="middle" font-family="JetBrains Mono,ui-monospace,monospace" font-size="18" fill="#5a5a6a">300 — 850</text>
+  <text x="${cx}" y="${cy + 150}" text-anchor="middle" font-family="JetBrains Mono,ui-monospace,monospace" font-size="18" fill="#7a7a8c">300 — 850</text>
 
   <text x="620" y="250" font-family="Inter,Helvetica,Arial,sans-serif" font-size="40" font-weight="700" fill="#e5e7eb">On-chain credit score</text>
   <text x="620" y="300" font-family="Inter,Helvetica,Arial,sans-serif" font-size="24" fill="#9ca3af">Loan reliability · Portfolio health</text>
@@ -128,9 +128,9 @@ export function cardSvg({ address, score, coverage, computedAt }) {
   <text x="640" y="410" font-family="Inter,Helvetica,Arial,sans-serif" font-size="20" font-weight="600" fill="#facc15">${escapeXml(label)}</text>`;
   })() : ""}
 
-  ${date ? `<text x="620" y="${partial ? 470 : 400}" font-family="JetBrains Mono,ui-monospace,monospace" font-size="17" fill="#5a5a6a">as of ${escapeXml(date)}</text>` : ""}
+  ${date ? `<text x="620" y="${partial ? 470 : 400}" font-family="JetBrains Mono,ui-monospace,monospace" font-size="17" fill="#7a7a8c">as of ${escapeXml(date)}</text>` : ""}
 
-  <text x="72" y="${H - 44}" font-family="Inter,Helvetica,Arial,sans-serif" font-size="20" fill="#5a5a6a">defiscoring.com</text>
+  <text x="72" y="${H - 44}" font-family="Inter,Helvetica,Arial,sans-serif" font-size="20" fill="#7a7a8c">defiscoring.com</text>
 </svg>`;
 }
 

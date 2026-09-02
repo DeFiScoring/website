@@ -33,6 +33,7 @@ const SUITES = [
   ["univ3", "Uniswap V3 position math and the value-based liquidity pillar"],
   ["share-card", "social share card: coverage survives into the shared context, no invented scores"],
   ["morpho", "Morpho Blue: market discovery, derived per-market health factors, pillar parity"],
+  ["facts",  "Model version and scored-chain list: site copy pinned to the worker constants"],
 ];
 
 const [maj, min] = process.versions.node.split(".").map(Number);

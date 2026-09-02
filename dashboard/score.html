@@ -25,10 +25,14 @@ sitemap: false
   <div class="defi-card">
     <div class="defi-card__title">How the score is built</div>
     <p style="margin:0;color:var(--defi-text-dim);font-size:13px;line-height:1.6">
-      The score combines on-chain signals weighted as shown above:
-      payment history (no liquidations in the last 90 days), utilization (borrowed vs supplied),
-      account history length, activity diversity, and fraud / sybil signals.
-      Phase 1 covers Ethereum, Arbitrum, and Polygon. Phase 2 will add Optimism and Base.
+      Five pillars, weighted as shown above: loan reliability (35%), portfolio health (25%),
+      liquidity provision (15%), account age (15%) and governance (10%).
+      Loan reliability reads Aave V3, Spark, Compound V3 and Morpho Blue; liquidity provision
+      values live Uniswap V3 positions in USD; account age takes the oldest first transaction
+      across every scored chain.
+      Scored on {{ site.defi.scored_chains | join: ", " }}.
+      A pillar whose source could not be read is held at a neutral score and marked estimated —
+      it is never presented as an observed result.
     </p>
   </div>
 </div>

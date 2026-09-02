@@ -294,7 +294,7 @@ A scored result is written to the wallet's score history, which backs the trend 
 
 ### 1.9 Model versioning
 
-A score is only comparable to another score produced by the same model, so every score carries a **model version** — currently `2026.09` — and every stored row records the version that produced it.
+A score is only comparable to another score produced by the same model, so every score carries a **model version** — currently `2026.11` — and every stored row records the version that produced it.
 
 The version is incremented whenever a change would move an existing wallet's score without its on-chain position having changed: new or reweighted pillars, changed banding, new adjustments, or a new data source feeding an existing pillar. It is *not* incremented for bug fixes that only affect which wallets can be scored at all, nor for refactors.
 

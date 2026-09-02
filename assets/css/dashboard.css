@@ -16,7 +16,12 @@
   --defi-border-hi:  rgba(255, 255, 255, 0.14);
   --defi-text:       #e8e8f0;
   --defi-text-dim:   #8b8b99;
+  /* #5a5a6a on --defi-bg is 2.93:1 — below the 4.5:1 WCAG AA floor for body
+     text and below 3:1 even for large text. It stays for hairlines, dividers
+     and disabled chrome, where contrast rules do not apply. Any TEXT that was
+     reaching for a third, quieter step uses --defi-text-muted (4.7:1). */
   --defi-text-mute:  #5a5a6a;
+  --defi-text-muted: #7a7a8c;
   --defi-accent:     #00f5ff;   /* cyan */
   --defi-accent-2:   #a855f7;   /* purple */
   --defi-gold:       #facc15;

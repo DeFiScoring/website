@@ -18,12 +18,12 @@
   // we tell users about that math.
   var EXPLAIN_TEMPLATES = {
     "Loan reliability": {
-      what: "How responsibly you've borrowed against collateral on Aave, Compound, and other money markets across every chain we cover.",
-      good: "No liquidations, healthy buffer (HF > 1.8), and consistent repayments.",
+      what: "How responsibly you've borrowed against collateral on Aave V3, Spark, Compound V3 and Morpho Blue. The riskiest position sets the band — Morpho is read on Ethereum only, and any chain we could not read is reported as not checked rather than as no position.",
+      good: "No liquidations, healthy buffer (HF > 2.0), and consistent repayments.",
       bad:  "Recent liquidations, tight health factor (HF < 1.3), or unpaid bad debt.",
       inputs: [
         "Number of active loan positions",
-        "Lowest health factor in the last 90 days",
+        "Lowest health factor across every protocol and chain read",
         "Liquidation count (lifetime)",
         "Average debt utilization vs. collateral",
       ],
@@ -40,13 +40,13 @@
       ],
     },
     "Liquidity provision": {
-      what: "Your contribution to DEX liquidity (Uniswap, Curve, Balancer LPs) — a signal of long-term DeFi engagement.",
-      good: "Multiple active LP positions, fee accrual over time.",
-      bad:  "No LP activity, or only short-term IL-prone positions.",
+      what: "Your contribution to DEX liquidity, scored on the USD value of your live Uniswap V3 positions rather than how many you hold — twenty dust positions no longer outrank one large one.",
+      good: "Meaningful capital in live, in-range positions.",
+      bad:  "No LP activity, or only dust positions left open.",
       inputs: [
-        "Active LP positions (count)",
+        "Live LP positions (count)",
         "Total LP value (USD)",
-        "Time-weighted LP duration",
+        "Number of chains with liquidity",
       ],
     },
     "Governance": {
@@ -60,20 +60,25 @@
       ],
     },
     "Account age": {
-      what: "How long this wallet has been active on-chain. Older wallets with consistent activity score higher.",
+      what: "How long this wallet has been active on-chain. The oldest first transaction across every scored chain wins, so a wallet that started on an L2 keeps that age instead of being reset to the date it bridged to Ethereum.",
       good: "First transaction ≥ 2 years ago with continuous monthly activity.",
       bad:  "Brand-new wallet (< 30 days) or large gaps in activity.",
       inputs: [
-        "Date of first on-chain transaction",
-        "Number of months with at least one transaction",
-        "Total transaction count",
+        "Date of the earliest first transaction found on any scored chain",
+        "Which chain that transaction was on",
+        "How many chains answered the lookup",
       ],
     },
   };
 
-  // The worker also exposes these; keep them in sync if you rename a pillar.
+  // Factor names arrive suffixed with their live sources — "Loan reliability
+  // (Aave V3, Spark, Compound V3, Morpho Blue)" — while the templates above are
+  // keyed on the bare pillar name. A direct lookup therefore missed on every
+  // factor and every modal silently rendered the generic fallback copy below.
+  // Key on the leading phrase; dashboard.js owns the suffix.
   function templateFor(name) {
-    return EXPLAIN_TEMPLATES[name] || {
+    var key = String(name || "").split(" (")[0].trim();
+    return EXPLAIN_TEMPLATES[key] || {
       what: "This component contributes to the overall on-chain credit score.",
       good: "Higher is better; consistent positive on-chain activity raises this.",
       bad:  "Lower values indicate risk or limited history.",

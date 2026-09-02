@@ -12,7 +12,7 @@ url: "https://defiscoring.com"
 # Brand.
 title: "DeFi Scoring"
 tagline: "Your on-chain credit score. Instant. Verifiable. Actionable."
-description: "DeFiScore gives any wallet an on-chain credit score (300–850), portfolio risk heatmaps, real-time alerts, and a free public API across Ethereum, Arbitrum, and Polygon. Instant. Verifiable. Actionable."
+description: "DeFiScore gives any wallet an on-chain credit score (300–850), portfolio risk heatmaps, real-time alerts, and a free public API across Ethereum, Optimism, Arbitrum, Base, and Polygon. Instant. Verifiable. Actionable."
 keywords: "on-chain credit score, DeFi credit score, wallet credit score, DeFi FICO, DeFi lending risk, portfolio risk heatmap, on-chain FICO, Aave risk, Compound risk, DeFi underwriting, DeFiScore"
 lang: en_US
 
@@ -33,6 +33,22 @@ organization:
 
 # DeFi Scoring runtime configuration. Override per-environment if needed.
 defi:
+  # Scoring facts the static site needs to state correctly. These duplicate
+  # constants that live in the worker, which is exactly why they drift: the
+  # model version sat at 2026.09 in methodology.md while the engine was on
+  # 2026.11, and three pages still claimed three chains after five went live.
+  #
+  # test/facts.mjs pins both values to their worker source of truth
+  # (SCORE_MODEL_VERSION in worker/lib/score.js, tier-1 entries in
+  # worker/lib/chains.js) and fails the build if they diverge. Bump them here
+  # in the same commit that bumps the constant, and the test will confirm it.
+  model_version: "2026.11"
+  scored_chains:
+    - Ethereum
+    - Optimism
+    - Arbitrum One
+    - Base
+    - Polygon
   worker_url: "https://defiscoring.guillaumelauzier.workers.dev"
   # Optional Cloudflare Web3 Gateway URLs (Cloudflare dashboard → Web3 →
   # Create Gateway). Leaving these blank keeps the public free-tier RPCs.
