@@ -5,20 +5,6 @@ permalink: /disclaimer/
 description: "DeFi Scoring is an analytics platform for educational use only. Read the full financial disclaimer."
 ---
 
-<style>
-  .legal-page { max-width: 820px; margin: 0 auto; }
-  .legal-page h1 { font-size: clamp(28px, 3.4vw, 40px); margin: 0 0 8px; }
-  .legal-page .legal-meta { color: #6f7aa0; font-size: 13px; margin-bottom: 32px; }
-  .legal-page h2 { margin-top: 36px; font-size: 20px; }
-  .legal-page h3 { margin-top: 22px; font-size: 16px; }
-  .legal-page p, .legal-page li { color: #c8d2f5; font-size: 15px; line-height: 1.7; }
-  .legal-page ul { padding-left: 22px; }
-  .legal-page strong { color: #fff; }
-  .legal-page .callout {
-    background: rgba(255,181,71,.08); border: 1px solid rgba(255,181,71,.35);
-    border-radius: 10px; padding: 14px 18px; color: #f5e4c5; margin: 24px 0;
-  }
-</style>
 
 <div class="legal-page" markdown="1">
 
@@ -68,4 +54,3 @@ The Website contains links to external DeFi protocols and third-party services. 
 
 </div>
 
-{% include site-footer.html %}

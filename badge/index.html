@@ -6,21 +6,21 @@ description: Paste a live DeFi credit-score badge anywhere — forum signatures,
 ---
 
 <style>
-  .badge-page { max-width: 880px; margin: 0 auto; padding: 64px 24px 96px; color: #e6edf6; }
-  .badge-page h1 { font-size: 36px; font-weight: 800; margin: 0 0 8px; }
-  .badge-page .lede { color: #98a4b3; font-size: 16px; line-height: 1.6; margin: 0 0 32px; }
-  .badge-card { background: #0f172a; border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 24px; margin-bottom: 20px; }
-  .badge-card h2 { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #7c8a9b; margin: 0 0 12px; }
-  .badge-input { width: 100%; padding: 12px 14px; background: #0a0f1d; border: 1px solid rgba(255,255,255,.1); border-radius: 8px; color: #e6edf6; font-size: 14px; font-family: 'JetBrains Mono', monospace; }
-  .badge-input:focus { outline: none; border-color: #00f5ff; }
+  .badge-page { max-width: 880px; margin: 0 auto; color: var(--ds-text, #e8e8f0); }
+  .badge-page h1 { font-size: clamp(28px, 3.4vw, 40px); font-weight: 800; margin: 0 0 8px; color: var(--ds-text, #e8e8f0); }
+  .badge-page .lede { color: var(--ds-text-dim, #8b8b99); font-size: 16px; line-height: 1.6; margin: 0 0 32px; }
+  .badge-card { background: var(--ds-surface, rgba(255,255,255,.035)); border: 1px solid var(--ds-border, rgba(255,255,255,.08)); border-radius: 14px; padding: 24px; margin-bottom: 20px; }
+  .badge-card h2 { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--ds-text-muted, #7a7a8c); margin: 0 0 12px; }
+  .badge-input { width: 100%; padding: 12px 14px; background: var(--ds-bg-1, #0f0f14); border: 1px solid var(--ds-border, rgba(255,255,255,.1)); border-radius: 8px; color: var(--ds-text, #e8e8f0); font-size: 14px; font-family: var(--ds-font-mono, ui-monospace, monospace); }
+  .badge-input:focus { outline: none; border-color: var(--ds-cyan, #00f5ff); }
   .badge-preview { display: flex; justify-content: center; padding: 32px 0; background: rgba(255,255,255,.02); border-radius: 8px; margin: 16px 0; }
   .badge-preview img { max-width: 100%; height: auto; }
-  .snippet { position: relative; background: #0a0f1d; border: 1px solid rgba(255,255,255,.1); border-radius: 8px; padding: 14px 16px; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #cfd9e6; white-space: pre-wrap; word-break: break-all; }
-  .snippet button { position: absolute; top: 8px; right: 8px; background: rgba(0,245,255,.12); color: #00f5ff; border: 1px solid rgba(0,245,255,.3); padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .snippet { position: relative; background: var(--ds-bg-1, #0f0f14); border: 1px solid var(--ds-border, rgba(255,255,255,.1)); border-radius: 8px; padding: 14px 16px; font-family: var(--ds-font-mono, ui-monospace, monospace); font-size: 13px; color: var(--ds-text, #e8e8f0); white-space: pre-wrap; word-break: break-all; }
+  .snippet button { position: absolute; top: 8px; right: 8px; background: var(--ds-cyan-soft, rgba(0,245,255,.12)); color: var(--ds-cyan, #00f5ff); border: 1px solid rgba(0,245,255,.3); padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
   .snippet button:hover { background: rgba(0,245,255,.2); }
   .snippet-row { display: grid; grid-template-columns: 130px 1fr; gap: 12px; align-items: start; margin-bottom: 12px; }
-  .snippet-row label { color: #7c8a9b; font-size: 12px; font-weight: 600; padding-top: 14px; }
-  .badge-card p { color: #cfd9e6; font-size: 14px; line-height: 1.6; margin: 0; }
+  .snippet-row label { color: var(--ds-text-muted, #7a7a8c); font-size: 12px; font-weight: 600; padding-top: 14px; }
+  .badge-card p { color: var(--ds-text-dim, #8b8b99); font-size: 14px; line-height: 1.6; margin: 0; }
 </style>
 
 <section class="badge-page">

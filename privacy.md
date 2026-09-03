@@ -5,16 +5,6 @@ permalink: /privacy/
 description: "How DeFi Scoring handles wallet addresses, server logs, and third-party API data."
 ---
 
-<style>
-  .legal-page { max-width: 820px; margin: 0 auto; }
-  .legal-page h1 { font-size: clamp(28px, 3.4vw, 40px); margin: 0 0 8px; }
-  .legal-page .legal-meta { color: #6f7aa0; font-size: 13px; margin-bottom: 32px; }
-  .legal-page h2 { margin-top: 36px; font-size: 20px; }
-  .legal-page p, .legal-page li { color: #c8d2f5; font-size: 15px; line-height: 1.7; }
-  .legal-page ul { padding-left: 22px; }
-  .legal-page strong { color: #fff; }
-  .legal-page a { color: #5b8cff; }
-</style>
 
 <div class="legal-page" markdown="1">
 
@@ -98,4 +88,3 @@ We do not sell user data. Period.
 
 </div>
 
-{% include site-footer.html %}

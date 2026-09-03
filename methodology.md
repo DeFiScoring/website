@@ -5,48 +5,6 @@ permalink: /methodology/
 description: "How DeFi Scoring computes the 300–850 wallet score from five on-chain pillars, and the separate 0–100 protocol safety score."
 ---
 
-<style>
-  .legal-page { max-width: 860px; margin: 0 auto; }
-  .legal-page h1 { font-size: clamp(28px, 3.4vw, 40px); margin: 0 0 8px; }
-  .legal-page .legal-meta { color: #6f7aa0; font-size: 13px; margin-bottom: 32px; }
-  .legal-page h2 { margin-top: 36px; font-size: 22px; }
-  .legal-page h3 { margin-top: 22px; font-size: 17px; color: #e6ebff; }
-  .legal-page p, .legal-page li { color: #c8d2f5; font-size: 15px; line-height: 1.7; }
-  .legal-page ul { padding-left: 22px; }
-  .legal-page strong { color: #fff; }
-  .legal-page code {
-    background: rgba(255,255,255,.06); padding: 1px 5px; border-radius: 4px;
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; color: #e6ebff;
-  }
-  .legal-page table {
-    width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px;
-    background: rgba(255,255,255,.02); border: 1px solid rgba(255,255,255,.08);
-    border-radius: 10px; overflow: hidden;
-  }
-  .legal-page th, .legal-page td {
-    padding: 11px 14px; text-align: left;
-    border-bottom: 1px solid rgba(255,255,255,.06);
-  }
-  .legal-page th { color: #c8d2f5; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
-  .pillar-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin: 18px 0 4px; }
-  .pillar {
-    background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08);
-    border-radius: 12px; padding: 16px;
-  }
-  .pillar h4 { margin: 0 0 4px; font-size: 14px; color: #fff; }
-  .pillar .weight { font-size: 26px; font-weight: 700; color: #5b8cff; }
-  .formula {
-    background: rgba(91,140,255,.08); border: 1px solid rgba(91,140,255,.3);
-    border-radius: 10px; padding: 16px 18px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: 14px; color: #e6ebff; margin: 18px 0;
-  }
-  .callout {
-    background: rgba(250,204,21,.07); border: 1px solid rgba(250,204,21,.28);
-    border-radius: 10px; padding: 14px 18px; margin: 18px 0;
-  }
-  .callout p:last-child { margin-bottom: 0; }
-  .band-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 8px; vertical-align: middle; }
-</style>
 
 <div class="legal-page" markdown="1">
 
@@ -393,4 +351,3 @@ This version documents what the code computes. Where version 1.0 described signa
 
 </div>
 
-{% include site-footer.html %}

@@ -111,6 +111,10 @@ const badgePage = read("badge/index.html");
 const config = read("_config.yml");
 check("badge page does not reference the unprovisioned api.defiscoring.com host",
   !/api\.defiscoring\.com/.test(badgePage), null);
+check("API docs do not reference the unprovisioned api.defiscoring.com host",
+  !/api\.defiscoring\.com/.test(read("api.md")), null);
+check("API docs state the apex as the base URL",
+  /Base URL[\s\S]{0,40}https:\/\/defiscoring\.com/.test(read("api.md")), null);
 check("badge page uses same-origin badge paths",
   badgePage.includes('var BADGE_BASE = "/badge/"'), null);
 check("badge page uses same-origin share-card paths",
