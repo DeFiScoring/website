@@ -5,46 +5,6 @@ permalink: /api/
 description: "Programmatic access to DeFi Scoring risk metrics, AI security narratives, and on-chain health scores."
 ---
 
-<style>
-  .legal-page { max-width: 920px; margin: 0 auto; }
-  .legal-page h1 { font-size: clamp(28px, 3.4vw, 40px); margin: 0 0 8px; }
-  .legal-page .legal-meta { color: #6f7aa0; font-size: 13px; margin-bottom: 32px; }
-  .legal-page h2 { margin-top: 40px; font-size: 22px; }
-  .legal-page h3 { margin-top: 26px; font-size: 17px; color: #e6ebff; }
-  .legal-page p, .legal-page li { color: #c8d2f5; font-size: 15px; line-height: 1.7; }
-  .legal-page ul { padding-left: 22px; }
-  .legal-page strong { color: #fff; }
-  .legal-page code {
-    background: rgba(255,255,255,.06); padding: 1px 6px; border-radius: 4px;
-    font-size: 13px; color: #e6ebff;
-  }
-  .legal-page pre {
-    background: #0b1228; border: 1px solid rgba(255,255,255,.08);
-    border-radius: 10px; padding: 16px 18px; overflow-x: auto;
-    font-size: 13px; line-height: 1.55; color: #d6def5;
-  }
-  .legal-page pre code { background: transparent; padding: 0; color: inherit; }
-  .legal-page table {
-    width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px;
-    background: rgba(255,255,255,.02); border: 1px solid rgba(255,255,255,.08);
-    border-radius: 10px; overflow: hidden;
-  }
-  .legal-page th, .legal-page td {
-    padding: 11px 14px; text-align: left;
-    border-bottom: 1px solid rgba(255,255,255,.06);
-  }
-  .legal-page th { color: #c8d2f5; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
-  .endpoint {
-    display: inline-block; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    background: rgba(91,140,255,.12); border: 1px solid rgba(91,140,255,.3);
-    border-radius: 6px; padding: 2px 8px; font-size: 13px; color: #e6ebff;
-  }
-  .method-get {
-    display: inline-block; background: #2bd4a4; color: #03110a;
-    font-weight: 700; font-size: 11px; padding: 2px 8px; border-radius: 4px;
-    margin-right: 6px; letter-spacing: .04em;
-  }
-</style>
 
 <div class="legal-page" markdown="1">
 
@@ -56,7 +16,7 @@ The DeFi Scoring API provides programmatic access to real-time risk metrics, AI-
 
 ## 1. General Information
 
-- **Base URL:** `https://api.defiscoring.com/v1`
+- **Base URL:** `https://defiscoring.com`
 - **Format:** All responses are returned in `application/json`.
 - **Rate limits:** 100 requests/minute on the free tier. For higher limits, contact `api@defiscoring.com`.
 
@@ -238,4 +198,3 @@ There is no separate status page yet. If you suspect a degradation, check the [G
 
 </div>
 
-{% include site-footer.html %}

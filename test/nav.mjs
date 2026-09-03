@@ -99,6 +99,27 @@ check("Report an Issue sits in the Account group, last",
   accountGroup.includes("/dashboard/report-issue/") &&
   accountGroup.trimEnd().endsWith("match: report }"), null);
 
+// Content pages that share layout: default must inherit the dark theme.
+// Without class="ds-body" they render light text on a white browser default.
+const defaultLayout = fs.readFileSync(path.join(root, "_layouts/default.html"), "utf8");
+check("default layout applies ds-body (dark theme + Inter)",
+  /<body\s+class="ds-body">/.test(defaultLayout), null);
+check("default layout loads Inter + JetBrains Mono",
+  /fonts\.googleapis\.com\/css2\?family=Inter/.test(defaultLayout), null);
+check("default layout does not double-include the site footer in itself only once",
+  (defaultLayout.match(/include site-footer\.html/g) || []).length === 1, null);
+
+const footerPages = [
+  "privacy.md", "terms.md", "disclaimer.md", "api.md", "methodology.md",
+];
+for (const f of footerPages) {
+  const s = fs.readFileSync(path.join(root, f), "utf8");
+  check(`${f} does not double-include the site footer`,
+    !/\{\%\s*include site-footer\.html\s*\%\}/.test(s), f);
+  check(`${f} uses the shared legal-page wrapper`,
+    /class="legal-page"/.test(s), f);
+}
+
 const failed = results.filter((r) => !r.ok).length;
 console.log(`\n${results.length - failed}/${results.length} passed`);
 process.exit(failed ? 1 : 0);

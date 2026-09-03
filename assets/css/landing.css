@@ -76,6 +76,319 @@ code {
   z-index: 1;
 }
 
+/* Skip link — keyboard-only; mirrors the dashboard a11y pattern. */
+.ds-skip {
+  position: absolute;
+  left: 16px;
+  top: -48px;
+  z-index: 100;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--ds-cyan);
+  color: #0a0a0a;
+  font-weight: 700;
+  font-size: 13px;
+  transition: top 140ms ease;
+}
+.ds-skip:focus {
+  top: 16px;
+  outline: 2px solid var(--ds-gold);
+  outline-offset: 2px;
+}
+
+/* Content pages that use layout: default (/privacy/, /api/, /methodology/,
+   /account/, /terms/, …). Gives them readable padding under the sticky nav
+   without each page inventing its own spacing. */
+.ds-page {
+  padding-top: 48px;
+  padding-bottom: 80px;
+  color: var(--ds-text);
+}
+.ds-page h1,
+.ds-page h2,
+.ds-page h3,
+.ds-page h4 {
+  color: var(--ds-text);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+.ds-page a:not(.ds-btn):not(.btn-link) {
+  color: var(--ds-cyan);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.ds-page a:not(.ds-btn):not(.btn-link):hover {
+  color: #fff;
+}
+
+/* Shared prose styles for legal / docs pages (/privacy/, /terms/,
+   /disclaimer/, /api/, /methodology/). Pages keep only page-specific
+   extras (pillars, endpoints, callouts) in their own <style> blocks. */
+.legal-page {
+  max-width: 860px;
+  margin: 0 auto;
+}
+.legal-page h1 {
+  font-size: clamp(28px, 3.4vw, 40px);
+  margin: 0 0 8px;
+  color: var(--ds-text);
+}
+.legal-page .legal-meta,
+.legal-page .meta {
+  color: var(--ds-text-muted);
+  font-size: 13px;
+  margin-bottom: 32px;
+}
+.legal-page h2 {
+  margin-top: 36px;
+  font-size: 22px;
+  color: var(--ds-text);
+}
+.legal-page h3 {
+  margin-top: 22px;
+  font-size: 17px;
+  color: var(--ds-text);
+}
+.legal-page p,
+.legal-page li {
+  color: var(--ds-text-dim);
+  font-size: 15px;
+  line-height: 1.7;
+}
+.legal-page ul { padding-left: 22px; }
+.legal-page strong { color: var(--ds-text); }
+.legal-page table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 18px 0;
+  font-size: 14px;
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-sm);
+  overflow: hidden;
+}
+.legal-page th,
+.legal-page td {
+  padding: 11px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--ds-border);
+  color: var(--ds-text-dim);
+}
+.legal-page th {
+  color: var(--ds-text);
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.legal-page pre {
+  background: var(--ds-bg-2);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-sm);
+  padding: 16px 18px;
+  overflow-x: auto;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ds-text);
+  font-family: var(--ds-font-mono);
+}
+.legal-page pre code {
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: inherit;
+}
+.legal-page .callout {
+  background: var(--ds-gold-soft);
+  border: 1px solid rgba(250, 204, 21, 0.28);
+  border-radius: var(--ds-radius-sm);
+  padding: 14px 18px;
+  color: #f5e4c5;
+  margin: 18px 0;
+  font-size: 14px;
+}
+.legal-page .callout p:last-child { margin-bottom: 0; }
+.legal-page .callout strong { color: var(--ds-gold); }
+
+/* Methodology extras */
+.pillar-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  margin: 18px 0 4px;
+}
+.pillar {
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border);
+  border-radius: 12px;
+  padding: 16px;
+}
+.pillar h4 { margin: 0 0 4px; font-size: 14px; color: var(--ds-text); }
+.pillar p { margin: 0; font-size: 13px; color: var(--ds-text-dim); }
+.pillar .weight {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--ds-cyan);
+  font-family: var(--ds-font-mono);
+}
+.formula {
+  background: var(--ds-cyan-soft);
+  border: 1px solid rgba(0, 245, 255, 0.3);
+  border-radius: var(--ds-radius-sm);
+  padding: 16px 18px;
+  font-family: var(--ds-font-mono);
+  font-size: 14px;
+  color: var(--ds-text);
+  margin: 18px 0;
+}
+.band-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+/* API docs extras */
+.endpoint {
+  display: inline-block;
+  font-family: var(--ds-font-mono);
+  background: var(--ds-cyan-soft);
+  border: 1px solid rgba(0, 245, 255, 0.3);
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 13px;
+  color: var(--ds-text);
+}
+.method-get {
+  display: inline-block;
+  background: var(--ds-green);
+  color: #03110a;
+  font-weight: 700;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-right: 6px;
+  letter-spacing: .04em;
+}
+
+/* Account / privacy preference pages */
+.account-page,
+.privacy-page {
+  max-width: 820px;
+  margin: 0 auto;
+}
+.account-page h1,
+.privacy-page h1 {
+  font-size: clamp(28px, 3.4vw, 40px);
+  margin: 0 0 8px;
+  color: var(--ds-text);
+}
+.account-page .meta,
+.privacy-page .meta {
+  color: var(--ds-text-muted);
+  font-size: 13px;
+  margin-bottom: 32px;
+}
+.account-page p,
+.account-page li,
+.privacy-page p {
+  color: var(--ds-text-dim);
+  font-size: 15px;
+  line-height: 1.7;
+}
+.account-card {
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border);
+  border-radius: 12px;
+  padding: 18px 22px;
+  margin: 18px 0;
+}
+.account-card h3 {
+  margin: 0 0 6px;
+  font-size: 17px;
+  color: var(--ds-text);
+}
+.account-card a.btn-link {
+  color: var(--ds-cyan);
+  text-decoration: none;
+  font-weight: 600;
+}
+.account-card a.btn-link:hover { text-decoration: underline; color: #fff; }
+.pill {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.pill-live {
+  background: var(--ds-cyan-soft);
+  color: var(--ds-cyan);
+  border: 1px solid rgba(0, 245, 255, 0.4);
+}
+.pill-soon {
+  background: var(--ds-gold-soft);
+  color: var(--ds-gold);
+  border: 1px solid rgba(250, 204, 21, 0.4);
+}
+.pref-row {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border);
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin: 14px 0;
+}
+.pref-row__copy { flex: 1; }
+.pref-row__copy h3 { margin: 0 0 4px; font-size: 16px; color: var(--ds-text); }
+.pref-row__copy p { margin: 4px 0 0; color: var(--ds-text-dim); font-size: 14px; line-height: 1.55; }
+.pref-row__copy small { color: var(--ds-text-muted); font-size: 12px; }
+.switch { position: relative; width: 46px; height: 26px; flex-shrink: 0; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.switch-slider {
+  position: absolute; cursor: pointer; inset: 0;
+  background: var(--ds-bg-2); border-radius: 999px;
+  transition: background .2s ease;
+  border: 1px solid var(--ds-border);
+}
+.switch-slider::before {
+  content: ""; position: absolute; left: 3px; top: 2px;
+  width: 20px; height: 20px; background: var(--ds-text-dim);
+  border-radius: 50%; transition: transform .2s ease, background .2s ease;
+}
+.switch input:checked + .switch-slider { background: var(--ds-cyan); border-color: var(--ds-cyan); }
+.switch input:checked + .switch-slider::before { transform: translateX(20px); background: #0a0a0a; }
+.switch input:focus-visible + .switch-slider { outline: 2px solid var(--ds-gold); outline-offset: 2px; }
+.pref-status {
+  display: inline-block; margin-left: 8px; padding: 2px 8px;
+  border-radius: 999px; font-size: 11px; font-weight: 600;
+}
+.pref-status[data-on="true"]  { background: var(--ds-cyan-soft); color: var(--ds-cyan); }
+.pref-status[data-on="false"] { background: var(--ds-surface-2); color: var(--ds-text-muted); }
+.saved-flash {
+  color: var(--ds-gold); font-size: 12px; margin-left: 10px;
+  opacity: 0; transition: opacity .25s ease;
+}
+.saved-flash.show { opacity: 1; }
+.legal-note {
+  background: var(--ds-gold-soft);
+  border: 1px solid rgba(250, 204, 21, 0.28);
+  border-radius: 10px;
+  padding: 14px 18px;
+  color: #f5e4c5;
+  font-size: 14px;
+  margin: 24px 0;
+}
+.legal-note strong { color: var(--ds-gold); }
+
 /* ---------- Animated backdrop ---------------------------------------------*/
 
 .ds-bg {
