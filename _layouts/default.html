@@ -38,7 +38,7 @@
   </main>
   {% include site-footer.html %}
   {% include dashboard/intel-consent.html %}
-  <script>window.DEFI_RISK_WORKER_URL = window.DEFI_RISK_WORKER_URL || "{{ site.defi.worker_url | default: 'https://defiscoring.guillaumelauzier.workers.dev' }}";</script>
+  <script>window.DEFI_RISK_WORKER_URL = window.DEFI_RISK_WORKER_URL ?? "{{ site.defi.worker_url }}";</script>
   <script src="{{ '/assets/js/score-bands.js' | relative_url }}?v={{ site.time | date: '%s' }}" defer></script>
   <script src="{{ '/assets/js/landing.js' | relative_url }}?v={{ site.time | date: '%s' }}" defer></script>
 </body>

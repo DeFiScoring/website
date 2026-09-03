@@ -104,13 +104,12 @@
   }
 
   async function scan(wallet) {
-    const base = window.DEFI_RISK_WORKER_URL;
-    if (!base) { setNotice("DEFI_RISK_WORKER_URL not set on this page.", true); return; }
+    const base = (window.DEFI_RISK_WORKER_URL ?? "").replace(/\/$/, "");
     setNotice("Scanning your wallet across Ethereum, Arbitrum, and Polygon…");
     setVerdict(null);
     $("defi-scanner-results").hidden = true;
     try {
-      const res = await fetch(base.replace(/\/$/, "") + "/api/exposure", {
+      const res = await fetch(base + "/api/exposure", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ wallet }),

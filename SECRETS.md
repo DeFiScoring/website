@@ -104,7 +104,7 @@ The only env vars local devs need are for `scripts/refresh_scores.py`:
 
 | Name | Default | Purpose |
 |---|---|---|
-| `WORKER_BASE_URL` | `https://defiscoring.guillaumelauzier.workers.dev` | Worker to hit from the script |
+| `WORKER_BASE_URL` | `https://defiscoring.com` | Worker to hit from the script |
 | `REQUEST_TIMEOUT` | `20` | HTTP timeout in seconds |
 
 Copy `.env.example` to `.env` and edit. `.env` is gitignored.

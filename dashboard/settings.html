@@ -167,8 +167,7 @@ sitemap: false
     // Open Stripe billing portal
     if (portalBtn) {
       portalBtn.addEventListener('click', async function () {
-        var workerUrl = window.DEFI_RISK_WORKER_URL;
-        if (!workerUrl) return;
+        var workerUrl = (window.DEFI_RISK_WORKER_URL ?? "").replace(/\/$/, "");
         portalBtn.disabled = true;
         var prevText = portalBtn.textContent;
         portalBtn.textContent = 'Opening…';

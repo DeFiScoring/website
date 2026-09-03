@@ -5,7 +5,7 @@
 # dispatched) Action run will populate it from the live Cloudflare Worker.
 
 generated_at: null
-worker: https://defiscoring.guillaumelauzier.workers.dev
+worker: https://defiscoring.com
 protocol_count: 0
 failure_count: 0
 failures: []

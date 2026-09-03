@@ -66,11 +66,7 @@
   function init() {
     const els = document.querySelectorAll("[data-defi-gas]");
     if (!els.length) return;
-    const base = (window.DEFI_RISK_WORKER_URL || "").replace(/\/$/, "");
-    if (!base) {
-      els.forEach((el) => (el.style.display = "none"));
-      return;
-    }
+    const base = (window.DEFI_RISK_WORKER_URL ?? "").replace(/\/$/, "");
     injectStyle();
     els.forEach((el) => el.classList.add("defi-gas"));
     tick(els, base);

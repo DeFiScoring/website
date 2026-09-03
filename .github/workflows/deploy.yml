@@ -49,7 +49,7 @@ jobs:
 
       - uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.2'
+          ruby-version: '3.3.5'
           bundler-cache: true
 
       - uses: actions/setup-node@v4
@@ -70,3 +70,13 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           command: deploy
+
+      - name: Smoke test production
+        run: |
+          curl -sf https://defiscoring.com/health | grep -q '"ok":true'
+          curl -sfI https://defiscoring.com/ | grep -qi strict-transport-security
+          curl -sfI https://defiscoring.com/badge/0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045.svg | grep -qi 'content-type:.*svg'
+          if curl -sfI https://defiscoring.com/ | grep -qi x-github-request-id; then
+            echo "Still served by GitHub Pages — complete DNS cutover (see docs/DEPLOYMENT.md)"
+            exit 1
+          fi

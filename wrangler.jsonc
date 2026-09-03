@@ -5,6 +5,13 @@
   "compatibility_date": "2025-04-01",
   "compatibility_flags": ["nodejs_compat"],
   "account_id": "c016d64a9a4f4a2900fb3385bd08144f",
+  // Production custom domains. Requires defiscoring.com to be a Cloudflare-
+  // managed zone on this account. www is redirected to the apex in the Worker
+  // (worker/index.js fetch handler). workers.dev remains available for staging.
+  "routes": [
+    { "pattern": "defiscoring.com/*", "zone_name": "defiscoring.com" },
+    { "pattern": "www.defiscoring.com/*", "zone_name": "defiscoring.com" }
+  ],
   "assets": {
     "directory": "./_site",
     "binding": "ASSETS",

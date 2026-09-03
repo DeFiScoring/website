@@ -1,3 +1,7 @@
+# LEGACY — not used by production deploy. See docs/DEPLOYMENT.md.
+# Cloudflare Workers (wrangler.jsonc) serves the site; this Pages-style
+# config is kept for reference only and is NOT read by wrangler deploy.
+
 [build]
   command = "jekyll build"
   publish = "_site"

@@ -173,7 +173,6 @@ const CSP = [
   "font-src 'self' data: https://fonts.gstatic.com",
   "img-src 'self' data: blob: https:",
   "connect-src 'self' " +
-    "https://defiscoring.guillaumelauzier.workers.dev " +
     "https://api.etherscan.io " +
     "https://api.llama.fi " +
     "https://hub.snapshot.org " +
@@ -2322,6 +2321,14 @@ async function handleChatbotMessage(request, env) {
 export default {
   async fetch(request, env) {
     try {
+      // Canonical host is the apex. www requests are permanently redirected
+      // so SIWE, cookies, and badge URLs stay on one origin.
+      const reqUrl = new URL(request.url);
+      if (reqUrl.hostname === "www.defiscoring.com") {
+        reqUrl.hostname = "defiscoring.com";
+        return finalizeResponse(Response.redirect(reqUrl.toString(), 301), request, env);
+      }
+
       // Phase 4: fail-closed sanctions check before any handler runs.
       // We collect EVERY address that appears in the URL or anywhere in
       // the JSON body and block if ANY one matches the SDN list. The

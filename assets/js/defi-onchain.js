@@ -35,10 +35,9 @@
   }
 
   async function getEtherscanHistory(address) {
-    const base = window.DEFI_RISK_WORKER_URL;
-    if (!base) return null;
+    const base = workerBase();
     try {
-      const res = await fetch(base.replace(/\/$/, "") + "/onchain/" + address);
+      const res = await fetch(base + "/onchain/" + address);
       if (!res.ok) throw new Error("worker " + res.status);
       const j = await res.json();
       if (!j.success) throw new Error(j.error || "history fetch failed");
