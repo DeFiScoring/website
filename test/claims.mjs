@@ -53,6 +53,53 @@ check("API docs state the key is shown only once",
 check("API docs state the public endpoint needs no key",
   /No key is required/i.test(apiDocs), null);
 
+// --- no tier may be sold a rate-limit advantage nothing grants -------------
+// rateLimit() and rateLimitByAddress() in worker/index.js key on (path, IP)
+// and (path, address). Neither reads a tier. Pro's card carried "Higher scan
+// rate limits" for months: a Pro subscriber gets exactly the anonymous limit,
+// and cannot buy out of it with a key either, because TIERS.pro's
+// bulk_api.requests.day is 0 and chargeApiRequest answers 402. The compare
+// table was honest ("Fair-use rate limit" in all four columns) while the
+// bullet above it was not, which is why checking only the table missed it.
+const tierAwareLimiter = /rateLimit\([^)]*\btier\b|\btier\b[^)]*rateLimit\(/.test(workerIndex);
+// Match on tag-stripped text: the offending bullet was
+// "<strong>Higher</strong> scan rate limits", so any pattern that treats "<"
+// as a boundary walks straight past it.
+const pricingText = pricing.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+check("no tier bullet claims a rate-limit advantage the limiter cannot give",
+  tierAwareLimiter || !/(higher|increased|raised|priority)[^.]{0,40}rate limit/i.test(pricingText),
+  "pricing sells a rate-limit tier the worker does not implement");
+
+// --- API quota figures on the page must be the ones tiers.js enforces ------
+const apiDay = (t) => TIERS[t].limits["bulk_api.requests.day"];
+for (const tier of ["free", "pro"]) {
+  check(`${tier} advertises no API/day figure while its budget is ${apiDay(tier)}`,
+    apiDay(tier) > 0 || !new RegExp(`data-tier-label="${tier[0].toUpperCase()}${tier.slice(1)}"[^<]*>\\s*\\d+\\s*<`, "i")
+      .test(pricing.slice(pricing.indexOf("API requests"), pricing.indexOf("API requests") + 400)),
+    { tier, limit: apiDay(tier) });
+}
+// When the page does print a Plus figure, it must be the enforced one.
+const plusApiClaim = pricing.match(/(\d+)\s*API requests\s*\/\s*day/i);
+check("any advertised Plus API/day figure equals tiers.js",
+  !plusApiClaim || Number(plusApiClaim[1]) === apiDay("plus"),
+  { advertised: plusApiClaim && plusApiClaim[1], enforced: apiDay("plus") });
+
+// "Dedicated" reads as per-customer provisioning. Enterprise is the same
+// tier_quotas row and the same shared worker as Plus with a larger literal;
+// changing one contract's budget means editing tiers.js and redeploying,
+// which moves every Enterprise account at once.
+check("Enterprise does not call its API budget dedicated while it is a shared code path",
+  !/dedicated api quota/i.test(pricing), "Enterprise claims a dedicated quota");
+
+// --- api.md may not invent a rate limit -----------------------------------
+// api.md claimed "100 requests/minute on the free tier" and a matching 429
+// row. No route in the worker uses 100/min. Every per-minute figure the docs
+// print must appear as a literal in the limiter's call sites.
+for (const m of apiDocs.matchAll(/(\d+)\s*(?:requests?|req)\s*\/\s*min/gi)) {
+  check(`api.md's ${m[1]}/min limit exists in worker/index.js`,
+    new RegExp(`rateLimit(?:ByAddress)?\\([^)]*,\\s*${m[1]},\\s*60\\s*\\)`).test(workerIndex), m[0]);
+}
+
 // --- the ◷ glyph must always be explained ----------------------------------
 check("comparison table explains the ◷ planned marker",
   !pricing.includes("◷") || /pr-table__legend/.test(pricing), null);
@@ -80,6 +127,43 @@ for (const [tier, expected] of [["free", 7], ["pro", 30], ["plus", 365]]) {
 }
 check("pricing advertises the history windows tiers.js enforces",
   pricing.includes("7 days") && pricing.includes("30 days") && pricing.includes("365 days"), null);
+
+// --- the landing page may not sell a product we stopped being --------------
+// index.html shipped for months claiming a "private beta" in which "every
+// feature — including the public API — is free" with "no signups", while
+// Pro at $15 and Plus at $49 were live through Stripe Checkout and SIWE
+// sign-in gated history, alerts and linked wallets. One of those claims sat
+// in the FAQ JSON-LD, which search engines republish as a rich result, so a
+// stale sentence there is repeated by Google long after the page changes.
+//
+// The check is driven from the tier table rather than a word list: the day
+// someone genuinely makes everything free again, price_usd_month goes to 0
+// and this stops complaining on its own.
+const paidTiers = ["pro", "plus"].filter((t) => TIERS[t].price_usd_month > 0);
+const sellsPaidPlans = paidTiers.length > 0;
+for (const [label, re] of [
+  ["a private beta", /private beta/i],
+  ["that there are no signups", /\bno signups\b|\bno signup,|>0<\/b>\s*signups/i],
+  ["that every feature is free", /every feature[^.]*is free/i],
+]) {
+  check(`landing does not claim ${label} while ${paidTiers.join(" and ")} are sold`,
+    !sellsPaidPlans || !re.test(landing), label);
+}
+
+// --- the API the landing page documents must be the one the worker serves --
+// The FAQ answered "Does DeFiScore have a public API?" with an endpoint that
+// does not exist (GET /api/score?wallet=…, which is the *protocol* score
+// route) and a field the response has never carried ("LTV recommendation").
+// A wrong path in JSON-LD is worse than no path: it is the copy a developer
+// pastes into curl before deciding we are broken.
+const landingApiPaths = [...landing.matchAll(/GET (\/api\/[a-z0-9/{}-]+)/gi)].map((m) => m[1]);
+for (const p of landingApiPaths) {
+  check(`landing documents "${p}", which worker/index.js routes`,
+    workerIndex.includes(`"${p}"`) || workerIndex.includes(`"${p}/"`), p);
+}
+check("landing does not advertise an LTV recommendation the score never returns",
+  !/LTV recommendation/i.test(landing) || /ltv_recommendation|ltvRecommendation/.test(workerIndex),
+  "LTV recommendation claimed but never returned");
 
 // --- chain coverage claim must match the registry --------------------------
 const tier1 = CHAINS.filter((c) => c.tier === 1).map((c) => c.name);

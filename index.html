@@ -52,12 +52,12 @@ changefreq: "weekly"
       {
         "@type": "Question",
         "name": "Is DeFiScore free to use?",
-        "acceptedAnswer": { "@type": "Answer", "text": "Yes. During the private beta every feature — including the public API — is free. There are no signups and no KYC; scoring is wallet-based." }
+        "acceptedAnswer": { "@type": "Answer", "text": "The score is free. Connect a wallet and you get a 300–850 score with no account, no email and no KYC, and the public score endpoint stays free and needs no API key. Paid plans add longer score history, more linked wallets, real-time alerts and a metered API budget: Pro is $15/month and Plus is $49/month." }
       },
       {
         "@type": "Question",
         "name": "Does DeFiScore have a public API?",
-        "acceptedAnswer": { "@type": "Answer", "text": "Yes. A single endpoint GET /api/score?wallet=0x… returns a 300–850 score, factor breakdown, and LTV recommendation. It is KV-cached with a free public tier." }
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. GET /api/wallet-score?address=0x… returns a 300–850 score with the five-pillar breakdown and the adjustments applied to it. No key is required and the endpoint is cached at the edge; it is served under a shared per-IP rate limit." }
       },
       {
         "@type": "Question",
@@ -107,7 +107,7 @@ changefreq: "weekly"
     <div class="ds-hero__copy">
       <span class="ds-badge">
         <span class="ds-badge__dot"></span>
-        Private beta · 5 chains scored by default
+        Model {{ site.defi.model_version }} · 5 chains scored by default
       </span>
       <h1 class="ds-hero__title">
         Your <span class="ds-grad">on-chain credit score.</span><br>
@@ -129,11 +129,11 @@ changefreq: "weekly"
         <a class="ds-btn ds-btn--ghost ds-btn--lg" href="#how">See how it works</a>
       </div>
       <div class="ds-hero__trust">
-        <span><b>0</b> signups</span>
+        <span><b>No account</b> to scan</span>
         <span class="ds-sep">·</span>
-        <span><b>5</b> chains scored</span>
+        <span><b>{{ site.defi.scored_chains | size }}</b> chains scored</span>
         <span class="ds-sep">·</span>
-        <span><b>Free</b> public API</span>
+        <span><b>Keyless</b> public API</span>
       </div>
     </div>
 
@@ -242,7 +242,7 @@ changefreq: "weekly"
           <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
         </div>
         <h3>Public API</h3>
-        <p>One endpoint: <code>GET /api/score?wallet=0x…</code> returns a score, factor breakdown, and LTV recommendation. KV-cached, free tier.</p>
+        <p>One endpoint: <code>GET /api/wallet-score?address=0x…</code> returns the score, the five-pillar breakdown and the adjustments applied to it. No key required, cached at the edge.</p>
       </article>
       <article class="ds-card ds-feature">
         <div class="ds-feature__icon ds-feature__icon--purple">
@@ -268,7 +268,7 @@ changefreq: "weekly"
     <div class="ds-section__head">
       <div class="ds-eyebrow">How it works</div>
       <h2 class="ds-section__title">From wallet connect to score in under 10 seconds</h2>
-      <p class="ds-section__sub">No accounts. No KYC. Just on-chain signals you and your counterparties can verify.</p>
+      <p class="ds-section__sub">No account needed to scan, and no KYC ever. Just on-chain signals you and your counterparties can verify.</p>
     </div>
     <ol class="ds-steps" role="list">
       <li class="ds-step">
@@ -392,7 +392,7 @@ changefreq: "weekly"
     <div class="ds-cta__card">
       <div class="ds-cta__copy">
         <h2>See your score in one click.</h2>
-        <p>Free during the private beta. No signup, no email — just connect and scan.</p>
+        <p>The score is free. No account, no email — just connect and scan.</p>
       </div>
       <a class="ds-btn ds-btn--primary ds-btn--lg ds-btn--glow" href="/dashboard/">
         Open the Dashboard →

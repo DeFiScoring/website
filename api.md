@@ -58,7 +58,7 @@ The DeFi Scoring API provides programmatic access to real-time risk metrics, AI-
 
 - **Base URL:** `https://api.defiscoring.com/v1`
 - **Format:** All responses are returned in `application/json`.
-- **Rate limits:** 100 requests/minute on the free tier. For higher limits, contact `api@defiscoring.com`.
+- **Rate limits:** without a key, `GET /api/wallet-score` is served under a shared limit of **30 requests/minute per IP** and **10 requests/minute per wallet address**. Other endpoints carry their own limits. Presenting a key replaces the shared limit with your account's metered daily budget (§2).
 
 ## 2. Authentication
 
@@ -86,6 +86,13 @@ Keys are issued and revoked in **Settings → API keys** on the dashboard. Notes
 * Daily quota is per **account**, not per key, so adding keys does not add
   budget. Per-key request counts are shown in the dashboard so you can tell
   which integration is spending it.
+* The daily window is **rolling, not calendar-aligned**: it opens the first
+  time you spend the quota in a period and closes exactly 24 hours later, so
+  there is no midnight-UTC reset to schedule against. `retry_at` on a 429 is
+  the authoritative time. The dashboard's *per-key* counter is a UTC calendar
+  day, so it and the account meter can legitimately disagree.
+* Metering applies to `GET /api/wallet-score`, which is the only route that
+  accepts a key today.
 
 | Plan | Requests / day with a key |
 |---|---|
@@ -188,7 +195,7 @@ Analyses a wallet's on-chain history to return a DeFi credit score (300 – 850,
 | **400** | Bad Request | Missing parameters or invalid address format. |
 | **401** | Unauthorized | Invalid or missing API key. |
 | **404** | Not Found | Protocol or contract not yet indexed. |
-| **429** | Rate Limit | You have exceeded the 100 req/min limit. |
+| **429** | Rate Limit | Anonymous: you exceeded the shared per-IP or per-address limit. With a key: your account's daily budget is spent — see `Retry-After`. |
 
 ## 5. Integration Example
 
