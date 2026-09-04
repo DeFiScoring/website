@@ -199,17 +199,76 @@ check("API docs do not reference the unprovisioned api.defiscoring.com host",
   !/api\.defiscoring\.com/.test(read("api.md")), null);
 check("API docs state the apex as the base URL",
   /Base URL[\s\S]{0,40}https:\/\/defiscoring\.com/.test(read("api.md")), null);
-check("badge page uses same-origin badge paths",
-  badgePage.includes('var BADGE_BASE = "/badge/"'), null);
-check("badge page uses same-origin share-card paths",
-  badgePage.includes('shareImg.src = "/card/"') &&
-  badgePage.includes('"https://defiscoring.com/share/"'), null);
-check("how-it-works documents the apex badge URL",
-  badgePage.includes("https://defiscoring.com/badge/"), null);
+/* The badge page has two kinds of URL and they are not interchangeable.
+ *
+ * Its previews are same-origin, so relative is right for those. Its SNIPPETS
+ * are the product — the whole page exists so someone can paste one into a
+ * GitHub README, a forum signature, another site — and there a relative
+ * "/badge/0x….svg" resolves against THEIR host and 404s.
+ *
+ * The unified-deployment change made everything relative, snippets included,
+ * and the check here was rewritten to require exactly that: it asserted
+ * `var BADGE_BASE = "/badge/"` and so pinned the bug in place. These replace
+ * it with the distinction the code got wrong.
+ */
+check("badge previews load same-origin",
+  /img\.src = badgePath/.test(badgePage) && /shareImg\.src = "\/card\/"/.test(badgePage), null);
+// Every copyable string is built from ORIGIN. Catching this by construction
+// rather than by matching a literal host keeps it true if the domain changes.
+for (const snip of ["snipMd", "snipHtml", "snipBb", "snipShare"]) {
+  const line = (badgePage.match(new RegExp(snip + "\\.textContent[^;]*;")) || [""])[0];
+  check(`${snip} emits an absolute URL`,
+    /\bbadgeUrl\b|\bprofileUrl\b|\bORIGIN\b/.test(line) && !/\bbadgePath\b/.test(line), line.slice(0, 90));
+}
+check("the badge page's ORIGIN comes from site.url, not a typed-out host",
+  /var ORIGIN = "\{\{ site\.url \}\}"/.test(badgePage), null);
+check("badge page does not hardcode the apex anywhere",
+  !/https:\/\/defiscoring\.com/.test(badgePage), "hardcoded origin — use site.url");
 check("site.webmanifest exists for the link in _includes/head.html",
   fs.existsSync(path.join(root, "assets/favicon/site.webmanifest")), null);
 check("_config.yml worker_url is empty for same-origin API calls",
   /worker_url:\s*""/.test(config), null);
+
+/* --- no browser file may read the empty worker URL as "no backend" ---------
+ *
+ * worker_url is "" because the worker serves this site and its /api/* routes
+ * from one origin: "" IS the origin. A guard of the form `if (!base) return`
+ * reads that default as "unconfigured" and routes around the backend — the
+ * Phase 0 bug, which cost the dashboard its five-pillar score for months.
+ *
+ * The unified-deployment change fixed nine files of this and missed
+ * community-votes.js, where it surfaced as every vote widget on
+ * /dashboard/risk-profiler/ rendering "Worker URL not set on this page."
+ * Nothing caught that, because the checks named files rather than the shape.
+ * This names the shape: any early return or user-visible error keyed on the
+ * falsiness of a worker-URL variable, in any assets/js file.
+ */
+const JS_DIR = path.join(root, "assets/js");
+const WORKER_VAR = /^(base|WORKER|url|workerUrl|root|origin|ORIGIN|b)$/;
+// Scan CODE, not prose. The comment in community-votes.js that warns against
+// this very pattern quotes it verbatim ("Guards of the form `if (!base) bail`"),
+// and a raw substring scan reports the warning as the offence.
+const stripComments = (s) => s.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:])\/\/.*$/gm, "$1");
+const offenders = [];
+for (const file of fs.readdirSync(JS_DIR).filter((f) => f.endsWith(".js"))) {
+  const src = stripComments(fs.readFileSync(path.join(JS_DIR, file), "utf8"));
+  // Only files that actually derive a base from the worker URL can offend.
+  if (!/DEFI_RISK_WORKER_URL/.test(src)) continue;
+  // Every operand of the condition, not just the first. The defect this exists
+  // to catch was `if (!slug || !base)`, where the worker base is the SECOND
+  // term — a pattern anchored to the start of the condition sails past it.
+  for (const cond of src.matchAll(/\bif\s*\(([^)]*)\)/g)) {
+    for (const neg of cond[1].matchAll(/!\s*([A-Za-z_$][\w$]*)/g)) {
+      if (!WORKER_VAR.test(neg[1])) continue;
+      // Is this the worker base, or an unrelated local that shares its name?
+      const decl = new RegExp("\\b" + neg[1] + "\\s*=\\s*[^;]*(DEFI_RISK_WORKER_URL|workerBase\\(\\))");
+      if (!decl.test(src)) continue;
+      offenders.push(`${file}: if (${cond[1].trim().slice(0, 40)}…`);
+    }
+  }
+}
+check("no assets/js file bails when the worker URL is the empty same origin",
+  offenders.length === 0, offenders);
 
 const failed = results.filter((r) => !r.ok).length;
 console.log(`\n${results.length - failed}/${results.length} passed`);

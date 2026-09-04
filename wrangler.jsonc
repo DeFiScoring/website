@@ -7,7 +7,22 @@
   "account_id": "c016d64a9a4f4a2900fb3385bd08144f",
   // Production custom domains. Requires defiscoring.com to be a Cloudflare-
   // managed zone on this account. www is redirected to the apex in the Worker
-  // (worker/index.js fetch handler). workers.dev remains available for staging.
+  // (worker/index.js fetch handler).
+  //
+  // `workers_dev` is set EXPLICITLY, and must stay that way. Cloudflare infers
+  // it as false the moment `routes` exists:
+  //
+  //   "If you do not specify workers_dev = false but add a routes component to
+  //    your Wrangler configuration file, the value of workers_dev will be
+  //    inferred as false on the next deploy."
+  //   — developers.cloudflare.com/workers/configuration/routing/workers-dev/
+  //
+  // So adding the routes below silently switched off
+  // defiscoring.guillaumelauzier.workers.dev — the staging URL this comment
+  // used to claim "remains available", and the only host serving the site
+  // before the apex DNS cutover completed. Deleting this line does not restore
+  // the default; it re-disables the subdomain.
+  "workers_dev": true,
   "routes": [
     { "pattern": "defiscoring.com/*", "zone_name": "defiscoring.com" },
     { "pattern": "www.defiscoring.com/*", "zone_name": "defiscoring.com" }

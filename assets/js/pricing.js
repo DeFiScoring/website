@@ -11,10 +11,9 @@
 (function () {
   "use strict";
 
-  var WORKER = (window.DEFI_RISK_WORKER_URL || "").replace(/\/$/, "");
-  if (!WORKER) {
-    console.warn("[pricing] DEFI_RISK_WORKER_URL is not set");
-  }
+  // "" is the same origin, not "unset" — see the note in community-votes.js.
+  // This used to warn on every page load once worker_url became empty.
+  var WORKER = (window.DEFI_RISK_WORKER_URL ?? "").replace(/\/$/, "");
 
   /* ---------- helpers ---------- */
 

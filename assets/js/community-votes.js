@@ -57,8 +57,14 @@
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>';
   }
 
+  /* "" is the SAME ORIGIN, not "unconfigured". The worker serves this site and
+     its /api/* routes from one origin, so a relative /api/votes/… reaches it.
+     Guards of the form `if (!base) bail` read the empty default as "no backend"
+     — the Phase 0 bug — and here it surfaced as every vote widget on
+     /dashboard/risk-profiler/ rendering "Worker URL not set on this page."
+     Do not reintroduce a truthiness check on this value. */
   function workerBase() {
-    return (window.DEFI_RISK_WORKER_URL || "").replace(/\/$/, "");
+    return (window.DEFI_RISK_WORKER_URL ?? "").replace(/\/$/, "");
   }
 
   function render(el, data, status) {
@@ -112,8 +118,8 @@
   async function load(el) {
     const slug = el.dataset.defiVotes;
     const base = workerBase();
-    if (!slug || !base) {
-      render(el, null, { text: "Worker URL not set on this page.", error: true });
+    if (!slug) {
+      render(el, null, { text: "This widget is missing its protocol slug.", error: true });
       return;
     }
     try {
@@ -132,7 +138,7 @@
   async function onVote(el, slug, vote) {
     const base = workerBase();
     const wallet = window.DefiWallet && window.DefiWallet.address;
-    if (!base || !wallet) return;
+    if (!wallet) return;
     el.querySelectorAll("[data-vote]").forEach((b) => (b.disabled = true));
     try {
       let res;
