@@ -107,18 +107,20 @@ changefreq: "weekly"
     <div class="ds-hero__copy">
       <span class="ds-badge">
         <span class="ds-badge__dot"></span>
-        Model {{ site.defi.model_version }} · 5 chains scored by default
+        Model {{ site.defi.model_version }} · {{ site.defi.scored_chains | size }} chains scored by default
       </span>
       <h1 class="ds-hero__title">
         Your <span class="ds-grad">on-chain credit score.</span><br>
         Instant. Verifiable. <span class="ds-grad ds-grad--gold">Actionable.</span>
       </h1>
       <p class="ds-hero__sub">
-        Connect any wallet to get a 300–850 DeFi credit score, a per-protocol risk
-        heatmap across your portfolio, and real-time alerts before liquidations hit.
+        A 300–850 score from five on-chain pillars — loan reliability, portfolio
+        health, liquidity provision, account age, governance. Every pillar shows
+        whether it ran on live data or fell back to an estimate.
+        <b>We never invent a number.</b>
       </p>
       <div class="ds-hero__cta">
-        <a class="ds-btn ds-btn--primary ds-btn--lg ds-btn--glow" href="/dashboard/">
+        <a class="ds-btn ds-btn--primary ds-btn--lg" href="/dashboard/">
           <svg class="ds-btn__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/>
             <path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/>
@@ -128,13 +130,32 @@ changefreq: "weekly"
         </a>
         <a class="ds-btn ds-btn--ghost ds-btn--lg" href="#how">See how it works</a>
       </div>
+      {%- comment -%}
+        Two figures, not a slogan row. "0 invented numbers" is the claim the
+        rest of the page is built to earn: when a source is unreachable the
+        pillar falls back to a neutral 50 and is marked estimated everywhere,
+        and the honest-score gate in worker/lib/score.js refuses to emit a
+        300–850 at all rather than publish a number it cannot stand behind.
+      {%- endcomment -%}
       <div class="ds-hero__trust">
-        <span><b>No account</b> to scan</span>
-        <span class="ds-sep">·</span>
-        <span><b>{{ site.defi.scored_chains | size }}</b> chains scored</span>
-        <span class="ds-sep">·</span>
-        <span><b>Keyless</b> public API</span>
+        <div class="ds-figure">
+          <span class="ds-figure__value">{{ site.defi.scored_chains | size }}</span>
+          <span class="ds-figure__label">Chains scored</span>
+        </div>
+        <div class="ds-figure">
+          <span class="ds-figure__value">0</span>
+          <span class="ds-figure__label">Invented numbers</span>
+        </div>
+        <div class="ds-figure">
+          <span class="ds-figure__value">0</span>
+          <span class="ds-figure__label">Accounts to scan</span>
+        </div>
       </div>
+
+      <p class="ds-sources">
+        <span class="ds-sources__label">Read directly from</span>
+        <span class="ds-sources__list">Aave V3 · Spark · Compound V3 · Morpho Blue · Uniswap V3 · Snapshot · Lido &amp; LSTs</span>
+      </p>
     </div>
 
     <!-- Live score meter -->
@@ -176,8 +197,91 @@ changefreq: "weekly"
         <span class="ds-gauge__band ds-gauge__band--good">Good<br><em>660–719</em></span>
         <span class="ds-gauge__band ds-gauge__band--great">Excellent<br><em>720–850</em></span>
       </div>
+      {%- comment -%}
+        The five pillars behind the number above. These are not decoration:
+        0.35·65 + 0.25·90 + 0.15·79 + 0.15·85 + 0.10·50 = 74.85, and
+        round(300 + 74.85 × 5.5) = 712, which is what the gauge animates to
+        (the TARGET constant in landing.js). Governance is the one estimated pillar
+        and carries 10 of the 100 weight, so coverage reads 90% — coverageOf()
+        sums weights, not pillars, so this is 90 and not 4/5 = 80.
+
+        test/facts.mjs recomputes all of that from worker/lib/score.js and
+        fails if this markup and the engine ever disagree. Edit the numbers
+        here and that test tells you what they now add up to.
+      {%- endcomment -%}
+      <ul class="ds-pillars" data-ds-pillars>
+        <li class="ds-pillar">
+          <span class="ds-pillar__name"><span class="ds-pillar__glyph" aria-hidden="true">●</span> Loan reliability</span>
+          <span class="ds-pillar__value">65</span>
+          <span class="ds-pillar__bar"><i style="width:65%"></i></span>
+        </li>
+        <li class="ds-pillar">
+          <span class="ds-pillar__name"><span class="ds-pillar__glyph" aria-hidden="true">●</span> Portfolio health</span>
+          <span class="ds-pillar__value">90</span>
+          <span class="ds-pillar__bar"><i style="width:90%"></i></span>
+        </li>
+        <li class="ds-pillar">
+          <span class="ds-pillar__name"><span class="ds-pillar__glyph" aria-hidden="true">●</span> Liquidity provision</span>
+          <span class="ds-pillar__value">79</span>
+          <span class="ds-pillar__bar"><i style="width:79%"></i></span>
+        </li>
+        <li class="ds-pillar">
+          <span class="ds-pillar__name"><span class="ds-pillar__glyph" aria-hidden="true">●</span> Account age</span>
+          <span class="ds-pillar__value">85</span>
+          <span class="ds-pillar__bar"><i style="width:85%"></i></span>
+        </li>
+        <li class="ds-pillar is-estimated">
+          <span class="ds-pillar__name"><span class="ds-pillar__glyph" aria-hidden="true">◔</span> Governance <span class="ds-pillar__tag">estimated</span></span>
+          <span class="ds-pillar__value">50</span>
+          <span class="ds-pillar__bar"><i style="width:50%"></i></span>
+        </li>
+      </ul>
+      <p class="ds-gauge__note">
+        Governance ran on an estimate — the Snapshot API was unreachable, so the
+        pillar is held at a neutral 50 and marked <span aria-hidden="true">◔</span> estimated.
+        It is never shown as a real result. Coverage: <b>90% live data</b>.
+      </p>
       <div class="ds-gauge__caption">Sample wallet · 0x7a…fB3e</div>
     </div>
+  </div>
+</section>
+
+<!-- Honest-scoring guarantees. Three claims, each one checkable in the code:
+     account age takes the oldest first-transaction across Tier-1 chains
+     (worker/lib/score.js pillarAccountAge — "Oldest wins"), the protocol reads
+     are direct contract calls listed in lib/defi-protocols.js, and an
+     unreachable source produces `real: false` with a neutral 50 rather than a
+     guess. -->
+<section class="ds-guarantees" aria-labelledby="guarantees-heading">
+  <h2 class="ds-visually-hidden" id="guarantees-heading">How we keep the score honest</h2>
+  <div class="ds-container ds-guarantees__grid">
+    <article class="ds-guarantee">
+      <div class="ds-guarantee__eyebrow">Coverage</div>
+      <h3 class="ds-guarantee__title">Five chains, oldest transaction wins</h3>
+      <p class="ds-guarantee__body">
+        Account age reads the earliest first-transaction across
+        {{ site.defi.scored_chains | join: ", " }}. A wallet that started on an
+        L2 and later bridged keeps the age it earned.
+      </p>
+    </article>
+    <article class="ds-guarantee">
+      <div class="ds-guarantee__eyebrow">Sources</div>
+      <h3 class="ds-guarantee__title">Read directly from protocol contracts</h3>
+      <p class="ds-guarantee__body">
+        Aave V3, Spark, Compound V3 and Morpho Blue for loan reliability;
+        Uniswap V3 positions valued in USD; Snapshot for governance. No
+        third-party score resold as our own.
+      </p>
+    </article>
+    <article class="ds-guarantee">
+      <div class="ds-guarantee__eyebrow">Guarantee</div>
+      <h3 class="ds-guarantee__title">An estimate never poses as a result</h3>
+      <p class="ds-guarantee__body">
+        When a source is unreachable the pillar falls back to a neutral 50 and
+        is labelled estimated everywhere it appears — in the product, the API
+        and the public badge.
+      </p>
+    </article>
   </div>
 </section>
 
@@ -394,7 +498,7 @@ changefreq: "weekly"
         <h2>See your score in one click.</h2>
         <p>The score is free. No account, no email — just connect and scan.</p>
       </div>
-      <a class="ds-btn ds-btn--primary ds-btn--lg ds-btn--glow" href="/dashboard/">
+      <a class="ds-btn ds-btn--primary ds-btn--lg" href="/dashboard/">
         Open the Dashboard →
       </a>
     </div>

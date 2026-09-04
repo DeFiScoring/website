@@ -31,7 +31,15 @@
 
   const MIN = 300;
   const MAX = 850;
-  const TARGET = 782; // sample wallet score — tuned for an "excellent" look
+  // The sample wallet's score, and it is derived, not chosen. index.html's
+  // pillar strip publishes the five values this animates to the end of:
+  //   0.35·65 + 0.25·90 + 0.15·79 + 0.15·85 + 0.10·50 = 74.85
+  //   round(300 + 74.85 × 5.5) = 712
+  // It used to be 782, "tuned for an excellent look", which is exactly the
+  // kind of number this page now promises not to invent. test/facts.mjs
+  // recomputes the identity from worker/lib/score.js and fails if the markup,
+  // this constant and the engine stop agreeing.
+  const TARGET = 712;
   const CIRCUMFERENCE = 527.79; // 2πr for r=84
 
   // The band comes from score-bands.js; the letter is the landing page's own
