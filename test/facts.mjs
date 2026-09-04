@@ -18,7 +18,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { SCORE_MODEL_VERSION, BANDS, bandForScore } from "../worker/lib/score.js";
+import {
+  SCORE_MODEL_VERSION, BANDS, bandForScore, PILLAR_WEIGHTS, coverageOf,
+} from "../worker/lib/score.js";
 import { CHAINS } from "../worker/lib/chains.js";
 import { BAND_META, UNKNOWN_BAND, MARK_PATHS, fractionOf } from "../worker/lib/bands.js";
 
@@ -330,15 +332,108 @@ const CONSUMERS = [
   // The shared gauge / coverage / contribution renderers.
   "score-credential.js",
 ];
+/* Match SCRIPT TAGS, not prose. This used to substring-search the whole file
+ * for "/landing.js", so an HTML comment naming the file — "the TARGET
+ * constant in assets/js/landing.js" — registered as a load site at the top of
+ * the page and failed the ordering against a tag 17KB below it. The thing
+ * being asserted is tag order, so only src attributes count. */
+/* The srcs are Liquid, not plain paths:
+ *   src="{{ '/assets/js/landing.js' | relative_url }}?v={{ site.time | … }}"
+ * so anything that stops at the first quote inside the attribute matches
+ * nothing at all and the whole check passes vacuously. Stay inside the tag
+ * with [^>] and take the last path segment ending in .js. */
+const scriptSrcs = (html) =>
+  [...html.matchAll(/<script\b[^>]*\ssrc=[^>]*?\/([A-Za-z0-9_-]+\.js)/g)]
+    .map((m) => ({ file: m[1], at: m.index }));
+
 for (const page of ["_layouts/dashboard.html", "_layouts/default.html", "index.html", "_includes/health-score.html"]) {
   const html = read(page);
-  const used = CONSUMERS.filter((c) => html.includes("/" + c));
+  const tags = scriptSrcs(html);
+  const used = CONSUMERS.filter((c) => tags.some((t) => t.file === c));
   if (!used.length) continue;
-  const iVocab = html.indexOf("score-bands.js");
-  check(`${page} loads score-bands.js`, iVocab !== -1, { used });
+  const vocab = tags.find((t) => t.file === "score-bands.js");
+  check(`${page} loads score-bands.js`, !!vocab, { used });
   for (const c of used) {
+    const consumer = tags.find((t) => t.file === c);
     check(`${page} loads score-bands.js before ${c}`,
-      iVocab !== -1 && iVocab < html.indexOf("/" + c), { iVocab, consumer: html.indexOf("/" + c) });
+      vocab && consumer && vocab.at < consumer.at,
+      { iVocab: vocab && vocab.at, consumer: consumer && consumer.at });
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * The landing page's sample wallet must be arithmetic, not art direction.
+ *
+ * index.html's hero publishes five pillar values and a coverage figure, and
+ * assets/js/landing.js animates the gauge to a TARGET score. Before this,
+ * TARGET was 782 with the comment "tuned for an excellent look" and no
+ * pillars were shown — a number chosen because it looked good, on a page
+ * whose headline promise is that we never invent one.
+ *
+ * So recompute the whole thing from the engine's own constants: the weighted
+ * composite, the 300–850 mapping, the band, and coverageOf()'s weight sum.
+ * Change a pillar value in the markup and this tells you what it now adds up
+ * to, which is the only way the two can be edited together.
+ * ------------------------------------------------------------------------- */
+{
+  const landing = read("index.html");
+  const NAME_TO_KEY = {
+    "Loan reliability": "loan_reliability",
+    "Portfolio health": "portfolio_health",
+    "Liquidity provision": "liquidity_provision",
+    "Account age": "account_age",
+    "Governance": "governance",
+  };
+
+  const items = [...landing.matchAll(/<li class="ds-pillar([^"]*)">([\s\S]*?)<\/li>/g)];
+  check("the hero publishes one row per weighted pillar",
+    items.length === Object.keys(PILLAR_WEIGHTS).length,
+    { rows: items.length, weights: Object.keys(PILLAR_WEIGHTS).length });
+
+  const pillars = {};
+  for (const [, cls, body] of items) {
+    const name = (body.match(/<\/span>\s*([A-Za-z ]+?)\s*(?:<|$)/) || [])[1];
+    const value = Number((body.match(/ds-pillar__value">(\d+)</) || [])[1]);
+    const key = NAME_TO_KEY[name];
+    check(`hero pillar "${name}" is one the engine weights`, !!key, { name, value });
+    if (key) pillars[key] = { value, real: !/\bis-estimated\b/.test(cls) };
+  }
+
+  // Every weighted pillar must appear, or the composite below silently
+  // under-counts and still looks plausible.
+  for (const key of Object.keys(PILLAR_WEIGHTS)) {
+    check(`hero shows the ${key} pillar`, pillars[key] !== undefined, Object.keys(pillars));
+  }
+
+  if (Object.keys(pillars).length === Object.keys(PILLAR_WEIGHTS).length) {
+    let hs = 0;
+    for (const [key, weight] of Object.entries(PILLAR_WEIGHTS)) hs += weight * pillars[key].value;
+    const expected = Math.max(300, Math.min(850, Math.round(300 + (hs / 100) * 550)));
+
+    const target = Number((read("assets/js/landing.js").match(/const TARGET = (\d+)/) || [])[1]);
+    check("landing.js TARGET is the score the hero's own pillars produce",
+      target === expected, { target, expected, hs: Number(hs.toFixed(2)) });
+
+    // The band word beside the gauge is rendered by landing.js from
+    // DefiBands, but the note copy states the band in prose too.
+    const band = bandForScore(expected);
+    check(`the sample scores ${expected}, which is band "${band}"`,
+      BANDS.some((b) => b.key === band), band);
+
+    // coverageOf sums WEIGHTS, not pillars: four real pillars out of five is
+    // 90% here, not 80%. The note says so in words, so pin the number.
+    const coverage = Math.round(coverageOf(pillars) * 100);
+    const stated = Number((landing.match(/Coverage:\s*<b>(\d+)% live data<\/b>/) || [])[1]);
+    check("the hero's stated coverage is the weight sum, not the pillar count",
+      stated === coverage, { stated, coverage, naiveCount: 80 });
+
+    // An estimated pillar is held at the engine's neutral value. If the
+    // markup ever shows an estimated pillar at anything else, the page is
+    // claiming we estimated a specific number.
+    for (const [key, p] of Object.entries(pillars)) {
+      if (p.real) continue;
+      check(`estimated pillar ${key} sits at the neutral 50`, p.value === 50, p);
+    }
   }
 }
 

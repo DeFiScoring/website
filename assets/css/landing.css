@@ -623,41 +623,59 @@ code {
   display: flex; gap: 14px; flex-wrap: wrap;
   margin-bottom: 36px;
 }
+.ds-hero__sub b { color: var(--ds-text); font-weight: 700; }
+
+/* Figures, not a slogan row: each is a number in the mono face with a label
+   under it, so the three read as a spec strip rather than marketing. */
 .ds-hero__trust {
-  display: flex; gap: 14px; flex-wrap: wrap;
-  font-size: 13px; color: var(--ds-text-dim);
-  align-items: center;
+  display: flex; gap: 32px; flex-wrap: wrap;
+  align-items: flex-start;
+  padding-top: 26px;
+  border-top: 1px solid var(--ds-border);
 }
-.ds-hero__trust b { color: var(--ds-text); font-weight: 700; }
+.ds-figure { display: flex; flex-direction: column; gap: 5px; }
+.ds-figure__value {
+  font: 700 26px/1 var(--ds-font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: var(--ds-text);
+}
+.ds-figure__label {
+  font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.11em;
+  color: var(--ds-text-muted);
+}
 .ds-sep { color: var(--ds-text-muted); }
+
+/* ---------- Source attribution -------------------------------------------*/
+
+.ds-sources {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px;
+  margin: 22px 0 0;
+}
+.ds-sources__label {
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.14em;
+  color: var(--ds-text-muted);
+}
+.ds-sources__list {
+  font: 500 12px/1.6 var(--ds-font-mono);
+  color: var(--ds-text-dim);
+}
 
 /* ---------- Score gauge --------------------------------------------------*/
 
+/* Hairline, not glass. The card used to carry a blurred translucent fill, a
+   gradient border painted with a mask-composite trick, and a 120px cyan
+   bloom — three effects competing with the one thing on the page that has
+   earned a glow, which is the score itself. What is left is a 1px rule. */
 .ds-gauge {
   position: relative;
   display: flex; flex-direction: column; align-items: center; gap: 18px;
-  padding: 36px 30px;
-  background: var(--ds-surface);
+  padding: 32px 28px;
+  background: transparent;
   border: 1px solid var(--ds-border);
-  border-radius: var(--ds-radius-lg);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.05) inset,
-    0 30px 80px rgba(0, 0, 0, 0.5),
-    0 0 120px rgba(0, 245, 255, 0.08);
-}
-.ds-gauge::before {
-  content: "";
-  position: absolute; inset: -1px;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(135deg, rgba(0, 245, 255, 0.5), transparent 40%, rgba(168, 85, 247, 0.5));
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
+  border-radius: var(--ds-radius);
 }
 .ds-gauge__frame {
   position: relative;
@@ -710,6 +728,109 @@ code {
   font: 500 11px/1 var(--ds-font-mono);
   color: var(--ds-text-muted);
   letter-spacing: 0.04em;
+}
+
+/* ---------- Pillar strip -------------------------------------------------*/
+/* The derivation behind the number, on the face of the card. Values are
+   tabular mono so the column aligns; the estimated row is dimmed, dashed and
+   carries ◔ rather than ●, which is the same three-way treatment the product
+   uses (assets/js/score-bands.js SOURCES). Colour is never the only carrier. */
+
+.ds-pillars {
+  list-style: none; margin: 0; padding: 16px 0 0;
+  width: 100%;
+  display: flex; flex-direction: column; gap: 11px;
+  border-top: 1px solid var(--ds-border);
+}
+.ds-pillar {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas: "name value" "bar bar";
+  align-items: baseline;
+  gap: 5px 10px;
+}
+.ds-pillar__name {
+  grid-area: name;
+  font-size: 11.5px; color: var(--ds-text-dim);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ds-pillar__glyph { color: var(--ds-green); }
+.ds-pillar__value {
+  grid-area: value;
+  font: 500 11px/1 var(--ds-font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-text);
+}
+.ds-pillar__bar {
+  grid-area: bar;
+  display: block; height: 4px; border-radius: 2px;
+  background: #1a1a22; overflow: hidden;
+}
+.ds-pillar__bar i { display: block; height: 100%; border-radius: 2px; background: var(--ds-green); }
+
+.ds-pillar.is-estimated .ds-pillar__name,
+.ds-pillar.is-estimated .ds-pillar__value { color: var(--ds-text-muted); }
+.ds-pillar.is-estimated .ds-pillar__glyph { color: var(--ds-gold); }
+/* The estimated row keeps the same track as the others — outlining the whole
+   track with a dashed border made a 50 read as a full bar, which is the one
+   misreading this row exists to prevent. The FILL carries the difference: a
+   gold hatch rather than a solid, so the value stays measurable while never
+   looking like something we observed. */
+.ds-pillar.is-estimated .ds-pillar__bar i {
+  background-color: rgba(250, 204, 21, 0.14);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(250, 204, 21, 0.5) 0 2px,
+    transparent 2px 5px
+  );
+}
+.ds-pillar__tag {
+  margin-left: 4px;
+  font: 600 9px/1 var(--ds-font-mono);
+  text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--ds-gold);
+}
+
+.ds-gauge__note {
+  margin: 0; width: 100%;
+  font-size: 11.5px; line-height: 1.55;
+  color: var(--ds-text-muted);
+}
+.ds-gauge__note b { color: var(--ds-text-dim); font-weight: 600; }
+
+/* ---------- Honest-scoring guarantees ------------------------------------*/
+
+.ds-guarantees {
+  border-top: 1px solid var(--ds-border);
+  border-bottom: 1px solid var(--ds-border);
+}
+.ds-guarantees__grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+}
+.ds-guarantee {
+  padding: 26px 32px;
+  border-right: 1px solid var(--ds-border);
+}
+.ds-guarantee:last-child { border-right: 0; }
+.ds-guarantee__eyebrow {
+  font: 700 10px/1 var(--ds-font-mono);
+  text-transform: uppercase; letter-spacing: 0.16em;
+  color: var(--ds-cyan);
+  margin-bottom: 12px;
+}
+.ds-guarantee__title {
+  margin: 0 0 8px; font-size: 15px; font-weight: 700;
+  color: var(--ds-text); letter-spacing: -0.01em;
+}
+.ds-guarantee__body {
+  margin: 0; font-size: 13px; line-height: 1.62;
+  color: var(--ds-text-muted);
+}
+
+.ds-visually-hidden {
+  position: absolute; width: 1px; height: 1px;
+  margin: -1px; padding: 0; overflow: hidden;
+  clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
 }
 
 /* ---------- Trust bar ---------------------------------------------------*/
@@ -981,7 +1102,23 @@ code {
   .ds-cta__card { flex-direction: column; text-align: center; padding: 36px 28px; }
 }
 
+@media (max-width: 860px) {
+  /* Three hairline-separated columns become three stacked rows: the vertical
+     rule between them turns into a horizontal one so the band still reads as
+     a set rather than three loose paragraphs. */
+  .ds-guarantees__grid { grid-template-columns: 1fr; }
+  .ds-guarantee {
+    border-right: 0;
+    border-bottom: 1px solid var(--ds-border);
+    padding: 22px 0;
+  }
+  .ds-guarantee:last-child { border-bottom: 0; }
+}
+
 @media (max-width: 720px) {
+  .ds-hero__trust { gap: 22px 28px; }
+  .ds-figure__value { font-size: 22px; }
+  .ds-sources { flex-direction: column; gap: 4px; }
   .ds-nav__links { display: none; }
   .ds-nav__toggle { display: inline-flex; }
   .ds-nav__links.is-open {
