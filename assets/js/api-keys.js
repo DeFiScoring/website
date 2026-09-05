@@ -122,13 +122,25 @@
     });
   }
 
+  /* A blocking window.confirm()/prompt() holds the main thread for the user's
+     entire reading time. These are reached from a click handler, and INP runs
+     from the click to the next paint after its handlers finish, so opening one
+     inside that task charges the whole dwell to the interaction. Yield a frame
+     first: the interaction finishes and paints, and the dialog opens in a later
+     task where its duration belongs to nobody. */
+  function yieldToPaint() {
+    return new Promise(function (r) { requestAnimationFrame(function () { setTimeout(r, 0); }); });
+  }
+
   function onClick(e) {
     var revoke = e.target.closest("[data-revoke]");
     if (revoke) {
-      if (!window.confirm("Revoke this key? Any system using it will start receiving 401s immediately.")) return;
-      revoke.disabled = true;
-      api("/api/keys/" + revoke.getAttribute("data-revoke"), { method: "DELETE" })
-        .then(function () { state.freshKey = null; return load(); });
+      yieldToPaint().then(function () {
+        if (!window.confirm("Revoke this key? Any system using it will start receiving 401s immediately.")) return;
+        revoke.disabled = true;
+        api("/api/keys/" + revoke.getAttribute("data-revoke"), { method: "DELETE" })
+          .then(function () { state.freshKey = null; return load(); });
+      });
       return;
     }
     if (e.target.closest("[data-copy-key]")) {

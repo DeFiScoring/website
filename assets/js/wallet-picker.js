@@ -154,11 +154,27 @@
     }
   }
 
+  /* window.prompt() and window.confirm() block the main thread for as long as
+     the dialog is open -- i.e. for the user's entire reading-and-typing time.
+     Every caller below is reached from the document-level click delegate at the
+     bottom of this file, and INP runs from the click to the next paint after
+     its handlers finish, so a blocking dialog opened inside that task charges
+     the whole human dwell to the interaction. Because the listener is on
+     `document`, the browser attributes it to the root element -- which is
+     exactly the "html.translated-ltr" element Cloudflare measured at 1,000ms.
+
+     Yielding a frame first lets the interaction finish and paint; the dialog
+     then opens in a later task and its duration is nobody's INP. */
+  function yieldToPaint() {
+    return new Promise(function (r) { requestAnimationFrame(function () { setTimeout(r, 0); }); });
+  }
+
   async function doAddWallet() {
     if (!window.ethereum) {
       toast("Open MetaMask, switch to the wallet you want to add, then click Add wallet again.", "warn");
       return;
     }
+    await yieldToPaint();
     var label = window.prompt("Optional label for this wallet (e.g. \"Cold storage\"):", "");
     try {
       var addr = await window.DefiAuth.ensureMetamaskAccount();
@@ -182,6 +198,7 @@
   }
 
   async function doUnlink(addr) {
+    await yieldToPaint();
     if (!window.confirm("Unlink " + fmtAddr(addr) + "? You can re-link it later.")) return;
     try {
       await window.DefiAuth.unlinkWallet(addr);
@@ -198,6 +215,7 @@
    * reflects the new label without a page reload.
    */
   async function doRename(addr) {
+    await yieldToPaint();
     var snap = window.DefiAuth.snapshot();
     var current = (snap.wallets || []).find(function (w) { return w.wallet_address === addr; }) || {};
     var newLabel = window.prompt(

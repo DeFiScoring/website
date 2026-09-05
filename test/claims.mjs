@@ -328,6 +328,39 @@ check("no assets/js file bails when the worker URL is the empty same origin",
   }
 }
 
+/* ---------------------------------------------------------------------------
+ * No blocking dialog may run inside the task that handles a click.
+ *
+ * Cloudflare measured INP 100% Poor, with "html.translated-ltr" at 1,000ms.
+ * Attribution to the ROOT element is the tell: it means a document-level
+ * delegate handled the click. wallet-picker.js has one, and it called
+ * window.prompt() synchronously to ask for a wallet label -- and prompt()
+ * holds the main thread for as long as the human reads and types. INP runs to
+ * the next paint after the handler finishes, so the user's own dwell time was
+ * being charged to their own click. Measured in Chromium: 904ms, versus 16ms
+ * once the handler yields a frame first.
+ *
+ * So: any file that opens a blocking dialog must yield before it. The check is
+ * deliberately shallow -- it asks whether the file knows about yielding at all,
+ * not where -- because the precise call graph is not statically decidable here
+ * and a guard that overreaches gets deleted by the next person it annoys.
+ * ------------------------------------------------------------------------- */
+{
+  const stripped = (src) =>
+    src.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:])\/\/.*$/gm, "$1");
+  const offenders = [];
+  for (const file of fs.readdirSync(JS_DIR).filter((f) => f.endsWith(".js"))) {
+    // admin.js is a staff-only console behind auth, not a measured user surface.
+    if (file === "admin.js") continue;
+    const src = stripped(fs.readFileSync(path.join(JS_DIR, file), "utf8"));
+    if (!/\bwindow\.(confirm|prompt)\s*\(/.test(src)) continue;
+    if (/yieldToPaint/.test(src)) continue;
+    offenders.push(file);
+  }
+  check("no click handler opens a blocking dialog without yielding a frame first",
+    offenders.length === 0, offenders);
+}
+
 const failed = results.filter((r) => !r.ok).length;
 console.log(`\n${results.length - failed}/${results.length} passed`);
 process.exit(failed ? 1 : 0);
