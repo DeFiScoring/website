@@ -72,7 +72,6 @@ We reserve the right, at our sole discretion, to modify or replace these Terms a
 For questions about these Terms, please contact us at:
 
 - **Email:** admin@defiscoring.com
-- **GitHub:** [DeFiScoring/website](https://github.com/DeFiScoring/website)
 
 </div>
 

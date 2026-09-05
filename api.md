@@ -201,7 +201,7 @@ Stay updated in real-time. We can push data to your server whenever a protocol's
 
 ## 7. Status
 
-There is no separate status page yet. If you suspect a degradation, check the [GitHub repo](https://github.com/DeFiScoring/website) issues or email `admin@defiscoring.com`.
+There is no separate status page yet. If you suspect a degradation, email `admin@defiscoring.com`.
 
 </div>
 

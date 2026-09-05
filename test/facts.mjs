@@ -362,6 +362,36 @@ for (const page of ["_layouts/dashboard.html", "_layouts/default.html", "index.h
 }
 
 /* ---------------------------------------------------------------------------
+ * No first-party script in the dashboard layout may block the parser.
+ *
+ * Cloudflare Web Analytics measured LCP at P75 5,135ms and P90 9,916ms, with
+ * 50% of loads Poor, and INP 100% Poor. The cause was twelve render-blocking
+ * <script> tags per dashboard page: nine first-party files plus chart.js,
+ * jspdf and jspdf-autotable, none of them deferred, all executing before the
+ * page could paint. INP was the same wound: a main thread still busy running
+ * those scripts cannot answer a click, which is why two unrelated elements
+ * both measured ~1s.
+ *
+ * defer is what keeps this fixed AND what keeps the ordering check above
+ * meaningful: deferred scripts execute in document order, so score-bands.js
+ * still precedes its consumers. A single non-deferred tag reintroduced into
+ * this layout would jump ahead of every deferred one, so this guard is about
+ * correctness as much as speed.
+ * ------------------------------------------------------------------------- */
+{
+  const layout = read("_layouts/dashboard.html");
+  const tags = [...layout.matchAll(/<script\b[^>]*\ssrc=[^>]*?>/g)].map((m) => m[0]);
+  const firstParty = tags.filter((t) => t.includes("/assets/js/"));
+  check("the dashboard layout still loads first-party scripts", firstParty.length > 0,
+    { found: firstParty.length });
+  const blocking = firstParty
+    .filter((t) => !/\sdefer\b/.test(t) && !/\sasync\b/.test(t))
+    .map((t) => (t.match(/\/([A-Za-z0-9_-]+\.js)/) || [])[1]);
+  check("no first-party dashboard script blocks the parser", blocking.length === 0,
+    { blocking });
+}
+
+/* ---------------------------------------------------------------------------
  * The landing page's sample wallet must be arithmetic, not art direction.
  *
  * index.html's hero publishes five pillar values and a coverage figure, and

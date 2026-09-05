@@ -356,6 +356,15 @@
     const buttons = body.querySelectorAll("button");
     buttons.forEach((b) => { b.disabled = true; });
     errSlot.textContent = "";
+    // Let the disabled state actually reach the screen before handing control
+    // to the wallet. connectWith() ends in eth_requestAccounts, which parks on
+    // the extension for as long as the human takes to approve; INP runs to the
+    // next paint after this interaction, so anything still unpainted when that
+    // wait begins is charged to the click. Cloudflare measured this very
+    // element -- .defi-wm__pill inside #defi-wm-list -- at 1,288ms.
+    // Two frames: the first schedules the style change, the second runs after
+    // it has been presented.
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
     try {
       const addr = await window.DefiWallet.connectWith(rawProvider);
       if (!addr) {

@@ -214,6 +214,50 @@ function applySecurityHeaders(response) {
   });
 }
 
+/* Cache-Control for the static site.
+ *
+ * The ASSETS binding sets no Cache-Control of its own, so every asset was
+ * revalidated (or refetched) on each navigation -- which is what put the LCP
+ * P90 at ~9.9s for repeat visitors on a slow connection.
+ *
+ * Two classes, and the distinction is load-bearing:
+ *
+ *   - A URL carrying ?v=<build-stamp> is content-addressed by that stamp:
+ *     `site.time` changes on every Jekyll build, so a new deploy produces a
+ *     NEW url. The old one can therefore never go stale, and is safe to pin
+ *     for a year as immutable.
+ *   - An unversioned /assets/ URL is the same URL across deploys, so it gets
+ *     a short TTL plus stale-while-revalidate: fast on repeat views, and at
+ *     most 10 minutes behind a deploy.
+ *
+ * HTML is deliberately excluded from both. It carries the asset URLs, so
+ * caching the document is what would actually pin a user to an old build.
+ */
+function withAssetCaching(response, url) {
+  if (response.status !== 200) return response;
+  const h = new Headers(response.headers);
+  if (h.has("Cache-Control")) return response;
+
+  const type = h.get("Content-Type") || "";
+  if (type.includes("text/html")) {
+    h.set("Cache-Control", "public, max-age=0, must-revalidate");
+  } else if (url.pathname.startsWith("/assets/")) {
+    h.set(
+      "Cache-Control",
+      url.searchParams.has("v")
+        ? "public, max-age=31536000, immutable"
+        : "public, max-age=600, stale-while-revalidate=86400"
+    );
+  } else {
+    return response;
+  }
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: h,
+  });
+}
+
 // Final outgoing response middleware. Applied to *every* response by the
 // fetch() entrypoint so we don't have to plumb (request, env) into every
 // handler / json() helper. Order matters: CORS overrides must run AFTER
@@ -3236,7 +3280,7 @@ async function dispatch(request, env, peekedAddr) {
         // every static response. Workers config (`wrangler.jsonc`) does NOT
         // pick up `cloudflare.toml` headers, so the Worker is the source of
         // truth here.
-        return applySecurityHeaders(r);
+        return applySecurityHeaders(withAssetCaching(r, url));
       } catch (e) {
         return new Response("Asset error: " + (e && e.message ? e.message : String(e)), { status: 500 });
       }

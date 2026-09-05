@@ -159,10 +159,18 @@ sitemap: false
       [portalBtn, signoutBtn].forEach(function (b) { if (b) b.disabled = !isSignedIn; });
     }
 
-    if (window.DefiAuth && typeof window.DefiAuth.subscribe === 'function') {
-      window.DefiAuth.subscribe(syncAuthState);
+    // auth.js is deferred, so it has NOT run when this inline script parses --
+    // window.DefiAuth is still undefined here. Subscribing at parse time would
+    // silently no-op and the page would never react to a later sign-in or
+    // sign-out. Deferred scripts do run before DOMContentLoaded, so bind there.
+    function bindAuth() {
+      if (window.DefiAuth && typeof window.DefiAuth.subscribe === 'function') {
+        window.DefiAuth.subscribe(syncAuthState);
+      }
+      syncAuthState();
     }
-    document.addEventListener('DOMContentLoaded', syncAuthState);
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindAuth);
+    else bindAuth();
 
     // Open Stripe billing portal
     if (portalBtn) {

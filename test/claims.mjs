@@ -199,6 +199,31 @@ check("API docs do not reference the unprovisioned api.defiscoring.com host",
   !/api\.defiscoring\.com/.test(read("api.md")), null);
 check("API docs state the apex as the base URL",
   /Base URL[\s\S]{0,40}https:\/\/defiscoring\.com/.test(read("api.md")), null);
+
+/* --- the site does not link to its own source repository ------------------
+ *
+ * The repo link used to sit in the Contact sections of privacy.md and
+ * terms.md and in api.md's Status section. It is off the site by decision.
+ *
+ * This matches the ORG, not the host: github.com links to third-party audit
+ * reports (Aave, Uniswap, Trail of Bits, Spearbit) are citations the audit
+ * and RWA surfaces exist to show, and must keep working.
+ */
+{
+  const PUBLIC = [];
+  const walk = (dir) => {
+    for (const e of fs.readdirSync(path.join(root, dir), { withFileTypes: true })) {
+      if (e.name.startsWith(".") || e.name === "_site" || e.name === "node_modules") continue;
+      const rel = path.posix.join(dir, e.name);
+      if (e.isDirectory()) walk(rel);
+      else if (/\.(md|html)$/.test(e.name)) PUBLIC.push(rel);
+    }
+  };
+  walk(".");
+  const linking = PUBLIC.filter((f) => /github\.com\/DeFiScoring/i.test(read(f)));
+  check("no public page links to the DeFiScoring source repository",
+    linking.length === 0, linking);
+}
 /* The badge page has two kinds of URL and they are not interchangeable.
  *
  * Its previews are same-origin, so relative is right for those. Its SNIPPETS
@@ -269,6 +294,72 @@ for (const file of fs.readdirSync(JS_DIR).filter((f) => f.endsWith(".js"))) {
 }
 check("no assets/js file bails when the worker URL is the empty same origin",
   offenders.length === 0, offenders);
+
+/* ---------------------------------------------------------------------------
+ * The in-product upsell has to obey the same arithmetic as the pricing page.
+ *
+ * assets/js/onboarding.js renders a soft upgrade nudge after the user's fifth
+ * scan, and it advertised "25 alert rules" on Pro while TIERS.pro enforces 10.
+ * Every guard in this file read *.md and *.html, so a false claim living in a
+ * JavaScript string was invisible to all of them — and this one sat in the
+ * highest-intent surface on the site, the banner shown to a user immediately
+ * before they are asked to pay.
+ *
+ * Parse the numbers the banner actually states and hold each against the
+ * entitlement it names, so the copy cannot drift from TIERS again.
+ * ------------------------------------------------------------------------- */
+{
+  const onboarding = fs.readFileSync(path.join(root, "assets/js/onboarding.js"), "utf8");
+  const sub = (onboarding.match(/defi-nudge__sub">([^<]+)</) || [])[1] || "";
+  check("the upgrade nudge still states what Pro gives you", sub.length > 0, { sub });
+
+  const claims = [
+    ["history.days", /(\d+)-day history/],
+    ["wallets.linked", /(\d+) wallets?/],
+    ["alerts.rules", /(\d+) alert rules?/],
+  ];
+  for (const [key, re] of claims) {
+    const m = sub.match(re);
+    check(`the nudge names a ${key} figure`, !!m, { sub });
+    if (!m) continue;
+    check(`the nudge's ${key} figure is what TIERS.pro enforces`,
+      Number(m[1]) === TIERS.pro.limits[key],
+      { claimed: Number(m[1]), enforced: TIERS.pro.limits[key] });
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * No blocking dialog may run inside the task that handles a click.
+ *
+ * Cloudflare measured INP 100% Poor, with "html.translated-ltr" at 1,000ms.
+ * Attribution to the ROOT element is the tell: it means a document-level
+ * delegate handled the click. wallet-picker.js has one, and it called
+ * window.prompt() synchronously to ask for a wallet label -- and prompt()
+ * holds the main thread for as long as the human reads and types. INP runs to
+ * the next paint after the handler finishes, so the user's own dwell time was
+ * being charged to their own click. Measured in Chromium: 904ms, versus 16ms
+ * once the handler yields a frame first.
+ *
+ * So: any file that opens a blocking dialog must yield before it. The check is
+ * deliberately shallow -- it asks whether the file knows about yielding at all,
+ * not where -- because the precise call graph is not statically decidable here
+ * and a guard that overreaches gets deleted by the next person it annoys.
+ * ------------------------------------------------------------------------- */
+{
+  const stripped = (src) =>
+    src.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:])\/\/.*$/gm, "$1");
+  const offenders = [];
+  for (const file of fs.readdirSync(JS_DIR).filter((f) => f.endsWith(".js"))) {
+    // admin.js is a staff-only console behind auth, not a measured user surface.
+    if (file === "admin.js") continue;
+    const src = stripped(fs.readFileSync(path.join(JS_DIR, file), "utf8"));
+    if (!/\bwindow\.(confirm|prompt)\s*\(/.test(src)) continue;
+    if (/yieldToPaint/.test(src)) continue;
+    offenders.push(file);
+  }
+  check("no click handler opens a blocking dialog without yielding a frame first",
+    offenders.length === 0, offenders);
+}
 
 const failed = results.filter((r) => !r.ok).length;
 console.log(`\n${results.length - failed}/${results.length} passed`);

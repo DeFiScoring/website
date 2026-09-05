@@ -185,7 +185,18 @@
     return rows;
   }
 
+  /* A blocking window.confirm()/prompt() holds the main thread for the user's
+     entire reading time. These are reached from a click handler, and INP runs
+     from the click to the next paint after its handlers finish, so opening one
+     inside that task charges the whole dwell to the interaction. Yield a frame
+     first: the interaction finishes and paints, and the dialog opens in a later
+     task where its duration belongs to nobody. */
+  function yieldToPaint() {
+    return new Promise(function (r) { requestAnimationFrame(function () { setTimeout(r, 0); }); });
+  }
+
   async function deleteChannel(id) {
+    await yieldToPaint();
     if (!window.confirm("Remove this channel? Rules using it will fall back to your other channels.")) return;
     var r = await api("/api/alerts/channels/" + encodeURIComponent(id), { method: "DELETE" });
     if (!r.success) { toast("Couldn't remove: " + r.error, "bad"); return; }
@@ -415,6 +426,7 @@
   }
 
   async function deleteRule(id) {
+    await yieldToPaint();
     if (!window.confirm("Delete this rule?")) return;
     var r = await api("/api/alerts/rules/" + encodeURIComponent(id), { method: "DELETE" });
     if (!r.success) { toast("Couldn't delete: " + r.error, "bad"); return; }
