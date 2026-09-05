@@ -107,8 +107,21 @@
   font-size: 12px; cursor: pointer; text-decoration: underline;
 }
 .defi-ob__skip:hover { color: var(--defi-text-dim); }
+/* CLS: this spinner is swapped for .defi-ob__score-display when the async
+   /api/health-score call resolves. A scan takes seconds, so that swap lands
+   well outside the 500ms hadRecentInput window that excuses click-driven step
+   transitions -- it is counted. .defi-ob-backdrop centres the dialog, so any
+   height change moves the dialog's top edge and everything inside it, which is
+   what Cloudflare attributed 0.111 to #defi-ob. Reserving the replacement's
+   exact box makes the swap height-neutral:
+     .defi-ob__score-display = 24px padding x2 + a 56px/1 score line = 104px,
+     plus its 18px margin-bottom. */
 .defi-ob__loading {
   text-align: center; padding: 30px; color: var(--defi-text-dim); font-size: 13px;
+  box-sizing: border-box;
+  min-height: 104px;
+  margin-bottom: 18px;
+  display: flex; align-items: center; justify-content: center;
 }
 .defi-ob__loading::before {
   content: ""; display: inline-block; width: 18px; height: 18px;

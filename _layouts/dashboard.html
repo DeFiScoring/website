@@ -10,7 +10,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="{{ '/assets/favicon/apple-touch-icon.png' | relative_url }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ '/assets/css/dashboard.css' | relative_url }}?v={{ site.time | date: '%s' }}">
   <link rel="stylesheet" href="{{ '/assets/css/wallet-picker.css' | relative_url }}?v={{ site.time | date: '%s' }}">
   <link rel="stylesheet" href="{{ '/assets/css/onboarding.css' | relative_url }}?v={{ site.time | date: '%s' }}">
@@ -74,41 +74,65 @@
       polygon:  "{{ site.defi.rpc.polygon }}"
     };
   </script>
+  {%- comment -%}
+    Chart.js was loaded render-blocking on every dashboard page. Only these
+    sections actually construct a chart: home (dashboard-home.js), risk
+    (charts.js + dashboard-risk.js) and rwa-custody / rwa-chatbot /
+    audit-toolkit (custody-por.js). /dashboard/score/ draws its trend as
+    hand-rolled inline SVG and never touches Chart. Deferred, so it no longer
+    blocks the parser; deferred scripts still execute in document order, so
+    Chart is defined before the section script below that uses it.
+  {%- endcomment -%}
+  {%- assign chart_sections = "home,risk,rwa-custody,rwa-chatbot,audit-toolkit" | split: "," -%}
+  {%- if chart_sections contains page.dashboard_section %}
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"
           integrity="sha384-9nhczxUqK87bcKHh20fSQcTGD4qq5GhayNYSYWqwBkINBhOfQLg/P5HG5lF1urn4"
-          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"
-          integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk"
-          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+          crossorigin="anonymous" referrerpolicy="no-referrer" defer></script>
+  {%- endif %}
   <script src="{{ '/assets/js/billing-return.js' | relative_url }}?v={{ site.time | date: '%s' }}" defer></script>
-  <script src="{{ '/assets/js/auth.js' | relative_url }}?v={{ site.time | date: '%s' }}"></script>
+  <script src="{{ '/assets/js/auth.js' | relative_url }}?v={{ site.time | date: '%s' }}" defer></script>
   <script src="{{ '/assets/js/wallet-picker.js' | relative_url }}?v={{ site.time | date: '%s' }}" defer></script>
   <script src="{{ '/assets/js/onboarding.js' | relative_url }}?v={{ site.time | date: '%s' }}" defer></script>
+  {%- comment -%}
+    jsPDF + autotable were loaded render-blocking on every dashboard page to
+    serve a Download-PDF button on two of them. rwa-audit-toolkit.js and
+    rwa-chatbot.js read window.jspdf directly, so those two sections keep the
+    tags (deferred). risk-chatbot.js is deliberately NOT here: it already
+    lazy-loads jsPDF from this exact URL inside its own click handler
+    ("Lazy-load jsPDF only when the user clicks Download PDF"), so a global
+    tag only duplicated work it already does on demand.
+  {%- endcomment -%}
+  {%- assign pdf_sections = "audit-toolkit,rwa-chatbot" | split: "," -%}
+  {%- if pdf_sections contains page.dashboard_section %}
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"
+          integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk"
+          crossorigin="anonymous" referrerpolicy="no-referrer" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"
           integrity="sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3"
-          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="{{ '/assets/js/market-data-logger.js' | relative_url }}"></script>
-  <script src="{{ '/assets/js/wallet-connect.js' | relative_url }}"></script>
-  <script src="{{ '/assets/js/wallet-modal.js' | relative_url }}"></script>
+          crossorigin="anonymous" referrerpolicy="no-referrer" defer></script>
+  {%- endif %}
+  <script src="{{ '/assets/js/market-data-logger.js' | relative_url }}" defer></script>
+  <script src="{{ '/assets/js/wallet-connect.js' | relative_url }}" defer></script>
+  <script src="{{ '/assets/js/wallet-modal.js' | relative_url }}" defer></script>
   <!-- The score band vocabulary (label, colour, glyph, 300-850 fraction).
        Must precede every consumer below: defi-onchain.js, dashboard.js and the
        section scripts all read window.DefiBands, and DefiState.bandFor
        resolves it at call time, so a missing tag fails at first render rather
        than at load. test/facts.mjs pins this ordering. -->
-  <script src="{{ '/assets/js/score-bands.js' | relative_url }}"></script>
+  <script src="{{ '/assets/js/score-bands.js' | relative_url }}" defer></script>
   <!-- The gauge, coverage meter and contribution bars shared by /dashboard/
        and /dashboard/score/. Reads DefiBands, so it follows it. -->
-  <script src="{{ '/assets/js/score-credential.js' | relative_url }}"></script>
-  <script src="{{ '/assets/js/defi-onchain.js' | relative_url }}"></script>
-  <script src="{{ '/assets/js/dashboard.js' | relative_url }}"></script>
+  <script src="{{ '/assets/js/score-credential.js' | relative_url }}" defer></script>
+  <script src="{{ '/assets/js/defi-onchain.js' | relative_url }}" defer></script>
+  <script src="{{ '/assets/js/dashboard.js' | relative_url }}" defer></script>
   <script src="{{ '/assets/js/quota-widget.js' | relative_url }}?v={{ site.time | date: '%s' }}" defer></script>
   <script src="{{ '/assets/js/fiat-pref.js' | relative_url }}?v={{ site.time | date: '%s' }}" defer></script>
-  {% if page.dashboard_section == 'score' %}<script src="{{ '/assets/js/dashboard-score.js' | relative_url }}"></script>
+  {% if page.dashboard_section == 'score' %}<script src="{{ '/assets/js/dashboard-score.js' | relative_url }}" defer></script>
   <script src="{{ '/assets/js/score-breakdown.js' | relative_url }}?v={{ site.time | date: '%s' }}" defer></script>{% endif %}
-  {% if page.dashboard_section == 'portfolio' %}<script src="{{ '/assets/js/dashboard-portfolio.js' | relative_url }}"></script>{% endif %}
-  {% if page.dashboard_section == 'alerts' %}<script src="{{ '/assets/js/dashboard-alerts.js' | relative_url }}"></script>{% endif %}
-  {% if page.dashboard_section == 'watchlist' %}<script src="{{ '/assets/js/dashboard-watchlist.js' | relative_url }}"></script>{% endif %}
-  {% if page.dashboard_section == 'home' %}<script src="{{ '/assets/js/dashboard-home.js' | relative_url }}"></script>{% endif %}
+  {% if page.dashboard_section == 'portfolio' %}<script src="{{ '/assets/js/dashboard-portfolio.js' | relative_url }}" defer></script>{% endif %}
+  {% if page.dashboard_section == 'alerts' %}<script src="{{ '/assets/js/dashboard-alerts.js' | relative_url }}" defer></script>{% endif %}
+  {% if page.dashboard_section == 'watchlist' %}<script src="{{ '/assets/js/dashboard-watchlist.js' | relative_url }}" defer></script>{% endif %}
+  {% if page.dashboard_section == 'home' %}<script src="{{ '/assets/js/dashboard-home.js' | relative_url }}" defer></script>{% endif %}
   <script src="{{ '/assets/js/risk-badge.js' | relative_url }}" defer></script>
   <script src="{{ '/assets/js/ai-auditor.js' | relative_url }}" defer></script>
   <script src="{{ '/assets/js/watchlist.js' | relative_url }}" defer></script>

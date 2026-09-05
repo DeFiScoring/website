@@ -367,7 +367,7 @@
       '<div class="defi-ob__upsell">' +
         '<h4>Want longer history & more wallets?</h4>' +
         '<ul>' +
-          '<li><strong>Pro $15/mo</strong> — 30-day history, 3 wallets, 25 alert rules</li>' +
+          '<li><strong>Pro $15/mo</strong> — 30-day history, 3 wallets, 10 alert rules</li>' +
           '<li><strong>Plus $49/mo</strong> — 1-year history, 10 wallets, Telegram + webhook</li>' +
         '</ul>' +
       '</div>' +
@@ -416,12 +416,27 @@
       '<span class="defi-nudge__icon">⚡</span>' +
       '<div class="defi-nudge__body">' +
         '<div class="defi-nudge__title">You\'re an active user — unlock more with Pro</div>' +
-        '<div class="defi-nudge__sub">Get 30-day history, 3 wallets, 25 alert rules, and Telegram delivery.</div>' +
+        '<div class="defi-nudge__sub">Get 30-day history, 3 wallets, 10 alert rules, and Telegram delivery.</div>' +
       '</div>' +
       '<a href="/pricing/" class="defi-nudge__cta">Upgrade →</a>' +
       '<button type="button" class="defi-nudge__close" aria-label="Dismiss">×</button>';
+    // Inserting a banner ABOVE existing content pushes everything below it
+    // down, which is a layout shift for every element on the page. Paint it
+    // collapsed, then expand on the next frame: the expansion is a height
+    // transition, and transitions the browser can attribute to an animation
+    // are not counted as unexpected layout shift.
+    banner.style.overflow = "hidden";
+    banner.style.maxHeight = "0px";
+    banner.style.opacity = "0";
     if (topbar && topbar.parentNode) topbar.parentNode.insertBefore(banner, topbar.nextSibling);
     else host.insertBefore(banner, host.firstChild);
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        banner.style.transition = "max-height 220ms ease, opacity 220ms ease";
+        banner.style.maxHeight = banner.scrollHeight + "px";
+        banner.style.opacity = "1";
+      });
+    });
     banner.querySelector(".defi-nudge__close").addEventListener("click", function () {
       writeJson(KEY_NUDGE, { dismissed_at: Date.now() });
       banner.remove();

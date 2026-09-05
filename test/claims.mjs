@@ -295,6 +295,39 @@ for (const file of fs.readdirSync(JS_DIR).filter((f) => f.endsWith(".js"))) {
 check("no assets/js file bails when the worker URL is the empty same origin",
   offenders.length === 0, offenders);
 
+/* ---------------------------------------------------------------------------
+ * The in-product upsell has to obey the same arithmetic as the pricing page.
+ *
+ * assets/js/onboarding.js renders a soft upgrade nudge after the user's fifth
+ * scan, and it advertised "25 alert rules" on Pro while TIERS.pro enforces 10.
+ * Every guard in this file read *.md and *.html, so a false claim living in a
+ * JavaScript string was invisible to all of them — and this one sat in the
+ * highest-intent surface on the site, the banner shown to a user immediately
+ * before they are asked to pay.
+ *
+ * Parse the numbers the banner actually states and hold each against the
+ * entitlement it names, so the copy cannot drift from TIERS again.
+ * ------------------------------------------------------------------------- */
+{
+  const onboarding = fs.readFileSync(path.join(root, "assets/js/onboarding.js"), "utf8");
+  const sub = (onboarding.match(/defi-nudge__sub">([^<]+)</) || [])[1] || "";
+  check("the upgrade nudge still states what Pro gives you", sub.length > 0, { sub });
+
+  const claims = [
+    ["history.days", /(\d+)-day history/],
+    ["wallets.linked", /(\d+) wallets?/],
+    ["alerts.rules", /(\d+) alert rules?/],
+  ];
+  for (const [key, re] of claims) {
+    const m = sub.match(re);
+    check(`the nudge names a ${key} figure`, !!m, { sub });
+    if (!m) continue;
+    check(`the nudge's ${key} figure is what TIERS.pro enforces`,
+      Number(m[1]) === TIERS.pro.limits[key],
+      { claimed: Number(m[1]), enforced: TIERS.pro.limits[key] });
+  }
+}
+
 const failed = results.filter((r) => !r.ok).length;
 console.log(`\n${results.length - failed}/${results.length} passed`);
 process.exit(failed ? 1 : 0);
