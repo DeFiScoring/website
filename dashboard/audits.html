@@ -79,6 +79,25 @@ description: Browse the leading smart contract audit firms and their published r
   }
   .audit-firm__cta:hover { color: var(--defi-accent-2); }
 
+  .audit-filter__btn {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--defi-border);
+    background: transparent;
+    color: var(--defi-text-dim);
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .audit-filter__btn:hover { background: rgba(255, 255, 255, 0.04); }
+  .audit-filter__btn.is-active {
+    color: var(--defi-accent);
+    border-color: rgba(0, 245, 255, 0.4);
+    background: rgba(0, 245, 255, 0.06);
+  }
+  .audit-firm[hidden] { display: none; }
+
   .recent-audits {
     width: 100%;
     border-collapse: collapse;
@@ -150,9 +169,20 @@ description: Browse the leading smart contract audit firms and their published r
 
 <section class="defi-section" style="margin-bottom:18px">
   <div class="defi-card__title" style="margin-bottom:12px">Audit firms</div>
+  <div class="audit-filter" role="group" aria-label="Filter audit firms by specialty" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+    <button type="button" class="audit-filter__btn is-active" data-chip-filter="">All</button>
+    <button type="button" class="audit-filter__btn" data-chip-filter="evm">EVM</button>
+    <button type="button" class="audit-filter__btn" data-chip-filter="defi">DeFi</button>
+    <button type="button" class="audit-filter__btn" data-chip-filter="solana">Solana / Move</button>
+    <button type="button" class="audit-filter__btn" data-chip-filter="zk">Zero-knowledge</button>
+    <button type="button" class="audit-filter__btn" data-chip-filter="formal verification">Formal verification</button>
+    <button type="button" class="audit-filter__btn" data-chip-filter="contest">Contests</button>
+    <button type="button" class="audit-filter__btn" data-chip-filter="monitoring">Monitoring / forensics</button>
+  </div>
+  <p class="audit-filter__count" style="margin:0 0 12px;color:var(--defi-text-dim);font-size:12px" data-audit-count></p>
   <div class="audit-grid">
 
-    <div class="defi-card audit-firm">
+    <div class="defi-card audit-firm" data-chips="evm,cryptography,formal methods">
       <div class="audit-firm__head">
         <h3 class="audit-firm__name">Trail of Bits</h3>
         <span class="audit-firm__tier audit-firm__tier--tier1">Tier 1</span>
@@ -169,7 +199,7 @@ description: Browse the leading smart contract audit firms and their published r
       <a class="audit-firm__cta" href="https://github.com/trailofbits/publications" target="_blank" rel="noopener">View reports →</a>
     </div>
 
-    <div class="defi-card audit-firm">
+    <div class="defi-card audit-firm" data-chips="evm,defi,bridges">
       <div class="audit-firm__head">
         <h3 class="audit-firm__name">OpenZeppelin</h3>
         <span class="audit-firm__tier audit-firm__tier--tier1">Tier 1</span>
@@ -186,7 +216,7 @@ description: Browse the leading smart contract audit firms and their published r
       <a class="audit-firm__cta" href="https://blog.openzeppelin.com/security-audits" target="_blank" rel="noopener">View reports →</a>
     </div>
 
-    <div class="defi-card audit-firm">
+    <div class="defi-card audit-firm" data-chips="evm,defi,tooling">
       <div class="audit-firm__head">
         <h3 class="audit-firm__name">ConsenSys Diligence</h3>
         <span class="audit-firm__tier audit-firm__tier--tier1">Tier 1</span>
@@ -203,7 +233,7 @@ description: Browse the leading smart contract audit firms and their published r
       <a class="audit-firm__cta" href="https://consensys.io/diligence/audits/" target="_blank" rel="noopener">View reports →</a>
     </div>
 
-    <div class="defi-card audit-firm">
+    <div class="defi-card audit-firm" data-chips="evm,defi,rwa">
       <div class="audit-firm__head">
         <h3 class="audit-firm__name">Spearbit</h3>
         <span class="audit-firm__tier audit-firm__tier--tier1">Tier 1</span>
@@ -220,7 +250,7 @@ description: Browse the leading smart contract audit firms and their published r
       <a class="audit-firm__cta" href="https://github.com/spearbit/portfolio" target="_blank" rel="noopener">View reports →</a>
     </div>
 
-    <div class="defi-card audit-firm">
+    <div class="defi-card audit-firm" data-chips="evm,crowd-sourced">
       <div class="audit-firm__head">
         <h3 class="audit-firm__name">Code4rena</h3>
         <span class="audit-firm__tier">Contest</span>
@@ -236,7 +266,7 @@ description: Browse the leading smart contract audit firms and their published r
       <a class="audit-firm__cta" href="https://code4rena.com/reports" target="_blank" rel="noopener">View reports →</a>
     </div>
 
-    <div class="defi-card audit-firm">
+    <div class="defi-card audit-firm" data-chips="evm,rwa">
       <div class="audit-firm__head">
         <h3 class="audit-firm__name">Cantina</h3>
         <span class="audit-firm__tier">Contest</span>
@@ -252,7 +282,7 @@ description: Browse the leading smart contract audit firms and their published r
       <a class="audit-firm__cta" href="https://cantina.xyz/portfolio" target="_blank" rel="noopener">View reports →</a>
     </div>
 
-    <div class="defi-card audit-firm">
+    <div class="defi-card audit-firm" data-chips="evm,insurance">
       <div class="audit-firm__head">
         <h3 class="audit-firm__name">Sherlock</h3>
         <span class="audit-firm__tier">Contest + Coverage</span>
@@ -268,7 +298,7 @@ description: Browse the leading smart contract audit firms and their published r
       <a class="audit-firm__cta" href="https://audits.sherlock.xyz/contests" target="_blank" rel="noopener">View reports →</a>
     </div>
 
-    <div class="defi-card audit-firm">
+    <div class="defi-card audit-firm" data-chips="formal verification,defi">
       <div class="audit-firm__head">
         <h3 class="audit-firm__name">Certora</h3>
         <span class="audit-firm__tier audit-firm__tier--tier1">Formal</span>
@@ -284,7 +314,7 @@ description: Browse the leading smart contract audit firms and their published r
       <a class="audit-firm__cta" href="https://www.certora.com/reports" target="_blank" rel="noopener">View reports →</a>
     </div>
 
-    <div class="defi-card audit-firm">
+    <div class="defi-card audit-firm" data-chips="evm,multi-chain">
       <div class="audit-firm__head">
         <h3 class="audit-firm__name">Quantstamp</h3>
         <span class="audit-firm__tier">Tier 2</span>
@@ -298,6 +328,245 @@ description: Browse the leading smart contract audit firms and their published r
         <span class="audit-firm__chip">Multi-chain</span>
       </div>
       <a class="audit-firm__cta" href="https://certificate.quantstamp.com/" target="_blank" rel="noopener">View reports →</a>
+    </div>
+
+    <div class="defi-card audit-firm" data-chips="defi,formal verification,evm">
+      <div class="audit-firm__head">
+        <h3 class="audit-firm__name">ChainSecurity</h3>
+        <span class="audit-firm__tier audit-firm__tier--tier1">Tier 1</span>
+      </div>
+      <p class="audit-firm__desc">
+        Zurich-based formal-verification specialists focused on DeFi protocol math and economic invariants, not just memory safety.
+      </p>
+      <div class="audit-firm__meta">
+        <span class="audit-firm__chip">DeFi</span>
+        <span class="audit-firm__chip">Formal verification</span>
+        <span class="audit-firm__chip">EVM</span>
+      </div>
+      <a class="audit-firm__cta" href="https://www.chainsecurity.com/security-audits" target="_blank" rel="noopener">View reports →</a>
+    </div>
+
+    <div class="defi-card audit-firm" data-chips="defi,evm,tooling">
+      <div class="audit-firm__head">
+        <h3 class="audit-firm__name">Cyfrin</h3>
+        <span class="audit-firm__tier audit-firm__tier--tier1">Tier 1</span>
+      </div>
+      <p class="audit-firm__desc">
+        DeFi-focused auditors and developer-tooling authors (Aderyn, Cyfrin Updraft) with deep EVM bytecode expertise.
+      </p>
+      <div class="audit-firm__meta">
+        <span class="audit-firm__chip">DeFi</span>
+        <span class="audit-firm__chip">EVM bytecode</span>
+        <span class="audit-firm__chip">Tooling</span>
+      </div>
+      <a class="audit-firm__cta" href="https://www.cyfrin.io/audits" target="_blank" rel="noopener">View reports →</a>
+    </div>
+
+    <div class="defi-card audit-firm" data-chips="solana,move,zk,evm">
+      <div class="audit-firm__head">
+        <h3 class="audit-firm__name">Zellic</h3>
+        <span class="audit-firm__tier audit-firm__tier--tier1">Tier 1</span>
+      </div>
+      <p class="audit-firm__desc">
+        Full-stack Web3 security firm spanning Solana, Move, Cosmos and zero-knowledge systems alongside EVM.
+      </p>
+      <div class="audit-firm__meta">
+        <span class="audit-firm__chip">Solana</span>
+        <span class="audit-firm__chip">Move</span>
+        <span class="audit-firm__chip">Zero-knowledge</span>
+      </div>
+      <a class="audit-firm__cta" href="https://www.zellic.io/reports" target="_blank" rel="noopener">View reports →</a>
+    </div>
+
+    <div class="defi-card audit-firm" data-chips="solana,move,bridges">
+      <div class="audit-firm__head">
+        <h3 class="audit-firm__name">OtterSec</h3>
+        <span class="audit-firm__tier audit-firm__tier--tier1">Tier 1</span>
+      </div>
+      <p class="audit-firm__desc">
+        Security firm specializing in Solana, Aptos/Sui Move and cross-chain bridge audits.
+      </p>
+      <div class="audit-firm__meta">
+        <span class="audit-firm__chip">Solana</span>
+        <span class="audit-firm__chip">Move</span>
+        <span class="audit-firm__chip">Bridges</span>
+      </div>
+      <a class="audit-firm__cta" href="https://osec.io/audits" target="_blank" rel="noopener">View reports →</a>
+    </div>
+
+    <div class="defi-card audit-firm" data-chips="defi,pen testing,infra,monitoring">
+      <div class="audit-firm__head">
+        <h3 class="audit-firm__name">Halborn</h3>
+        <span class="audit-firm__tier">Tier 2</span>
+      </div>
+      <p class="audit-firm__desc">
+        Full-stack security firm covering smart contracts, penetration testing and cloud/DevOps infrastructure for exchanges and wallets.
+      </p>
+      <div class="audit-firm__meta">
+        <span class="audit-firm__chip">DeFi</span>
+        <span class="audit-firm__chip">Pen testing</span>
+        <span class="audit-firm__chip">Infra</span>
+      </div>
+      <a class="audit-firm__cta" href="https://www.halborn.com/audits" target="_blank" rel="noopener">View reports →</a>
+    </div>
+
+    <div class="defi-card audit-firm" data-chips="defi,evm,liquid staking">
+      <div class="audit-firm__head">
+        <h3 class="audit-firm__name">MixBytes</h3>
+        <span class="audit-firm__tier audit-firm__tier--tier1">Tier 1</span>
+      </div>
+      <p class="audit-firm__desc">
+        DeFi-specialist auditors focused on liquid staking, consensus logic and cross-chain protocols.
+      </p>
+      <div class="audit-firm__meta">
+        <span class="audit-firm__chip">Liquid staking</span>
+        <span class="audit-firm__chip">DeFi</span>
+        <span class="audit-firm__chip">EVM</span>
+      </div>
+      <a class="audit-firm__cta" href="https://mixbytes.io/audits" target="_blank" rel="noopener">View reports →</a>
+    </div>
+
+    <div class="defi-card audit-firm" data-chips="evm,ethereum core,consensus clients">
+      <div class="audit-firm__head">
+        <h3 class="audit-firm__name">Sigma Prime</h3>
+        <span class="audit-firm__tier audit-firm__tier--tier1">Tier 1</span>
+      </div>
+      <p class="audit-firm__desc">
+        Ethereum core-infrastructure security firm; authors of the Lighthouse consensus client alongside protocol audits.
+      </p>
+      <div class="audit-firm__meta">
+        <span class="audit-firm__chip">Consensus clients</span>
+        <span class="audit-firm__chip">Ethereum core</span>
+        <span class="audit-firm__chip">EVM</span>
+      </div>
+      <a class="audit-firm__cta" href="https://sigmaprime.io/audits" target="_blank" rel="noopener">View reports →</a>
+    </div>
+
+    <div class="defi-card audit-firm" data-chips="evm,static analysis,decompilation">
+      <div class="audit-firm__head">
+        <h3 class="audit-firm__name">Dedaub</h3>
+        <span class="audit-firm__tier audit-firm__tier--tier1">Tier 1</span>
+      </div>
+      <p class="audit-firm__desc">
+        Program-analysis specialists offering bytecode decompilation and static analysis on top of manual review.
+      </p>
+      <div class="audit-firm__meta">
+        <span class="audit-firm__chip">Static analysis</span>
+        <span class="audit-firm__chip">Decompilation</span>
+        <span class="audit-firm__chip">EVM</span>
+      </div>
+      <a class="audit-firm__cta" href="https://www.dedaub.com/audits" target="_blank" rel="noopener">View reports →</a>
+    </div>
+
+    <div class="defi-card audit-firm" data-chips="zk,rollups,infra">
+      <div class="audit-firm__head">
+        <h3 class="audit-firm__name">Hexens</h3>
+        <span class="audit-firm__tier audit-firm__tier--tier1">Tier 1</span>
+      </div>
+      <p class="audit-firm__desc">
+        Security firm covering zero-knowledge cryptography, rollups and complex infrastructure audits.
+      </p>
+      <div class="audit-firm__meta">
+        <span class="audit-firm__chip">Zero-knowledge</span>
+        <span class="audit-firm__chip">Rollups</span>
+        <span class="audit-firm__chip">Infra</span>
+      </div>
+      <a class="audit-firm__cta" href="https://hexens.io/audits" target="_blank" rel="noopener">View reports →</a>
+    </div>
+
+    <div class="defi-card audit-firm" data-chips="defi,invariant testing,evm">
+      <div class="audit-firm__head">
+        <h3 class="audit-firm__name">Statemind</h3>
+        <span class="audit-firm__tier audit-firm__tier--tier1">Tier 1</span>
+      </div>
+      <p class="audit-firm__desc">
+        DeFi protocol-mechanics specialists focused on invariant testing and state-machine correctness.
+      </p>
+      <div class="audit-firm__meta">
+        <span class="audit-firm__chip">Invariant testing</span>
+        <span class="audit-firm__chip">DeFi</span>
+        <span class="audit-firm__chip">Solidity</span>
+      </div>
+      <a class="audit-firm__cta" href="https://statemind.io/audits" target="_blank" rel="noopener">View reports →</a>
+    </div>
+
+    <div class="defi-card audit-firm" data-chips="defi,monitoring,forks">
+      <div class="audit-firm__head">
+        <h3 class="audit-firm__name">BlockSec</h3>
+        <span class="audit-firm__tier">Tier 2</span>
+      </div>
+      <p class="audit-firm__desc">
+        Runs the Phalcon real-time attack-blocking platform alongside direct smart-contract audits, with a focus on DeFi forks.
+      </p>
+      <div class="audit-firm__meta">
+        <span class="audit-firm__chip">DeFi</span>
+        <span class="audit-firm__chip">Monitoring</span>
+        <span class="audit-firm__chip">Forks</span>
+      </div>
+      <a class="audit-firm__cta" href="https://blocksec.com/audit" target="_blank" rel="noopener">View reports →</a>
+    </div>
+
+    <div class="defi-card audit-firm" data-chips="forensics,monitoring,defi">
+      <div class="audit-firm__head">
+        <h3 class="audit-firm__name">PeckShield</h3>
+        <span class="audit-firm__tier">Tier 2</span>
+      </div>
+      <p class="audit-firm__desc">
+        Incident-response and forensics firm alongside manual audits, known for rapid post-exploit analysis.
+      </p>
+      <div class="audit-firm__meta">
+        <span class="audit-firm__chip">Forensics</span>
+        <span class="audit-firm__chip">Incident response</span>
+        <span class="audit-firm__chip">DeFi</span>
+      </div>
+      <a class="audit-firm__cta" href="https://peckshield.com/audit-reports" target="_blank" rel="noopener">View reports →</a>
+    </div>
+
+    <div class="defi-card audit-firm" data-chips="exchanges,wallets,aml">
+      <div class="audit-firm__head">
+        <h3 class="audit-firm__name">SlowMist</h3>
+        <span class="audit-firm__tier">Tier 2</span>
+      </div>
+      <p class="audit-firm__desc">
+        APAC-focused security firm covering exchanges, wallets and AML/compliance alongside smart-contract audits.
+      </p>
+      <div class="audit-firm__meta">
+        <span class="audit-firm__chip">Exchanges</span>
+        <span class="audit-firm__chip">Wallets</span>
+        <span class="audit-firm__chip">AML</span>
+      </div>
+      <a class="audit-firm__cta" href="https://www.slowmist.com/report.html" target="_blank" rel="noopener">View reports →</a>
+    </div>
+
+    <div class="defi-card audit-firm" data-chips="automated scanning,multi-chain,evm">
+      <div class="audit-firm__head">
+        <h3 class="audit-firm__name">CertiK</h3>
+        <span class="audit-firm__tier">Tier 2</span>
+      </div>
+      <p class="audit-firm__desc">
+        High-volume automated scanning (Skynet) paired with manual review; publishes a public security-score leaderboard.
+      </p>
+      <div class="audit-firm__meta">
+        <span class="audit-firm__chip">Automated scanning</span>
+        <span class="audit-firm__chip">Multi-chain</span>
+      </div>
+      <a class="audit-firm__cta" href="https://skynet.certik.com/leaderboards/audits" target="_blank" rel="noopener">View reports →</a>
+    </div>
+
+    <div class="defi-card audit-firm" data-chips="defi,bug bounties,proof of reserve">
+      <div class="audit-firm__head">
+        <h3 class="audit-firm__name">Hacken</h3>
+        <span class="audit-firm__tier">Tier 2</span>
+      </div>
+      <p class="audit-firm__desc">
+        Full-stack Web3 security firm offering audits, bug-bounty management and proof-of-reserve attestations.
+      </p>
+      <div class="audit-firm__meta">
+        <span class="audit-firm__chip">Bug bounties</span>
+        <span class="audit-firm__chip">Proof of reserve</span>
+        <span class="audit-firm__chip">DeFi</span>
+      </div>
+      <a class="audit-firm__cta" href="https://hacken.io/audits" target="_blank" rel="noopener">View reports →</a>
     </div>
 
   </div>
@@ -423,3 +692,41 @@ description: Browse the leading smart contract audit firms and their published r
     </div>
   </div>
 </section>
+
+<script>
+(function () {
+  /* Client-side only: filters the static firm cards already in the DOM by the
+     data-chips attribute set on each card. No network request, no backend —
+     this page has never had one, and the firm directory is authored HTML, not
+     data from an API. Clicking a filter never changes which reports exist,
+     only which cards are visible. */
+  var buttons = document.querySelectorAll(".audit-filter__btn");
+  var cards = document.querySelectorAll(".audit-firm[data-chips]");
+  var countEl = document.querySelector("[data-audit-count]");
+
+  function apply(filter) {
+    var shown = 0;
+    cards.forEach(function (card) {
+      var chips = card.dataset.chips || "";
+      var match = !filter || chips.indexOf(filter) !== -1;
+      card.hidden = !match;
+      if (match) shown++;
+    });
+    if (countEl) {
+      countEl.textContent = filter
+        ? "Showing " + shown + " of " + cards.length + " firms"
+        : "Showing all " + cards.length + " firms";
+    }
+  }
+
+  buttons.forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      buttons.forEach(function (b) { b.classList.remove("is-active"); });
+      btn.classList.add("is-active");
+      apply(btn.dataset.chipFilter || "");
+    });
+  });
+
+  apply("");
+})();
+</script>
