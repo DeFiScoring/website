@@ -199,6 +199,31 @@ check("API docs do not reference the unprovisioned api.defiscoring.com host",
   !/api\.defiscoring\.com/.test(read("api.md")), null);
 check("API docs state the apex as the base URL",
   /Base URL[\s\S]{0,40}https:\/\/defiscoring\.com/.test(read("api.md")), null);
+
+/* --- the site does not link to its own source repository ------------------
+ *
+ * The repo link used to sit in the Contact sections of privacy.md and
+ * terms.md and in api.md's Status section. It is off the site by decision.
+ *
+ * This matches the ORG, not the host: github.com links to third-party audit
+ * reports (Aave, Uniswap, Trail of Bits, Spearbit) are citations the audit
+ * and RWA surfaces exist to show, and must keep working.
+ */
+{
+  const PUBLIC = [];
+  const walk = (dir) => {
+    for (const e of fs.readdirSync(path.join(root, dir), { withFileTypes: true })) {
+      if (e.name.startsWith(".") || e.name === "_site" || e.name === "node_modules") continue;
+      const rel = path.posix.join(dir, e.name);
+      if (e.isDirectory()) walk(rel);
+      else if (/\.(md|html)$/.test(e.name)) PUBLIC.push(rel);
+    }
+  };
+  walk(".");
+  const linking = PUBLIC.filter((f) => /github\.com\/DeFiScoring/i.test(read(f)));
+  check("no public page links to the DeFiScoring source repository",
+    linking.length === 0, linking);
+}
 /* The badge page has two kinds of URL and they are not interchangeable.
  *
  * Its previews are same-origin, so relative is right for those. Its SNIPPETS

@@ -82,7 +82,6 @@ We may update our Privacy Policy from time to time. We will notify you of any ch
 For any privacy-related questions, please reach out:
 
 - **Email:** admin@defiscoring.com
-- **GitHub:** [DeFiScoring/website](https://github.com/DeFiScoring/website)
 
 We do not sell user data. Period.
 
