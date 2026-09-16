@@ -202,6 +202,44 @@ function siwe({ address, nonce }) {
   check("the */15 cron trigger dispatches a rescore",
     countAfter === countBefore + 1, { countBefore, countAfter });
 
+  // ---- a broken watched-set query REPORTS; it does not reject.
+  // Production ran for weeks with migration 0012 unapplied, so this exact
+  // query threw "no such table: watched_wallets" every 15 minutes. The caller
+  // is ctx.waitUntil(), so the rejection was unhandled and Cloudflare recorded
+  // the whole invocation as outcome:"exception" — surfacing a second, useless
+  // log line whose entire message was the cron expression "*/15 * * * *".
+  // Every other failure in this function returns {ok:false}; this one must too.
+  const brokenDb = {
+    HEALTH_DB: {
+      prepare() {
+        return { first() { throw new Error("D1_ERROR: no such table: watched_wallets: SQLITE_ERROR"); } };
+      },
+    },
+  };
+  let threw = false;
+  let broken;
+  try {
+    broken = await runScheduledRescore(brokenDb, { waitUntil() {} });
+  } catch (e) {
+    threw = true;
+  }
+  check("a failing watched-set query returns instead of throwing", !threw, { threw });
+  check("and it reports db_query_failed with the D1 message kept",
+    !!broken && broken.ok === false && broken.error === "db_query_failed" &&
+      /watched_wallets/.test(broken.detail || ""),
+    broken);
+
+  // ---- and the cron dispatch contains a throwing job rather than letting the
+  // rejection escape into waitUntil, which is what made the invocation itself
+  // an exception rather than a logged failure.
+  let escaped = null;
+  let tracked = Promise.resolve();
+  await worker.scheduled({ cron: "*/15 * * * *" }, brokenDb, {
+    waitUntil(p) { tracked = p; },
+  });
+  await tracked.catch((e) => { escaped = e; });
+  check("the */15 dispatch does not let a job rejection escape", escaped === null, escaped);
+
   globalThis.fetch = realFetch;
   const failed = results.filter((r) => !r.ok);
   console.log(`\n${results.length - failed.length}/${results.length} passed`);

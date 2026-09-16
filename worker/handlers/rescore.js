@@ -31,18 +31,37 @@ export async function runScheduledRescore(env, ctx) {
   // Stalest wallet that is either covered by an active alert rule or on
   // someone's watchlist — the union IS the "watched" set. SQLite sorts NULL
   // first on ASC, so never-scored wallets win, then the oldest scan.
-  const row = await env.HEALTH_DB.prepare(
-    `SELECT w.wallet AS wallet,
-            (SELECT MAX(h.computed_at) FROM health_scores h
-              WHERE h.wallet = w.wallet) AS last_scored_at
-     FROM (
-       SELECT DISTINCT wallet_address AS wallet FROM alert_rules WHERE is_active = 1
-       UNION
-       SELECT DISTINCT wallet FROM watched_wallets
-     ) w
-     ORDER BY last_scored_at ASC
-     LIMIT 1`
-  ).first();
+  // Every other failure in this function RETURNS {ok:false,...}; only this one
+  // threw. The caller is `ctx.waitUntil(runScheduledRescore(env, ctx))` in the
+  // scheduled() handler, so a rejection here is an unhandled rejection that
+  // marks the whole invocation `outcome: "exception"` — which is exactly what
+  // production did every 15 minutes when watched_wallets was missing from D1
+  // (migration 0012 had never been applied). Two log lines, one cause.
+  //
+  // This is NOT here to make schema drift quiet. A missing table still logs at
+  // error level with the D1 message intact; it just reports through the same
+  // channel as every other failure instead of taking the invocation down with
+  // it, and it no longer hides the alert_rules half of the UNION behind the
+  // watched_wallets half.
+  let row;
+  try {
+    row = await env.HEALTH_DB.prepare(
+      `SELECT w.wallet AS wallet,
+              (SELECT MAX(h.computed_at) FROM health_scores h
+                WHERE h.wallet = w.wallet) AS last_scored_at
+       FROM (
+         SELECT DISTINCT wallet_address AS wallet FROM alert_rules WHERE is_active = 1
+         UNION
+         SELECT DISTINCT wallet FROM watched_wallets
+       ) w
+       ORDER BY last_scored_at ASC
+       LIMIT 1`
+    ).first();
+  } catch (e) {
+    const detail = (e && e.message) || String(e);
+    console.error("[rescore] could not read the watched set:", detail);
+    return { ok: false, error: "db_query_failed", detail };
+  }
 
   if (!row) return { ok: true, skipped: "no_watched_wallets" };
   if (row.last_scored_at != null && Date.now() - row.last_scored_at < minAgeMs) {

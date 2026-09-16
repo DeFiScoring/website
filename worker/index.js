@@ -2410,12 +2410,29 @@ export default {
   // We dispatch by event.cron so a missed/added trigger doesn't accidentally
   // run the wrong job.
   async scheduled(event, env, ctx) {
+    // A promise handed to waitUntil that rejects is an UNHANDLED rejection: the
+    // whole invocation is recorded `outcome: "exception"` and the only message
+    // Cloudflare shows is the cron expression itself — "*/15 * * * *" — with the
+    // real cause in a separate log line you have to correlate by requestId.
+    // That is how a missing D1 table (migration 0012, never applied) presented:
+    // one useful error and one useless one, every fifteen minutes.
+    //
+    // Naming the job keeps the attribution the bare form throws away. This does
+    // not swallow anything: it logs at error level with the original message.
+    const track = (job, p) =>
+      ctx.waitUntil(
+        Promise.resolve(p).catch((e) =>
+          console.error(`[scheduled:${job}] threw:`, (e && e.stack) || (e && e.message) || String(e))
+        )
+      );
+
     if (event.cron === "17 3 * * *") {
-      ctx.waitUntil(runRetentionPrune(env));
+      track("retention-prune", runRetentionPrune(env));
       // Same daily tick refreshes the sanctions overlay. Independent of the
       // prune: a failure in either must not skip the other, and the refresh
       // reports rather than throws.
-      ctx.waitUntil(
+      track(
+        "sanctions-refresh",
         refreshSanctionsList(env).then((r) => {
           if (!r.ok && !r.skipped) console.warn("[sanctions] refresh failed:", JSON.stringify(r));
         })
@@ -2423,11 +2440,11 @@ export default {
       return;
     }
     if (event.cron === "*/5 * * * *") {
-      ctx.waitUntil(scanAlertRules(env, ctx));
+      track("alert-scan", scanAlertRules(env, ctx));
       return;
     }
     if (event.cron === "*/15 * * * *") {
-      ctx.waitUntil(runScheduledRescore(env, ctx));
+      track("rescore", runScheduledRescore(env, ctx));
       return;
     }
     // Unknown cron — log and bail rather than guessing.

@@ -143,7 +143,7 @@ tier, Enterprise in its own strip.
 Signed in: `#pr-current-plan` appears and the current tier's CTA reads
 "Current plan". Signed out: it stays hidden.
 
-## 12. API keys — only after the migration in §B below
+## 12. API keys — unblocked (migrations applied 2026-09-16, see §B)
 
 Issue a key in `/dashboard/settings/`, then:
 
@@ -163,36 +163,73 @@ This is the item that decides whether the pricing page can honestly add
 
 # Infrastructure actions
 
-Three pending items. The order is not arbitrary.
+Two still pending — A and C. B (migrations) was completed on 2026-09-16 and is
+kept below for the record, and for the lesson about not trusting the ledger.
 
 ## A. Restrict Workers Builds to `main` — first
 
 Cloudflare dashboard → Workers & Pages → `defiscoring` → Settings → Builds.
 Set the production branch to `main` and disable non-production branch builds.
 
-**Do this first.** Every draft PR in this effort deployed straight to
-production — the Cloudflare bot posted "Deployment successful" on drafts #41
-and #42 before either was reviewed. Doing it before the migration also stops
-an in-flight branch deploying over a freshly migrated database.
+**Still the first thing to do.** Every draft PR in this effort deployed
+straight to production — the Cloudflare bot posted "Deployment successful" on
+drafts #41 and #42 before either was reviewed, and again on #44. The original
+reason to sequence it before the migration has passed (the migrations are
+applied), but the exposure it describes has not: an unreviewed branch still
+deploys to production the moment it is pushed.
 
-## B. Apply migration `0013_api_keys.sql`
+## B. Migrations — DONE, and the old instruction here was wrong
 
-```bash
-npm run migrate:remote      # wrangler d1 migrations apply defi_health --remote
+**Resolved 2026-09-16.** `0009`–`0013` are applied to production D1 and
+`d1_migrations` now records `0001`–`0013`. Nothing to run.
+
+This section used to say: run `npm run migrate:remote`, and "wrangler applies
+only unapplied migrations, so this should report `0013` alone; `0001`–`0012`
+are already live." **Both halves were false**, and the instruction would have
+failed if anyone had followed it:
+
+- Production was missing **five** migrations, not one: `0009` (admin tables),
+  `0010` (`alert_channels.secret`, without which webhook delivery — a Plus
+  feature — could not store its signing secret), `0011` (the alert-deliveries
+  audit rebuild), `0012` (`watched_wallets`), `0013` (api keys). `0012` is what
+  crashed the 15-minute re-score cron every tick with
+  `D1_ERROR: no such table: watched_wallets`.
+- `d1_migrations` only recorded `0001`–`0005`, yet the tables from `0006`,
+  `0007` and `0008` existed — they had been applied out of band. So wrangler
+  believed `0006` onward were pending and would have re-run them. `0006` and
+  `0007` are fully `IF NOT EXISTS` and would have passed, but `0008` is a bare
+  `ALTER TABLE wallet_connections ADD COLUMN tags TEXT` and SQLite has no
+  `ADD COLUMN IF NOT EXISTS` — it would have failed with "duplicate column
+  name: tags" and aborted the run partway.
+
+**The lesson worth keeping: never trust `d1_migrations` as the record of what
+production actually has.** Check the schema itself. These are the queries:
+
+```sql
+-- what the ledger claims
+SELECT id, name, applied_at FROM d1_migrations ORDER BY id;
+-- what is actually there
+SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;
+-- and for the ALTER-only migrations, which add no table
+SELECT COUNT(*) FROM pragma_table_info('wallet_connections') WHERE name='tags';      -- 0008
+SELECT COUNT(*) FROM pragma_table_info('users')           WHERE name='suspended_at'; -- 0009
+SELECT COUNT(*) FROM pragma_table_info('alert_channels')  WHERE name='secret';       -- 0010
+SELECT "notnull" FROM pragma_table_info('alert_deliveries') WHERE name='channel_id'; -- 0011 → 0 once applied
 ```
 
-Wrangler applies only unapplied migrations, so this should report `0013`
-alone; `0001`–`0012` are already live.
+**If a future migration is ever applied by hand, record it** in the same
+transaction-of-thought:
+`INSERT OR IGNORE INTO d1_migrations (name, applied_at) VALUES ('00NN_x.sql', datetime('now'));`
+An unrecorded migration is how this drift started.
 
 **Use `--remote`.** `npm run migrate:local` writes to the miniflare copy and
 its output looks identical.
 
-Verify by listing tables — `api_keys` and `api_key_usage` — or just by running
-smoke item 12.
-
-Until this runs, `authenticateApiKey`'s first statement selects from a table
-that does not exist, so **every API key errors**, and the Plus quota claim
-stays off the pricing page.
+Historical note — until this was applied, `authenticateApiKey`'s first
+statement selected from a table that did not exist, so **every API key
+errored**. That is no longer true, which means the Plus "100 API requests/day"
+claim is now enforceable and can go on the pricing page once smoke item 12
+passes against a real key.
 
 ## C. Set `ALCHEMY_KEY`
 
